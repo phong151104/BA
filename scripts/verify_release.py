@@ -15,7 +15,8 @@ assert all((run / name).is_file() for name in required)
 assert len(pd.read_csv(run / "validation_policy_search.csv")) == 27
 assert len(pd.read_csv(run / "random_campaigns.csv")) == 100
 assert len(pd.read_csv(run / "sensitivity.csv")) == 74
-assert len(pd.read_csv(run / "budget_curve.csv")) == 84
+assert len(pd.read_csv(run / "budget_curve.csv")) == 105
+assert len(pd.read_csv(run / "economic_uncertainty.csv")) == 4
 assert len(read_json(ROOT / "reports/figures/catalog.json")) == 14
 assert len((ROOT / "reports/executive-brief.md").read_text(encoding="utf-8").split()) <= 700
 assert read_json(ROOT / "reports/report-manifest.json")["run_id"] == run.name

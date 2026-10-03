@@ -46,8 +46,16 @@ def calculate(scores, budget, settings, offers, strategy, policy, thresholds):
 
 
 @st.cache_data(show_spinner=False)
-def scenario_views(scores, budget, settings, thresholds):
-    return sensitivity(scores, budget, settings, thresholds), budget_curve(scores, settings, thresholds)
+def scenario_views(scores, budget, settings, thresholds, offers, policy):
+    return sensitivity(scores, budget, settings, thresholds, offers, policy), budget_curve(scores, settings, thresholds, offers, policy)
+
+
+def control(key, default):
+    # Native persistence keeps Python state and remounted browser widgets in sync.
+    st.session_state.campaign_controls.setdefault(key, default)
+    if key not in st.session_state:
+        st.session_state[key] = default
+    return {"key": key, "persist_state": "session"}
 
 
 def metric_cards(stats):
@@ -82,6 +90,13 @@ except (FileNotFoundError, KeyError) as exc:
     st.caption(str(exc))
     st.stop()
 
+if st.session_state.get("controls_run") != run.name:
+    for key in st.session_state.get("campaign_controls", {}):
+        st.session_state.pop(key, None)
+    st.session_state.campaign_controls = {}
+    st.session_state.controls_run = run.name
+    st.session_state.pop("scenario_results", None)
+
 source_names = ["Demo · tập test giữ riêng"]
 if "uploaded_scores" in st.session_state:
     source_names.append("CSV đã nhập")
@@ -105,7 +120,9 @@ if page == "Nhập dữ liệu":
             st.success(f"Đã chấm điểm {len(predicted):,} khách hàng. Chọn 'CSV đã nhập' ở thanh bên để lập chiến dịch.")
             if quality["ignored_columns"]:
                 st.info("Cột không sử dụng: " + ", ".join(quality["ignored_columns"]))
-            st.dataframe(predicted[["customer_id", "churn_probability", "risk_band"]], hide_index=True, width="stretch")
+            st.dataframe(predicted[["customer_id", "churn_probability", "risk_band", "prediction_origin"]], hide_index=True, width="stretch")
+            if predicted.prediction_origin.str.contains("matches_").any():
+                st.warning("CSV có ID trùng dữ liệu dự án. Xem prediction_origin; ID trùng train không phải kiểm định độc lập. So khớp ID không xác minh nội dung hay thời điểm quan sát.")
             st.download_button("Tải bảng điểm", predicted.to_csv(index=False).encode("utf-8-sig"), "scores.csv", "text/csv")
         except DataValidationError as exc:
             st.error("CSV chưa hợp lệ; chưa nhập dòng nào. Nguồn dữ liệu trước đó vẫn giữ nguyên.")
@@ -143,6 +160,10 @@ if page == "Chất lượng mô hình":
         st.dataframe(csv_artifact(run.name, "segment_errors.csv"), hide_index=True)
         st.dataframe(csv_artifact(run.name, "fairness.csv"), hide_index=True)
         st.caption("Nhóm <50 quan sát cần thận trọng. Không sử dụng gender/SeniorCitizen làm features; vẫn có thể tồn tại proxy bias.")
+    if (run / "economic_uncertainty.csv").exists():
+        with st.expander("Bất định kinh tế · kịch bản chuẩn trên test"):
+            st.dataframe(csv_artifact(run.name, "economic_uncertainty.csv"), hide_index=True)
+            st.caption("Bootstrap ghép cặp khách hàng, giữ nguyên chính sách và giả định, dùng nhãn churn lịch sử. Chỉ phản ánh bất định lấy mẫu của mô phỏng hồi cứu; không phải khoảng tin cậy lợi nhuận thật, không bao gồm bất định save rate hay sai lệch mô hình. Không áp dụng cho CSV hoặc tham số hiện tại.")
     st.stop()
 
 if page == "Phương pháp và hướng dẫn":
@@ -174,27 +195,29 @@ st.markdown('<div class="hero"><h2>Đúng khách hàng. Đúng ngân sách.</h2>
 st.caption(f"Nguồn: {source} · {len(scores):,} khách hàng · đơn vị tiền tệ dữ liệu (ĐVTT)")
 with st.expander("Ngân sách và giả định chiến dịch", expanded=page == "Lập chiến dịch"):
     a, b, c = st.columns(3)
-    budget = a.number_input("Ngân sách · ĐVTT", min_value=0.0, value=float(default_budget(len(scores))), step=100.0, key="budget_" + source)
-    offer_cost = b.number_input("Chi phí ưu đãi tiêu chuẩn", min_value=0.0, value=20.0, step=1.0, key="offer_cost")
-    contact = c.number_input("Chi phí liên hệ", min_value=0.0, value=2.0, step=1.0, key="contact_cost")
+    standard = cfg["offers"][1]
+    budget = a.number_input("Ngân sách · ĐVTT", min_value=0.0, step=100.0, **control("budget_" + source, float(default_budget(len(scores), cfg))))
+    offer_cost = b.number_input("Chi phí ưu đãi tiêu chuẩn", min_value=0.0, step=1.0, **control("offer_cost", float(standard["offer_cost"])))
+    contact = c.number_input("Chi phí liên hệ tiêu chuẩn", min_value=0.0, step=1.0, **control("contact_cost", float(standard["contact_cost"])))
     a, b, c = st.columns(3)
-    q = a.slider("Save rate giả định", 0.0, 1.0, 0.2, .01, key="save_rate")
-    cfg["margin"] = b.slider("Biên đóng góp", 0.0, 1.0, .3, .01, key="margin")
-    cfg["base_horizon"] = c.slider("Thời gian giá trị cơ sở (tháng)", 0, 24, 12, key="horizon")
+    q = a.slider("Save rate giả định", 0.0, 1.0, step=.01, **control("save_rate", float(standard["save_rate"])))
+    cfg["margin"] = b.slider("Biên đóng góp", 0.0, 1.0, step=.01, **control("margin", float(cfg["margin"])))
+    cfg["base_horizon"] = c.number_input("Thời gian giá trị cơ sở (tháng)", min_value=0.0, step=1.0, **control("horizon", float(cfg["base_horizon"])))
     a, b, c = st.columns(3)
     for column, segment, label in zip([a, b, c], ["new", "developing", "loyal"], ["Hệ số tenure ≤12 tháng", "Hệ số tenure 13–24 tháng", "Hệ số tenure >24 tháng"]):
-        cfg["tenure_factors"][segment] = column.number_input(label, min_value=0.0, max_value=3.0, value=float(cfg["tenure_factors"][segment]), step=.05)
-    segments = st.multiselect("Phân khúc đủ điều kiện (áp dụng trước tối ưu)", ["new", "developing", "loyal"], default=["new", "developing", "loyal"])
-    mode = st.selectbox("Chính sách ưu đãi", ["Một ưu đãi tiêu chuẩn", "Tối ưu nhiều ưu đãi", "Chính sách tenure đã khóa"])
+        cfg["tenure_factors"][segment] = column.number_input(label, min_value=0.0, step=.05, **control("tenure_" + segment, float(cfg["tenure_factors"][segment])))
+    st.caption(f"Giới hạn thời gian giá trị: {cfg['horizon_cap']:g} tháng · Mặc định từ cấu hình run {run.name}; thay đổi được giữ trong phiên khi chuyển trang.")
+    segments = st.multiselect("Phân khúc đủ điều kiện (áp dụng trước tối ưu)", ["new", "developing", "loyal"], **control("eligible_segments", ["new", "developing", "loyal"]))
+    mode = st.selectbox("Chính sách ưu đãi", ["Một ưu đãi tiêu chuẩn", "Tối ưu nhiều ưu đãi", "Chính sách tenure đã khóa"], **control("offer_mode", "Một ưu đãi tiêu chuẩn"))
     cfg["offers"][1].update(offer_cost=offer_cost, contact_cost=contact, save_rate=q)
-    for o in cfg["offers"]:
-        o["contact_cost"] = contact
     if mode != "Một ưu đãi tiêu chuẩn":
         st.caption("Điều chỉnh thêm ưu đãi nhẹ/tăng cường; chính sách tenure giữ nguyên cách gán đã chọn trên validation.")
         for idx, name in [(0, "Nhẹ"), (2, "Tăng cường")]:
-            l, r = st.columns(2)
-            cfg["offers"][idx]["offer_cost"] = l.number_input(f"Chi phí ưu đãi {name}", min_value=0.0, value=float(cfg["offers"][idx]["offer_cost"]))
-            cfg["offers"][idx]["save_rate"] = r.slider(f"Save rate {name}", 0.0, 1.0, float(cfg["offers"][idx]["save_rate"]), .01)
+            l, r, c = st.columns(3)
+            offer = cfg["offers"][idx]
+            offer["offer_cost"] = l.number_input(f"Chi phí ưu đãi {name}", min_value=0.0, **control("cost_" + offer["offer_id"], float(offer["offer_cost"])))
+            offer["save_rate"] = r.slider(f"Save rate {name}", 0.0, 1.0, step=.01, **control("rate_" + offer["offer_id"], float(offer["save_rate"])))
+            offer["contact_cost"] = c.number_input(f"Chi phí liên hệ {name}", min_value=0.0, **control("contact_" + offer["offer_id"], float(offer["contact_cost"])))
 
 tenure_segments = pd.cut(scores.tenure, [-np.inf, 12, 24, np.inf], labels=["new", "developing", "loyal"])
 population = scores.loc[tenure_segments.isin(segments)].copy()
@@ -226,15 +249,17 @@ if page == "Tổng quan":
     st.subheader("Hành động được đề xuất")
     st.write(f"Tiếp cận {stats['selected_count']:,} khách hàng, dùng {stats['cost']:,.0f} ĐVTT; giá trị ròng mô phỏng {stats['expected_net_value']:,.1f} ĐVTT theo giả định hiện tại. Kiểm tra độ nhạy trước khi chọn ngân sách.")
 elif page == "Kịch bản và ngân sách":
-    st.info("Phân tích dưới đây dùng ưu đãi tiêu chuẩn làm mốc. Đường multi_offer so sánh riêng tác động tối ưu nhiều ưu đãi. Fixed có thể vượt ngân sách khi chi phí tăng và sẽ được đánh dấu.")
+    st.info(f"Độ nhạy dùng chính sách hiện tại: {mode}. Fixed giữ cả khách hàng và ưu đãi; retarget tối ưu lại theo cùng chính sách. Fixed có thể vượt ngân sách khi chi phí tăng. Đường active_policy là chính sách đang chọn; các đường khác là đối chứng.")
+    st.caption("Trục save rate là mức của ưu đãi tiêu chuẩn. Với nhiều ưu đãi, cộng cùng chênh lệch điểm phần trăm vào save rate mỗi ưu đãi và chặn trong [0,1]. Hệ số chi phí áp dụng cho mọi ưu đãi, không đổi phí liên hệ.")
     if st.button("Tính độ nhạy và đường ngân sách", type="primary"):
         with st.spinner("Đang tính các kịch bản…"):
-            st.session_state.scenario_results = (*scenario_views(population, budget, cfg, thresholds), stats["scenario_id"])
+            st.session_state.scenario_results = (*scenario_views(population, budget, cfg, thresholds, offers, policy), stats["scenario_id"], mode)
     if "scenario_results" in st.session_state:
-        sens, curves, sid = st.session_state.scenario_results
+        sens, curves, sid, computed_mode = st.session_state.scenario_results
+        st.caption(f"Kết quả đã tính: {computed_mode} · kịch bản {sid}")
         if sid != stats["scenario_id"]:
             st.warning("Tham số đã thay đổi. Bấm tính lại để cập nhật các biểu đồ dưới đây.")
-        view = st.radio("Cách đánh giá độ nhạy", ["retarget", "fixed"], horizontal=True)
+        view = st.radio("Cách đánh giá độ nhạy", ["retarget", "fixed"], format_func=lambda x: {"retarget": "Tối ưu lại danh sách", "fixed": "Giữ nguyên khách hàng và ưu đãi"}[x], horizontal=True)
         grid = sens.query("axis == 'cost_save_rate' and mode == @view").pivot(index="parameter", columns="cost_multiplier", values="expected_net_value")
         grid.index = [f"{value:.0%}" for value in grid.index]
         grid.columns = [f"{value:g}×" for value in grid.columns]
@@ -244,6 +269,7 @@ elif page == "Kịch bản và ngân sách":
         st.plotly_chart(heatmap, width="stretch")
         st.plotly_chart(px.line(curves, x="budget", y="expected_net_value", color="strategy", title="Giá trị ròng theo ngân sách · ĐVTT", labels={"budget": "Ngân sách · ĐVTT", "expected_net_value": "Giá trị ròng · ĐVTT", "strategy": "Chiến lược"}), width="stretch")
         st.dataframe(sens, hide_index=True, width="stretch")
+        st.download_button("Tải bảng độ nhạy", sens.to_csv(index=False).encode("utf-8-sig"), f"sensitivity_{sid}.csv", "text/csv")
     else:
         st.caption("Bấm nút để tính trên dữ liệu và giả định hiện tại; kết quả được lưu cache theo kịch bản.")
 
@@ -251,11 +277,18 @@ if page in ["Tổng quan", "Lập chiến dịch"]:
     if page == "Lập chiến dịch":
         st.subheader("So sánh trên cùng ngân sách")
         baseline_rows = []
-        for strategy in ["none", "risk", "value", "ev"]:
+        for strategy in ["none", "risk", "risk_positive_ev", "value", "ev"]:
             _, item = calculate(population, budget, cfg, [cfg["offers"][1]], strategy, None, thresholds)
             baseline_rows.append({"strategy": strategy, **{k: item[k] for k in ["selected_count", "cost", "expected_net_value", "precision_contacted"]}})
-        st.dataframe(pd.DataFrame(baseline_rows), hide_index=True, width="stretch")
-        st.caption("Baseline risk/value không lọc theo EV; có thể chọn khách hàng giá trị ròng âm. Đây là điểm cần so sánh với chiến lược EV.")
+        comparison_table = pd.DataFrame(baseline_rows)
+        comparison_table["strategy"] = comparison_table.strategy.map({"none": "Không triển khai", "risk": "Rủi ro cao nhất", "risk_positive_ev": "Rủi ro cao + EV dương", "value": "Giá trị cao nhất", "ev": "EV cao nhất"})
+        st.dataframe(comparison_table, hide_index=True, width="stretch", column_config={
+            "strategy": "Chiến lược", "selected_count": "Khách hàng được chọn",
+            "cost": st.column_config.NumberColumn("Chi phí · ĐVTT", format="%.2f"),
+            "expected_net_value": st.column_config.NumberColumn("Giá trị ròng · ĐVTT", format="%.2f"),
+            "precision_contacted": st.column_config.NumberColumn("Precision nhóm chọn", format="%.3f"),
+        })
+        st.caption("Các đối chứng trên dùng một ưu đãi tiêu chuẩn, cùng khách hàng và ngân sách. risk/value không lọc EV; risk_positive_ev chỉ xếp rủi ro sau khi loại EV ≤0 để so sánh với một quy tắc kinh tế đơn giản hơn. KPI phía trên dùng chính sách đang chọn.")
     st.subheader("Danh sách hành động")
     a, b = st.columns([2, 1])
     query = a.text_input("Tìm ID (chỉ lọc bảng)")
@@ -272,11 +305,20 @@ if page in ["Tổng quan", "Lập chiến dịch"]:
         "expected_net_value": st.column_config.NumberColumn("EV ròng · ĐVTT", format="%.2f"), "selected": "Được chọn", "selection_reason": "Lý do",
     })
     st.caption("Các cột chi phí/EV là phương án tiềm năng; chỉ cộng dòng selected=True vào KPI chiến dịch. Tìm kiếm không thay đổi file xuất toàn chiến dịch.")
+    if not visible.empty:
+        with st.expander("Vì sao chọn hoặc không chọn khách hàng này?"):
+            customer_id = st.selectbox("Khách hàng cần giải thích", visible.customer_id.tolist())
+            detail = visible.loc[visible.customer_id.eq(customer_id)].iloc[0]
+            st.write(detail.selection_reason)
+            st.write(detail.decision_detail)
+            st.caption("Đây là giải thích công thức kinh tế, không phải nguyên nhân churn hay bằng chứng ưu đãi sẽ có tác dụng. Trong bài toán nhiều ưu đãi, tổ hợp được chọn để tối đa tổng EV trong ngân sách, không nhất thiết ưu đãi có EV riêng cao nhất cho từng người.")
     st.download_button("Xuất gói chiến dịch · CSV + giả định", campaign_zip(target, stats), f"campaign_{stats['scenario_id']}.zip", "application/zip", type="primary")
     with st.expander("Precision, coverage và kết quả hồi cứu"):
         if "churn" in population:
             st.json({k: stats.get(k) for k in ["precision_contacted", "high_risk_high_value_coverage", "label_based_simulated_net"]})
             st.caption("Kết quả thay xác suất bằng nhãn lịch sử vẫn sử dụng save rate giả định, không phải tác động thực đo.")
+            if source == "CSV đã nhập":
+                st.warning("Chỉ là mô tả nhãn trong CSV, không được gọi là đánh giá holdout độc lập. Kiểm tra prediction_origin; nhãn hoặc ID đã dùng trong train/validation có thể làm kết quả thiên lệch.")
         else:
             st.info("CSV không có nhãn: không tính precision/recall/AUC. Coverage được định nghĩa bằng xác suất và giá trị, không phải nhãn.")
             st.write("Coverage high-risk/high-value:", stats.get("high_risk_high_value_coverage"))

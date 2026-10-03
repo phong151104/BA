@@ -27,6 +27,7 @@ Thư mục này là nơi lưu các yêu cầu và định hướng triển khai 
 - [Hướng dẫn sử dụng](user-guide.md)
 - [Kiến trúc triển khai](implementation.md)
 - [Hồ sơ nghiệm thu](verification.md)
+- [Cải tiến sau review và bằng chứng kiểm chứng](review-improvements.md)
 
 ## Cập nhật và truy vết
 

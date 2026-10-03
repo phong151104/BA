@@ -28,49 +28,65 @@ def eda(run):
     save_csv(train.describe(include="all").reset_index(names="statistic"), run / "eda_descriptive.csv")
 
 
-def sensitivity(scores, budget, cfg, thresholds=None):
-    reference, _ = campaign(scores, budget, cfg, thresholds=thresholds)
+def sensitivity(scores, budget, cfg, thresholds=None, offers=None, policy=None):
+    offers = deepcopy(offers if offers is not None else [cfg["offers"][1]])
+    reference, reference_stats = campaign(scores, budget, cfg, offers, policy=policy, thresholds=thresholds)
     reference_ids = set(reference.loc[reference.selected, "customer_id"])
+    reference_pairs = set(reference.loc[reference.selected, ["customer_id", "offer_id"]].itertuples(index=False, name=None))
     cases = []
     for q, multiplier in product([.05, .10, .20, .30, .40, .50], [.5, .75, 1, 1.25, 1.5]):
-        offer = {**cfg["offers"][1], "save_rate": q, "offer_cost": cfg["offers"][1]["offer_cost"] * multiplier}
-        cases.append(("cost_save_rate", q, multiplier, deepcopy(cfg), offer))
+        # A common percentage-point shift preserves differences between offer assumptions.
+        shift = q - cfg["offers"][1]["save_rate"]
+        changed = [{**o, "save_rate": float(np.clip(o["save_rate"] + shift, 0, 1)),
+                    "offer_cost": o["offer_cost"] * multiplier} for o in offers]
+        cases.append(("cost_save_rate", q, multiplier, deepcopy(cfg), changed))
     for margin in [.2, .3, .4]:
         setting = {**deepcopy(cfg), "margin": margin}
-        cases.append(("margin", margin, 1, setting, cfg["offers"][1]))
+        cases.append(("margin", margin, 1, setting, offers))
     for horizon in [6, 12, 18]:
         setting = {**deepcopy(cfg), "base_horizon": horizon}
-        cases.append(("horizon", horizon, 1, setting, cfg["offers"][1]))
+        cases.append(("horizon", horizon, 1, setting, offers))
     uniform = {**deepcopy(cfg), "tenure_factors": {s: 1 for s in SEGMENTS}}
-    cases.append(("uniform_tenure", 1, 1, uniform, cfg["offers"][1]))
+    cases.append(("uniform_tenure", 1, 1, uniform, offers))
     rows = []
-    for axis, param, cost_multiplier, settings, offer in cases:
-        picked, retarget = campaign(scores, budget, settings, [offer], thresholds=thresholds)
-        _, fixed = fixed_campaign(scores, reference, budget, settings, offer, thresholds)
+    for axis, param, cost_multiplier, settings, scenario_offers in cases:
+        picked, retarget = campaign(scores, budget, settings, scenario_offers, policy=policy, thresholds=thresholds)
+        _, fixed = fixed_campaign(scores, reference, budget, settings, scenario_offers, thresholds)
+        fixed["scenario_id"] = retarget["scenario_id"] + "-fixed"
+        fixed["solver_status"] = "fixed_assignments"
         ids = set(picked.loc[picked.selected, "customer_id"])
+        pairs = set(picked.loc[picked.selected, ["customer_id", "offer_id"]].itertuples(index=False, name=None))
         turnover = len(ids.symmetric_difference(reference_ids)) / len(ids.union(reference_ids)) if ids.union(reference_ids) else 0
+        assignment_turnover = len(pairs.symmetric_difference(reference_pairs)) / len(pairs.union(reference_pairs)) if pairs.union(reference_pairs) else 0
         for mode, stats in [("fixed", fixed), ("retarget", retarget)]:
             rows.append({"axis": axis, "parameter": param, "cost_multiplier": cost_multiplier, "mode": mode,
+                         "reference_scenario_id": reference_stats["scenario_id"],
+                         "solver_status": stats.get("solver_status", stats.get("solver", {}).get("status")),
+                         "solver_gap": stats.get("solver", {}).get("gap"),
                          "turnover": 0 if mode == "fixed" else turnover, "budget_feasible": stats["cost"] <= budget + 1e-7,
+                         "assignment_turnover": 0 if mode == "fixed" else assignment_turnover,
                          **{k: v for k, v in stats.items() if k not in ["solver", "scenario"]}})
     return pd.DataFrame(rows)
 
 
-def budget_curve(scores, cfg, thresholds=None):
+def budget_curve(scores, cfg, thresholds=None, offers=None, policy=None):
     maximum = len(scores) * max(o["offer_cost"] + o["contact_cost"] for o in cfg["offers"])
     rows = []
     for budget in np.linspace(0, maximum, 21):
-        for strategy in ["risk", "value", "ev"]:
+        for strategy in ["risk", "risk_positive_ev", "value", "ev"]:
             _, stats = campaign(scores, float(budget), cfg, strategy=strategy, thresholds=thresholds)
             rows.append({"budget": budget, "strategy": strategy, **{k: v for k, v in stats.items() if k not in ["solver", "scenario"]}})
         _, stats = campaign(scores, float(budget), cfg, offers=cfg["offers"], thresholds=thresholds)
         rows.append({"budget": budget, "strategy": "multi_offer", **{k: v for k, v in stats.items() if k not in ["solver", "scenario"]}, "solver_status": stats["solver"]["status"]})
+        if offers is not None:
+            _, stats = campaign(scores, float(budget), cfg, offers, policy=policy, thresholds=thresholds)
+            rows.append({"budget": budget, "strategy": "active_policy", **{k: v for k, v in stats.items() if k not in ["solver", "scenario"]}, "solver_status": stats["solver"]["status"]})
     return pd.DataFrame(rows)
 
 
 def compare(scores, budget, cfg, thresholds=None, random_iterations=100):
     rows, detail, scenarios = [], {}, {}
-    for strategy in ["none", "risk", "value", "ev", "multi_offer"]:
+    for strategy in ["none", "risk", "risk_positive_ev", "value", "ev", "multi_offer"]:
         offers = cfg["offers"] if strategy == "multi_offer" else [cfg["offers"][1]]
         target, summary = campaign(scores, budget, cfg, offers, "ev" if strategy == "multi_offer" else strategy, thresholds=thresholds)
         detail[strategy] = target
@@ -83,6 +99,33 @@ def compare(scores, budget, cfg, thresholds=None, random_iterations=100):
     random_frame = pd.DataFrame(random_rows)
     rows.append({"strategy": "random_mean", **random_frame.mean(numeric_only=True).to_dict(), "solver_status": "100 seeded random campaigns" if random_iterations == 100 else "seeded random campaigns"})
     return pd.DataFrame(rows), detail, scenarios, random_frame
+
+
+def economic_uncertainty(details, iterations=1000, seed=42):
+    """Paired customer bootstrap of frozen policies, not a confidence bound on real profit."""
+    reference = details["ev"].sort_values("customer_id")
+    if "churn" not in reference:
+        return pd.DataFrame()
+    rng = np.random.default_rng(seed)
+    contributions, scenario_ids = {}, {}
+    for strategy in ["ev", "risk", "risk_positive_ev"]:
+        frame = details[strategy].sort_values("customer_id")
+        if frame.customer_id.tolist() != reference.customer_id.tolist():
+            raise ValueError("Bootstrap cần cùng khách hàng cho mọi chiến lược")
+        contributions[strategy] = np.where(frame.selected, frame.churn * frame.assumed_save_rate * frame.customer_value - frame.total_cost, 0)
+        scenario_ids[strategy] = frame.scenario_id.iloc[0]
+    contributions["ev_minus_risk_positive_ev"] = contributions["ev"] - contributions["risk_positive_ev"]
+    samples = {key: [] for key in contributions}
+    for _ in range(iterations):
+        idx = rng.integers(0, len(reference), len(reference))
+        for key, values in contributions.items():
+            samples[key].append(float(values[idx].sum()))
+    return pd.DataFrame([{"strategy": key, "label_based_simulated_net": float(values.sum()),
+                          "lower_95": float(np.quantile(samples[key], .025)), "upper_95": float(np.quantile(samples[key], .975)),
+                          "iterations": iterations, "seed": seed, "population": "test",
+                          "scenario_id": scenario_ids.get(key, scenario_ids["ev"] + " vs " + scenario_ids["risk_positive_ev"]),
+                          "method": "paired_customer_bootstrap_frozen_policy_assumed_save_rate"}
+                         for key, values in contributions.items()])
 
 
 def simulate(run=None):
@@ -100,6 +143,7 @@ def simulate(run=None):
     for name, detail in details.items():
         save_csv(detail, run / f"targeting_{name}.csv")
     write_json(run / "campaign_scenarios.json", scenarios)
+    save_csv(economic_uncertainty(details, cfg["bootstrap_iterations"], cfg["seed"]), run / "economic_uncertainty.csv")
     policy_rows = []
     print("Selecting tenure policy on validation only (27 alternatives)", flush=True)
     for ids in product([o["offer_id"] for o in cfg["offers"]], repeat=3):

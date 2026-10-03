@@ -1,6 +1,6 @@
 # Hồ sơ phân tích Telecom Churn & Retention Targeting
 
-Run `20261003T133607624165Z-88be4b93` · nguồn `Kaggle blastchar/telco-customer-churn` · scenario chuẩn `765d0287b0f6`.
+Run `20261003T183647103688Z-88be4b93` · nguồn `Kaggle blastchar/telco-customer-churn` · scenario chuẩn `765d0287b0f6`.
 
 Tài liệu này là nguồn nội dung cho báo cáo và slide. Tất cả số liệu bên dưới được sinh từ pipeline đã chạy; không phải số mẫu. Tiền là ĐVTT. Save rate, chi phí, margin và horizon là giả định.
 
@@ -50,13 +50,19 @@ EDA thiết kế trên tập train; không sử dụng test để tạo features
 
 Biểu đồ đối chiếu churn giữa các loại hợp đồng. Nhóm có tỷ lệ cao chỉ cho thấy liên hệ trong mẫu; không chứng minh đổi hợp đồng sẽ làm giảm churn. Cần xem cả số lượng nhóm để tránh đánh giá một nhóm nhỏ như nhóm lớn.
 
+Trên train, nhóm `Month-to-month` có churn 43.1% (n=2,304), so với 2.9% ở `Two year` (n=1,025); chênh 40.1 điểm phần trăm. Đây là liên hệ quan sát, không chứng minh nguyên nhân hay hiệu quả của can thiệp. Hàm ý: dùng hợp đồng để kiểm tra phân bố rủi ro, sau đó xét EV và ngân sách; không tự động gửi ưu đãi cho toàn bộ nhóm churn cao.
+
 ![Churn theo tenure](figures/eda_tenure.png)
 
 Tenure giúp xem rủi ro thay đổi theo giai đoạn quan hệ khách hàng, đồng thời tham gia proxy giá trị qua các hệ số giả định. Đây là hai vai trò khác nhau; hệ số giá trị không được suy ra như một kết luận nhân quả từ biểu đồ churn.
 
+Trên train, nhóm `new` có churn 47.7% (n=1,318), so với 14.0% ở `loyal` (n=2,292); chênh 33.7 điểm phần trăm. Đây là liên hệ quan sát, không chứng minh nguyên nhân hay hiệu quả của can thiệp. Hàm ý: tách rủi ro giai đoạn đầu khỏi giả định về giá trị còn lại; kiểm tra kịch bản mọi hệ số tenure bằng 1 trước khi đề xuất chính sách phân khúc.
+
 ![Thanh toán](figures/eda_payment.png)
 
 Khác biệt theo cách thanh toán có thể liên quan đặc điểm khách hàng và dịch vụ. Không kết luận phương thức thanh toán tự nó gây churn. Xem thêm [bảng EDA đầy đủ](tables/eda_segments.csv), [thống kê](tables/eda_descriptive.csv), [tương quan](tables/correlations.csv).
+
+Trên train, nhóm `Electronic check` có churn 45.6% (n=1,410), so với 15.0% ở `Credit card (automatic)` (n=915); chênh 30.6 điểm phần trăm. Đây là liên hệ quan sát, không chứng minh nguyên nhân hay hiệu quả của can thiệp. Hàm ý: kiểm tra sai số và calibration theo nhóm; không kết luận thay cách thanh toán sẽ giữ chân khách hàng.
 
 ## 4. Thiết kế kiểm định
 
@@ -104,7 +110,7 @@ AP ở đây là Average Precision của scikit-learn, không phải tích phân
 | recall            |      0.663 |      0.751 |
 | f1                |      0.574 |      0.654 |
 
-Khoảng bootstrap 95% từ 1.000 lần lấy mẫu test phản ánh bất định lấy mẫu của metric, không bao gồm mọi sai lệch nguồn dữ liệu hay chứng minh tác động ưu đãi.
+Khoảng bootstrap 95% từ 1,000 lần lấy mẫu test phản ánh bất định lấy mẫu của metric, không bao gồm mọi sai lệch nguồn dữ liệu hay chứng minh tác động ưu đãi.
 
 ![Calibration](figures/calibration.png)
 
@@ -124,9 +130,9 @@ Nguồn bổ sung: [hệ số Logistic](tables/logistic_coefficients.csv), [perm
 
 ## 7. Giá trị khách hàng và ưu đãi
 
-`V = MonthlyCharges × margin × min(24, base_horizon × tenure_factor)`.
+`V = MonthlyCharges × margin × min(horizon_cap, base_horizon × tenure_factor)`.
 
-Mặc định margin 30%, base horizon 12 tháng; new/developing/loyal có hệ số 0.75/1/1.25. Mọi giá trị đều có thể chỉnh; kịch bản hệ số tenure bằng 1 được kiểm tra riêng. TotalCharges là thông tin lịch sử, không được cộng như lợi ích tương lai.
+Ưu đãi tiêu chuẩn: chi phí 20 + liên hệ 2 ĐVTT; save rate 20.0%. Biên đóng góp 30.0%; horizon cơ sở 12 tháng; hệ số new/developing/loyal 0.75/1/1.25; cap 24 tháng. Đây là cấu hình thực tế của lần chạy, không phải hằng số trong báo cáo. Mọi giá trị đều có thể chỉnh; kịch bản hệ số tenure bằng 1 được kiểm tra riêng. TotalCharges là thông tin lịch sử, không được cộng như lợi ích tương lai.
 
 | offer_id   |   offer_cost |   contact_cost |   save_rate |
 |:-----------|-------------:|---------------:|------------:|
@@ -140,19 +146,22 @@ Mặc định margin 30%, base horizon 12 tháng; new/developing/loyal có hệ 
 
 Ngân sách chuẩn 3,080 ĐVTT. Mỗi chiến lược dùng cùng tập test. Single-offer so sánh cùng mức chi phí; multi-offer trình bày riêng. Random là trung bình 100 lần chọn ngẫu nhiên với seed cố định.
 
-| strategy       |   selected_count |     cost |   expected_saved |   expected_net_value |     roi |   precision_contacted |   high_risk_high_value_coverage |   label_based_simulated_net |
-|:---------------|-----------------:|---------:|-----------------:|---------------------:|--------:|----------------------:|--------------------------------:|----------------------------:|
-| none           |            0.000 |    0.000 |            0.000 |                0.000 | nan     |               nan     |                           0.000 |                       0.000 |
-| risk           |          140.000 | 3080.000 |           20.750 |             1709.332 |   0.555 |                 0.700 |                           0.039 |                    1370.284 |
-| value          |          140.000 | 3080.000 |            5.820 |             -312.629 |  -0.102 |                 0.286 |                           0.294 |                     743.155 |
-| ev             |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
-| multi_offer    |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
-| random_mean    |          140.000 | 3080.000 |            7.505 |            -1146.105 |  -0.372 |                 0.262 |                           0.102 |                   -1171.184 |
-| segment_policy |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
+| strategy         |   selected_count |     cost |   expected_saved |   expected_net_value |     roi |   precision_contacted |   high_risk_high_value_coverage |   label_based_simulated_net |
+|:-----------------|-----------------:|---------:|-----------------:|---------------------:|--------:|----------------------:|--------------------------------:|----------------------------:|
+| none             |            0.000 |    0.000 |            0.000 |                0.000 | nan     |               nan     |                           0.000 |                       0.000 |
+| risk             |          140.000 | 3080.000 |           20.750 |             1709.332 |   0.555 |                 0.700 |                           0.039 |                    1370.284 |
+| risk_positive_ev |          140.000 | 3080.000 |           20.706 |             1792.562 |   0.582 |                 0.679 |                           0.039 |                    1347.307 |
+| value            |          140.000 | 3080.000 |            5.820 |             -312.629 |  -0.102 |                 0.286 |                           0.294 |                     743.155 |
+| ev               |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
+| multi_offer      |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
+| random_mean      |          140.000 | 3080.000 |            7.505 |            -1146.105 |  -0.372 |                 0.262 |                           0.102 |                   -1171.184 |
+| segment_policy   |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
 
 ![So sánh targeting](figures/strategy_comparison.png)
 
 EV tạo net kỳ vọng 2,859.22 so với risk-only 1,709.33; chênh 1,149.88 ĐVTT trong kịch bản này. Precision targeting đo mức tập trung churn, không trực tiếp đo giá trị kinh tế. Risk-only có thể precision cao hơn nhưng bỏ qua giá trị khách hàng.
+
+Đối chứng risk_positive_ev chỉ giữ ứng viên EV >0 rồi xếp theo xác suất churn, cùng ưu đãi/ngân sách. Net kỳ vọng 1,792.56; EV chênh 1,066.65 ĐVTT. Báo cáo cả đối chứng này để phân biệt lợi ích của loại EV âm với lợi ích của xếp hạng theo giá trị.
 
 `label_based_simulated_net` thay p bằng nhãn test, vẫn dùng q giả định. Đây là mô phỏng hồi cứu, không phải lợi nhuận quan sát được. Nhãn test không tham gia chọn khách hàng.
 
@@ -176,6 +185,19 @@ Trong lưới 21 điểm, EV đạt net lớn nhất lần đầu tại ngân s�
 
 Xem [sensitivity đầy đủ](tables/sensitivity.csv) cho margin 20/30/40%, horizon 6/12/18 tháng và hệ số tenure đồng nhất; [budget curve](tables/budget_curve.csv) có chi phí thực và số người chọn.
 
+Dashboard tính độ nhạy theo chính sách đang chọn (một ưu đãi, nhiều ưu đãi hoặc tenure đã khóa). Fixed giữ nguyên cả cặp khách hàng–ưu đãi. Với nhiều ưu đãi, trục save rate là mốc tiêu chuẩn; các ưu đãi khác thay đổi cùng số điểm phần trăm, chặn [0,1]. Phí ưu đãi cùng nhân hệ số, phí liên hệ giữ nguyên. Bảng báo cáo tĩnh này dùng một ưu đãi tiêu chuẩn. Cột assignment_turnover đo thay đổi cặp khách hàng–ưu đãi, còn turnover chỉ đo thay đổi ID; reference_scenario_id truy về chiến dịch gốc, solver_status/gap công khai chất lượng nghiệm.
+
+### Bất định lấy mẫu của mô phỏng kinh tế
+
+| strategy                  |   label_based_simulated_net |   lower_95 |   upper_95 |   iterations |
+|:--------------------------|----------------------------:|-----------:|-----------:|-------------:|
+| ev                        |                    2708.611 |   1807.217 |   3792.675 |         1000 |
+| risk                      |                    1370.284 |    802.993 |   1932.335 |         1000 |
+| risk_positive_ev          |                    1347.307 |    785.543 |   1910.894 |         1000 |
+| ev_minus_risk_positive_ev |                    1361.304 |    492.646 |   2308.765 |         1000 |
+
+[Bảng bootstrap kinh tế](tables/economic_uncertainty.csv) dùng cùng chỉ số khách hàng được lấy mẫu cho mọi chiến lược, giữ nguyên danh sách/ưu đãi và giả định. Dòng ev_minus_risk_positive_ev là chênh lệch ghép cặp, không lấy hai khoảng độc lập trừ nhau. Đây là biến thiên lấy mẫu của tổng giá trị mô phỏng dùng nhãn churn trên một quần thể cùng kích thước. Không tối ưu lại sau lấy mẫu; ngân sách của mẫu lặp không phải ràng buộc của một chiến dịch mới. Khoảng này không bao gồm sai số save rate, ước lượng lại mô hình hay hiệu quả nhân quả, và không phải khoảng tin cậy lợi nhuận thật. Đọc cùng khoảng kịch bản fixed/retarget, không thay thế chúng.
+
 ## 10. Chính sách phân khúc và công bằng
 
 27 chính sách gán ưu đãi theo tenure được so sánh trên validation; lựa chọn khóa là `{'new': 'standard', 'developing': 'standard', 'loyal': 'standard'}`. Nếu cả ba nhóm cùng ưu đãi hoặc multi-offer không tăng net, đó là kết quả hợp lệ; không sửa giả định để tạo câu chuyện tốt hơn.
@@ -196,7 +218,7 @@ Các nhóm có thể khác nhau về chọn ưu đãi, recall và calibration. C
 
 ## 11. Khuyến nghị quản lý
 
-Ưu tiên xem EV dưới ngân sách cùng với độ nhạy, thay vì chỉ chọn khách hàng churn cao. Với cấu hình chuẩn, danh sách 140 người là phương án tham khảo có thể xuất và kiểm tra. Không coi save rate 20% là điều đã biết; cần xác thực trước khi dự báo lợi ích cho chiến dịch thật. Khi tham số thay đổi, kiểm tra cả fixed và retarget để hiểu rủi ro của quyết định cũ và phương án điều chỉnh.
+Ưu tiên xem EV dưới ngân sách cùng với độ nhạy, thay vì chỉ chọn khách hàng churn cao. Với cấu hình chuẩn, danh sách 140 người là phương án tham khảo có thể xuất và kiểm tra. Không coi save rate 20.0% là điều đã biết; cần xác thực trước khi dự báo lợi ích cho chiến dịch thật. Khi tham số thay đổi, kiểm tra cả fixed và retarget để hiểu rủi ro của quyết định cũ và phương án điều chỉnh.
 
 Không ép tiêu hết ngân sách. So sánh ngân sách tăng thêm với giá trị tăng thêm. Nếu không có EV dương, kết quả phù hợp là không triển khai theo các giả định hiện tại. [Executive brief](executive-brief.md) và [playbook](../docs/retention-playbook.md) phục vụ người ra quyết định.
 
@@ -209,7 +231,7 @@ Dữ liệu mô phỏng học thuật; không có phân bổ ưu đãi ngẫu nh
 1. Mở dashboard; giới thiệu câu hỏi kinh doanh và 5 KPI.
 2. Giải thích dữ liệu demo là test giữ riêng và mọi giá trị tiền là mô phỏng.
 3. Mở Lập chiến dịch; so EV với risk-only trên cùng ngân sách.
-4. Đổi save rate từ 20% xuống 10%; đọc thay đổi danh sách và net.
+4. Giảm save rate tiêu chuẩn từ 20.0% còn 10.0%; đọc thay đổi danh sách và net.
 5. Đổi chi phí hoặc ngân sách; chỉ ra trường hợp không dùng hết ngân sách.
 6. Mở Kịch bản; tính fixed/retarget và xem profit curve.
 7. Xem quality/calibration và SHAP, nêu giới hạn giải thích.

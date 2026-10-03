@@ -2,7 +2,7 @@
 
 ## Quyết định chuẩn
 
-Ngân sách 3,080 ĐVTT trên 1409 khách hàng test. Ưu đãi tiêu chuẩn: cost 20 + contact 2; save rate 20%. Margin 30%; horizon cơ sở 12 tháng; hệ số tenure 0.75/1/1.25, cap 24.
+Ngân sách 3,080 ĐVTT trên 1409 khách hàng test. Ưu đãi tiêu chuẩn: chi phí 20 + liên hệ 2 ĐVTT; save rate 20.0%. Biên đóng góp 30.0%; horizon cơ sở 12 tháng; hệ số new/developing/loyal 0.75/1/1.25; cap 24 tháng.
 
 `V = MonthlyCharges × margin × min(cap, horizon × tenure factor)`
 
@@ -12,7 +12,7 @@ Chi phí phát sinh cho tất cả người được chọn. Không cộng Total
 
 ## Kết quả đề xuất
 
-Chọn 140 người, chi phí 3,080, giá trị ròng kỳ vọng 2,859.22 ĐVTT. Scenario `765d0287b0f6`, run `20261003T133607624165Z-88be4b93`. Xem [targeting](../reports/tables/targeting_ev.csv).
+Chọn 140 người, chi phí 3,080, giá trị ròng kỳ vọng 2,859.22 ĐVTT. Scenario `765d0287b0f6`, run `20261003T183647103688Z-88be4b93`. Xem [targeting](../reports/tables/targeting_ev.csv).
 
 ## Thực hiện demo
 
@@ -26,7 +26,7 @@ Chọn 140 người, chi phí 3,080, giá trị ròng kỳ vọng 2,859.22 ĐVTT
 
 ## Quy tắc không chọn
 
-EV ≤0 không được chiến lược EV chọn. Không ép dùng hết ngân sách. Baseline risk/value/random chỉ thực hiện quy tắc đơn giản nên có thể chọn EV âm; mục tiêu là làm rõ giá trị của việc tính kinh tế.
+EV ≤0 không được chiến lược EV chọn. Không ép dùng hết ngân sách. Baseline risk/value/random chỉ thực hiện quy tắc đơn giản nên có thể chọn EV âm. Đối chứng bổ sung risk_positive_ev loại EV ≤0 trước khi xếp theo rủi ro để tránh chỉ so với một quy tắc chưa xét kinh tế.
 
 ## Chính sách phân khúc
 

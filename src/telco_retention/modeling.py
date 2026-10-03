@@ -93,7 +93,7 @@ def train():
     thresholds = pd.DataFrame([{"threshold": float(t), **metrics(yv, model.predict_proba(Xv)[:, 1], t)} for t in np.arange(0.05, 1, 0.05)])
     best_threshold = float(thresholds.sort_values(["f1", "threshold"], ascending=[False, True]).iloc[0].threshold)
     metadata = {"run_id": run_id, "selected_model": winner, "threshold": best_threshold, "seed": seed, "created_at": now(), "source_sha256": source["sha256"], "config": cfg, "selection_rule": "AP within 0.01 of best calibrated candidate; Brier within 0.002 of best; prefer simpler", "split_counts": df.split.value_counts().to_dict(), "feature_columns": list(X.columns), "numeric_medians": df.loc[df.split.eq("train"), NUMERIC].median().to_dict(), "best_parameters": best_params, "python": platform.python_version(), "dependencies": {d.metadata["Name"]: d.version for d in importlib.metadata.distributions()}, "code_sha256": {str(p.relative_to(ROOT)): digest(p.read_bytes()) for p in (ROOT / "src").rglob("*.py")}}
-    joblib.dump({"model": model, "metadata": metadata}, run / "model.joblib")
+    joblib.dump({"model": model, "metadata": metadata, "reference_splits": df.set_index("customerID").split.to_dict()}, run / "model.joblib")
     joblib.dump(models, run / "candidates.joblib")
     save_csv(validation, run / "validation_metrics.csv")
     save_csv(thresholds, run / "threshold_analysis.csv")
@@ -103,7 +103,7 @@ def train():
     return run
 
 
-def score_frame(df, bundle=None, origin="uploaded_unseen"):
+def score_frame(df, bundle=None, origin="uploaded_unverified"):
     bundle = bundle or joblib.load(latest_run() / "model.joblib")
     out = df.copy()
     out["churn_probability"] = bundle["model"].predict_proba(features(df))[:, 1]
@@ -114,6 +114,18 @@ def score_frame(df, bundle=None, origin="uploaded_unseen"):
     out["prediction_origin"] = origin
     if "split" in out:
         out["prediction_origin"] = out.split.map({"train": "in_sample_do_not_evaluate", "validation": "selection_holdout", "test": "untouched_test"})
+    else:
+        reference = bundle.get("reference_splits")
+        # Backward compatibility for locally produced bundles without an ID registry.
+        path = ROOT / "artifacts/runs" / bundle["metadata"]["run_id"] / "customers.csv"
+        if reference is None and path.exists():
+            reference = pd.read_csv(path, usecols=["customerID", "split"], dtype={"customerID": str}).set_index("customerID").split.to_dict()
+        if reference is not None:
+            out["reference_split"] = out.customerID.map(reference).fillna("not_in_reference")
+            out["prediction_origin"] = out.reference_split.map({
+                "train": "uploaded_matches_train_do_not_evaluate", "validation": "uploaded_matches_validation",
+                "test": "uploaded_matches_test", "not_in_reference": "uploaded_not_in_reference",
+            })
     out["risk_band"] = pd.cut(out.churn_probability, [-np.inf, 0.25, 0.5, 1], labels=["low", "medium", "high"]).astype(str)
     return out
 

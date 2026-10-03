@@ -151,3 +151,37 @@ def test_csv_totals():
     selected = restored.loc[restored.selected]
     assert selected.total_cost.sum() == pytest.approx(stats["cost"])
     assert selected.expected_net_value.sum() == pytest.approx(stats["expected_net_value"])
+
+
+def test_risk_positive_ev_baseline():
+    data = scores()
+    data.loc[0, ["churn_probability", "MonthlyCharges"]] = [.99, 1]
+    raw, _ = campaign(data, 22, settings(), strategy="risk")
+    filtered, _ = campaign(data, 22, settings(), strategy="risk_positive_ev")
+    assert raw.loc[raw.selected, "customer_id"].tolist() == ["a"]
+    assert filtered.loc[filtered.selected, "customer_id"].tolist() == ["b"]
+    assert filtered.loc[filtered.selected, "expected_net_value"].gt(0).all()
+
+
+def test_fixed_multi_offer_keeps_assignments():
+    cfg = settings()
+    data = scores()
+    data.tenure = [3, 20, 40]
+    policy = {"new": "light", "developing": "standard", "loyal": "intensive"}
+    reference, _ = campaign(data, 100, cfg, cfg["offers"], policy=policy)
+    changed = deepcopy(cfg["offers"])
+    for offer in changed:
+        offer["offer_cost"] *= 2
+    fixed, stats = fixed_campaign(data, reference, 100, cfg, changed)
+    a = reference.sort_values("customer_id")
+    b = fixed.sort_values("customer_id")
+    assert a.offer_id.tolist() == b.offer_id.tolist()
+    assert a.selected.tolist() == b.selected.tolist()
+    np.testing.assert_allclose(b.expected_net_value, a.expected_net_value - a.offer_cost)
+    assert stats["cost"] == pytest.approx(b.loc[b.selected, "total_cost"].sum())
+
+
+def test_customer_explanation_contains_economics():
+    target, _ = campaign(scores().iloc[:1], 22, settings())
+    assert "EV 2.00" in target.decision_detail.iloc[0]
+    assert "hòa vốn" in target.decision_detail.iloc[0]

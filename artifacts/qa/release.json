@@ -2,22 +2,22 @@
   "status": "passed",
   "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]",
   "environment": "D:\\BA\\.venv-check",
-  "run_id": "20261003T133607624165Z-88be4b93",
+  "run_id": "20261003T183647103688Z-88be4b93",
   "required_artifact_count": 19,
   "broken_links": [],
   "reproducibility": {
     "previous": "20261003T113637229316Z-88be4b93",
-    "current": "20261003T133607624165Z-88be4b93",
+    "current": "20261003T183647103688Z-88be4b93",
     "metrics_equal_atol": 1e-12,
     "selected_ids_equal": true
   },
   "warmed_app_seconds": [
-    0.23110219999944093,
-    0.2731986999997389,
-    0.3040490999992471,
-    0.28454280000005383,
-    0.29406229999949574
+    0.13958129999991797,
+    0.19950910000079602,
+    0.21361269999943033,
+    0.2203488000013749,
+    0.21884099999988393
   ],
-  "mean_seconds": 0.2773910199995953,
-  "max_seconds": 0.3040490999992471
+  "mean_seconds": 0.19837858000028064,
+  "max_seconds": 0.2203488000013749
 }

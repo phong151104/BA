@@ -1,13 +1,18 @@
 {
   "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
   "mode": "local headless fallback; no in-app browser connection",
+  "run_id": "20261003T183647103688Z-88be4b93",
+  "checked_at_utc": "2026-10-03T18:45:44.738263+00:00",
   "checks": [
     "home: five KPIs and targeting table",
     "budget 0 and restore update KPI correctly",
     "campaign ZIP downloaded and budget validated",
     "model quality and SHAP visible",
+    "custom budget and KPI survive navigation through model page",
     "sensitivity and budget curves calculated interactively",
     "valid CSV uploaded and scored in browser",
+    "known dataset ID overlap is disclosed on upload",
+    "contradictory service CSV rejected in browser",
     "invalid CSV rejected with errors"
   ],
   "status": "passed"

@@ -54,6 +54,19 @@ def test_selection_rule():
     assert choose_model(frame) == "logistic"
 
 
+def test_uploaded_ids_not_assumed_unseen():
+    source = pd.read_csv(latest_run() / "customers.csv")
+    sample = source.groupby("split").head(1)
+    expected = dict(zip(sample.customerID, sample.split))
+    from telco_retention.data import SCHEMA
+    clean, _ = validate(sample[SCHEMA].reset_index(drop=True))
+    scored = score_frame(clean)
+    assert scored.set_index("customerID").reference_split.to_dict() == expected
+    assert "uploaded_matches_train_do_not_evaluate" in scored.prediction_origin.values
+    clean.customerID = [f"NEW-ID-{i}" for i in range(len(clean))]
+    assert set(score_frame(clean).prediction_origin) == {"uploaded_not_in_reference"}
+
+
 def test_test_metrics_and_shap_consistency():
     run = latest_run()
     scores = pd.read_csv(run / "scorecard.csv")

@@ -1,0 +1,9 @@
+{
+  "metadata_url": "https://www.kaggle.com/api/v1/datasets/list?search=blastchar%2Ftelco-customer-churn",
+  "observed_at_utc": "2026-10-03T13:36:07.417299+00:00",
+  "ref": "blastchar/telco-customer-churn",
+  "version": 1,
+  "last_updated": "2018-02-23T18:20:00.21Z",
+  "license": "Data files © Original Authors",
+  "note": "Metadata observed separately from downloaded bytes; raw SHA-256 identifies the exact analyzed file."
+}

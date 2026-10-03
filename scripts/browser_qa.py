@@ -3,9 +3,10 @@ import io
 import json
 import time
 import zipfile
+import pandas as pd
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
-from telco_retention.common import ROOT, write_json
+from telco_retention.common import ROOT, write_json, latest_run, now
 
 output = ROOT / "artifacts/qa"
 output.mkdir(parents=True, exist_ok=True)
@@ -13,7 +14,7 @@ executables = [Path(r"C:\Program Files\Google\Chrome\Application\chrome.exe"), P
 executable = next((p for p in executables if p.exists()), None)
 if executable is None:
     raise RuntimeError("Cần Chrome hoặc Edge local để chạy browser QA")
-result = {"browser": str(executable), "mode": "local headless fallback; no in-app browser connection", "checks": []}
+result = {"browser": str(executable), "mode": "local headless fallback; no in-app browser connection", "run_id": latest_run().name, "checked_at_utc": now(), "checks": []}
 with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=str(executable), headless=True)
     page = browser.new_page(viewport={"width": 1440, "height": 1800}, device_scale_factor=1)
@@ -45,11 +46,21 @@ with sync_playwright() as p:
         summary = json.loads(archive.read("scenario_and_summary.json"))
         assert summary["cost"] <= summary["scenario"]["budget"]
     result["checks"].append("campaign ZIP downloaded and budget validated")
+    budget_input.fill("1000")
+    budget_input.press("Enter")
+    expect(page.locator('[data-testid="stMetricValue"]').first).to_have_text("45")
     page.get_by_text("Chất lượng mô hình", exact=True).first.click()
     page.get_by_text("Giải thích XGBoost · classifier gốc", exact=True).wait_for()
     page.locator('.js-plotly-plot .main-svg').first.wait_for(timeout=30000)
     page.screenshot(path=str(output / "dashboard-model.png"), full_page=True)
     result["checks"].append("model quality and SHAP visible")
+    page.get_by_text("Lập chiến dịch", exact=True).click()
+    expect(page.get_by_role("spinbutton", name="Ngân sách · ĐVTT")).to_have_value("1000.00")
+    expect(page.locator('[data-testid="stMetricValue"]').first).to_have_text("45")
+    result["checks"].append("custom budget and KPI survive navigation through model page")
+    page.get_by_role("spinbutton", name="Ngân sách · ĐVTT").fill("3080")
+    page.get_by_role("spinbutton", name="Ngân sách · ĐVTT").press("Enter")
+    expect(page.locator('[data-testid="stMetricValue"]').first).to_have_text("140")
     page.get_by_text("Kịch bản và ngân sách", exact=True).click()
     page.get_by_text("Tính độ nhạy và đường ngân sách", exact=True).click()
     page.get_by_text("Cách đánh giá độ nhạy", exact=True).wait_for(timeout=180000)
@@ -61,6 +72,13 @@ with sync_playwright() as p:
     page.get_by_text("Đã chấm điểm 20 khách hàng.", exact=False).wait_for(timeout=30000)
     page.screenshot(path=str(output / "dashboard-upload.png"), full_page=True)
     result["checks"].append("valid CSV uploaded and scored in browser")
+    page.get_by_text("CSV có ID trùng dữ liệu dự án.", exact=False).wait_for()
+    result["checks"].append("known dataset ID overlap is disclosed on upload")
+    contradictory = pd.read_csv(ROOT / "data/examples/customers_unlabeled.csv")
+    contradictory.loc[0, ["PhoneService", "MultipleLines"]] = ["No", "Yes"]
+    page.locator('input[type="file"]').set_input_files({"name": "contradictory.csv", "mimeType": "text/csv", "buffer": contradictory.to_csv(index=False).encode()})
+    page.get_by_text("CSV chưa hợp lệ", exact=False).wait_for()
+    result["checks"].append("contradictory service CSV rejected in browser")
     page.locator('input[type="file"]').set_input_files({"name": "invalid.csv", "mimeType": "text/csv", "buffer": b"customerID,tenure\na,-1\n"})
     page.get_by_text("CSV chưa hợp lệ", exact=False).wait_for()
     result["checks"].append("invalid CSV rejected with errors")

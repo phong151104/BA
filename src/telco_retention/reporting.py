@@ -17,7 +17,25 @@ def write(path, text):
     path.write_text(text.strip() + "\n", encoding="utf-8")
 
 
+def assumption_summary(cfg):
+    offer = cfg["offers"][1]
+    factors = "/".join(f"{cfg['tenure_factors'][s]:g}" for s in ["new", "developing", "loyal"])
+    return (f"Ưu đãi tiêu chuẩn: chi phí {offer['offer_cost']:g} + liên hệ {offer['contact_cost']:g} ĐVTT; "
+            f"save rate {offer['save_rate']:.1%}. Biên đóng góp {cfg['margin']:.1%}; "
+            f"horizon cơ sở {cfg['base_horizon']:g} tháng; hệ số new/developing/loyal {factors}; cap {cfg['horizon_cap']:g} tháng.")
+
+
+def eda_findings(frame, attribute):
+    groups = frame.loc[frame.attribute.eq(attribute)].sort_values(["churn_rate", "group"])
+    low, high = groups.iloc[0], groups.iloc[-1]
+    return (f"Trên train, nhóm `{high['group']}` có churn {high.churn_rate:.1%} (n={int(high.n):,}), "
+            f"so với {low.churn_rate:.1%} ở `{low['group']}` (n={int(low.n):,}); "
+            f"chênh {100 * (high.churn_rate - low.churn_rate):.1f} điểm phần trăm. "
+            "Đây là liên hệ quan sát, không chứng minh nguyên nhân hay hiệu quả của can thiệp.")
+
+
 def figures(run):
+    cfg = read_json(run / "campaign_scenarios.json")["ev"]["scenario"]["settings"]
     dest = ROOT / "reports/figures"
     dest.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({"font.family": "DejaVu Sans", "axes.spines.top": False, "axes.spines.right": False, "axes.titleweight": "bold", "figure.facecolor": "white", "axes.prop_cycle": plt.cycler(color=["#167e85", "#df9850", "#576f92", "#bd5b63", "#49734c", "#896aaa", "#687981"])})
@@ -76,7 +94,7 @@ def figures(run):
     for selected, part in target.groupby("selected"):
         plt.scatter(part.churn_probability, part.customer_value, s=14, alpha=.5, label="Được chọn" if selected else "Không chọn")
     plt.legend(); plt.xlabel("Xác suất churn"); plt.ylabel("Giá trị còn lại · ĐVTT")
-    finish("risk_value", "Rủi ro và giá trị khách hàng", "Margin 30%, horizon cơ sở 12 tháng; ngưỡng high/high khóa trên validation.")
+    finish("risk_value", "Rủi ro và giá trị khách hàng", f"Margin {cfg['margin']:.1%}, horizon cơ sở {cfg['base_horizon']:g} tháng, cap {cfg['horizon_cap']:g}; ngưỡng high/high khóa trên validation.")
     plt.figure(figsize=(9, 5)); plt.hist(target.churn_probability, bins=25); plt.xlabel("Xác suất churn"); plt.ylabel("Số khách hàng")
     finish("probability_distribution", "Phân bố xác suất churn", "Mô hình được chọn trước khi đánh giá test.", scenario="not applicable")
     fair = pd.read_csv(run / "fairness.csv").query("strategy == 'ev' and attribute == 'gender'")
@@ -99,17 +117,19 @@ def dictionary():
         ("addon_count", "int 0–6", "Tổng dịch vụ thêm có giá trị Yes"), ("monthly_contract", "0/1", "Hợp đồng Month-to-month"), ("autopay", "0/1", "Thanh toán automatic"),
         ("customer_id", "string", "Bí danh customerID trong bảng kết quả"), ("churn_probability", "float [0,1]", "Xác suất calibrated"),
         ("risk_band", "low/medium/high", "≤0.25; (0.25,0.5]; >0.5; chỉ mô tả, khác ngưỡng high/high"),
-        ("prediction_origin", "string", "in_sample_do_not_evaluate / selection_holdout / untouched_test / uploaded_unseen"),
+        ("prediction_origin", "string", "in_sample_do_not_evaluate / selection_holdout / untouched_test; CSV: uploaded_matches_train_do_not_evaluate / uploaded_matches_validation / uploaded_matches_test / uploaded_not_in_reference / uploaded_unverified"),
+        ("reference_split", "string, CSV scoring", "Split của ID trùng dữ liệu mô hình, hoặc not_in_reference. So khớp ID không xác minh nội dung/thời điểm; không đủ kết luận độc lập"),
         ("model_version", "string", "Run ID gắn artifact mô hình"), ("remaining_months", "tháng", "min(cap, horizon × hệ số tenure)"),
         ("customer_value", "ĐVTT", "MonthlyCharges × margin × remaining_months"), ("offer_id", "string", "light/standard/intensive"),
         ("assumed_save_rate", "[0,1]", "Giả định giữ lại một người vốn sẽ churn"), ("offer_cost / contact_cost / total_cost", "ĐVTT", "Chi phí cố định mỗi người được chọn; total là tổng hai thành phần"),
         ("expected_saved_probability", "[0,1]", "churn_probability × assumed_save_rate"), ("expected_retained_value", "ĐVTT", "expected_saved_probability × customer_value"),
         ("expected_net_value", "ĐVTT", "expected_retained_value − total_cost"), ("selected", "bool", "Quyết định chọn; chỉ tổng hợp KPI cho selected=True"),
         ("selection_reason", "string", "Lý do lựa chọn/không chọn"), ("scenario_id", "string", "Hash cấu hình, ngân sách và tập khách hàng"),
+        ("decision_detail", "string", "Công thức EV với p, q, V, chi phí và save rate hòa vốn của từng khách hàng; không là giải thích nhân quả"),
         ("break_even_save_rate", "tỷ lệ hoặc NA", "cost/(p × V); NA khi p × V = 0; >1 nghĩa không hòa vốn được"), ("break_even_total_cost", "ĐVTT", "p × q × V"),
         ("customer_index", "int nội bộ", "Vị trí khách hàng để ràng buộc tối đa một ưu đãi"),
     ]
-    write(ROOT / "docs/data-dictionary.md", "# Từ điển dữ liệu\n\n" + table(pd.DataFrame(rows)) + "\n\n## Trường phát sinh\n\n" + table(pd.DataFrame(derived, columns=["Trường", "Kiểu/đơn vị", "Ý nghĩa"])) + "\n\nChuỗi rỗng TotalCharges → missing; tenure=0 → điền 0. Các số thiếu khác dùng median train, cả khi tính giá trị kinh doanh. Các trường phân loại bắt buộc không nhận missing. Các trạng thái không có dịch vụ là giá trị hợp lệ. Tiền dùng ĐVTT, không quy đổi VND.")
+    write(ROOT / "docs/data-dictionary.md", "# Từ điển dữ liệu\n\n" + table(pd.DataFrame(rows)) + "\n\n## Trường phát sinh\n\n" + table(pd.DataFrame(derived, columns=["Trường", "Kiểu/đơn vị", "Ý nghĩa"])) + "\n\nChuỗi rỗng TotalCharges → missing; tenure=0 → điền 0. Các số thiếu khác dùng median train, cả khi tính giá trị kinh doanh. Các trường phân loại bắt buộc không nhận missing. MultipleLines phải là No phone service khi và chỉ khi PhoneService=No; sáu dịch vụ Internet phải là No internet service khi và chỉ khi InternetService=No. Mâu thuẫn làm cả lần nhập bị từ chối. Tiền dùng ĐVTT, không quy đổi VND.")
 
 
 def notebooks(run):
@@ -117,7 +137,7 @@ def notebooks(run):
     specs = [
         ("01-data-eda", "Dữ liệu và EDA", "EDA thiết kế trên train. Các bảng và hình do pipeline chung tạo; không fit thêm trên test.", ["display(read_json(ROOT / 'data/raw/source.json'))\ndisplay(read_json(ROOT / 'data/processed/quality.json'))", "display(pd.read_csv(run / 'eda_segments.csv'))\ndisplay(pd.read_csv(run / 'correlations.csv'))", "display(Image(filename=str(ROOT / 'reports/figures/eda_contract.png')))\ndisplay(Image(filename=str(ROOT / 'reports/figures/eda_tenure.png')))"]),
         ("02-models-validation", "Mô hình và kiểm định", "Các mô hình được fit trong package modeling. Xem CV results, lựa chọn trên validation và kết quả test; không chọn lại theo test.", ["display(pd.read_csv(run / 'validation_metrics.csv'))\ndisplay(read_json(run / 'manifest.json')['best_parameters'])", "display(pd.read_csv(run / 'test_metrics.csv'))\ndisplay(pd.read_csv(run / 'bootstrap_intervals.csv'))", "display(Image(filename=str(ROOT / 'reports/figures/calibration.png')))\ndisplay(Image(filename=str(ROOT / 'reports/figures/shap_global.png')))"]),
-        ("03-targeting", "Giá trị và chiến dịch", "Tính lại chiến dịch bằng cùng hàm dashboard. Save rate là giả định; kết quả không nhân quả.", ["from telco_retention.business import campaign\nfrom telco_retention.analysis import default_budget\nscores = pd.read_csv(run / 'scorecard.csv').query(\"split == 'test'\")\ntarget, summary = campaign(scores, default_budget(len(scores)), thresholds=read_json(run / 'targeting_thresholds.json'))\ndisplay({k:v for k,v in summary.items() if k != 'scenario'})\ndisplay(target.loc[target.selected].head(10))", "display(pd.read_csv(run / 'strategy_comparison.csv'))\ndisplay(read_json(run / 'segment_policy.json'))", "display(Image(filename=str(ROOT / 'reports/figures/risk_value.png')))"]),
+        ("03-targeting", "Giá trị và chiến dịch", "Tính lại chiến dịch bằng cùng hàm dashboard. Save rate là giả định; kết quả không nhân quả.", ["from telco_retention.business import campaign\nfrom telco_retention.analysis import default_budget\ncfg = read_json(run / 'manifest.json')['config']\nscores = pd.read_csv(run / 'scorecard.csv').query(\"split == 'test'\")\ntarget, summary = campaign(scores, default_budget(len(scores), cfg), cfg, thresholds=read_json(run / 'targeting_thresholds.json'))\ndisplay({k:v for k,v in summary.items() if k != 'scenario'})\ndisplay(target.loc[target.selected].head(10))", "display(pd.read_csv(run / 'strategy_comparison.csv'))\ndisplay(read_json(run / 'segment_policy.json'))", "display(Image(filename=str(ROOT / 'reports/figures/risk_value.png')))"]),
         ("04-sensitivity-fairness", "Độ nhạy và công bằng", "Fixed và retarget có ý nghĩa khác nhau. Nhóm mẫu nhỏ không đủ cho kết luận chắc chắn.", ["display(pd.read_csv(run / 'sensitivity.csv'))\ndisplay(pd.read_csv(run / 'budget_curve.csv'))", "display(pd.read_csv(run / 'fairness.csv'))", "display(Image(filename=str(ROOT / 'reports/figures/sensitivity_fixed.png')))\ndisplay(Image(filename=str(ROOT / 'reports/figures/sensitivity_retarget.png')))\ndisplay(Image(filename=str(ROOT / 'reports/figures/budget_curve.png')))"]),
     ]
     for name, title, intro, cells in specs:
@@ -135,6 +155,11 @@ def report(run=None):
     source_metadata = read_json(run / "dataset_metadata.json")
     summary = read_json(run / "campaign_scenarios.json")
     ev, risk = summary["ev"], summary["risk"]
+    cfg = ev["scenario"]["settings"]
+    assumptions = assumption_summary(cfg)
+    risk_positive = summary["risk_positive_ev"]
+    uncertainty = pd.read_csv(run / "economic_uncertainty.csv")
+    model_name = {"logistic": "Logistic Regression", "random_forest": "Random Forest", "xgboost": "XGBoost"}[manifest['selected_model']]
     metrics = pd.read_csv(run / "test_metrics.csv")
     selected = metrics.loc[metrics.model.eq(manifest["selected_model"] + "_calibrated")].iloc[0]
     comparison = pd.read_csv(run / "strategy_comparison.csv")
@@ -199,7 +224,7 @@ customerID và Churn không là features. gender/SeniorCitizen chỉ dùng audit
 
 ## Validation và chọn mô hình
 
-Train/validation/test: {manifest['split_counts']}. Stratified random split, seed 42. CV 5 fold trên train, AP làm mục tiêu; calibration dùng OOF. Chọn calibrated AP trong 0.01 của tốt nhất, Brier trong 0.002 của tốt nhất trong nhóm đó, ưu tiên Logistic → Random Forest → XGBoost. Không chọn theo test và không refit toàn dataset.
+Train/validation/test: {manifest['split_counts']}. Stratified random split, seed {cfg['seed']}. CV {cfg['cv_folds']} fold trên train, AP làm mục tiêu; calibration dùng OOF. Chọn calibrated AP trong 0.01 của tốt nhất, Brier trong 0.002 của tốt nhất trong nhóm đó, ưu tiên Logistic → Random Forest → XGBoost. Không chọn theo test và không refit toàn dataset.
 
 Ngưỡng F1 validation: {manifest['threshold']:.2f}, chỉ cho metric phân loại. Targeting dùng EV và ngân sách. Các metric theo ngưỡng của mô hình khác trong bảng test dùng chung ngưỡng này, không phải ngưỡng tối ưu riêng của từng model.
 
@@ -207,7 +232,7 @@ Ngưỡng F1 validation: {manifest['threshold']:.2f}, chỉ cho metric phân lo�
 
 {table(metrics)}
 
-[Khoảng bootstrap 95%](../reports/tables/bootstrap_intervals.csv), 1.000 lần. Chất lượng calibration không được giả định luôn cải thiện; so sánh raw/calibrated được công bố đầy đủ.
+[Khoảng bootstrap 95%](../reports/tables/bootstrap_intervals.csv), {cfg['bootstrap_iterations']:,} lần. Chất lượng calibration không được giả định luôn cải thiện; so sánh raw/calibrated được công bố đầy đủ.
 
 ## Giả định và giới hạn
 
@@ -229,7 +254,7 @@ Chỉ nạp artifact do dự án tạo; joblib không dùng cho tệp mô hình 
 
 ## Quyết định chuẩn
 
-Ngân sách {ev['scenario']['budget']:,.0f} ĐVTT trên {manifest['split_counts']['test']} khách hàng test. Ưu đãi tiêu chuẩn: cost 20 + contact 2; save rate 20%. Margin 30%; horizon cơ sở 12 tháng; hệ số tenure 0.75/1/1.25, cap 24.
+Ngân sách {ev['scenario']['budget']:,.0f} ĐVTT trên {manifest['split_counts']['test']} khách hàng test. {assumptions}
 
 `V = MonthlyCharges × margin × min(cap, horizon × tenure factor)`
 
@@ -253,7 +278,7 @@ Chọn {ev['selected_count']} người, chi phí {ev['cost']:,.0f}, giá trị r
 
 ## Quy tắc không chọn
 
-EV ≤0 không được chiến lược EV chọn. Không ép dùng hết ngân sách. Baseline risk/value/random chỉ thực hiện quy tắc đơn giản nên có thể chọn EV âm; mục tiêu là làm rõ giá trị của việc tính kinh tế.
+EV ≤0 không được chiến lược EV chọn. Không ép dùng hết ngân sách. Baseline risk/value/random chỉ thực hiện quy tắc đơn giản nên có thể chọn EV âm. Đối chứng bổ sung risk_positive_ev loại EV ≤0 trước khi xếp theo rủi ro để tránh chỉ so với một quy tắc chưa xét kinh tế.
 
 ## Chính sách phân khúc
 
@@ -276,11 +301,11 @@ Doanh nghiệp cần lựa chọn khách hàng nhận ưu đãi trong một ngâ
 
 ## Dữ liệu và độ tin cậy
 
-Bộ dữ liệu có {source['rows']:,} khách hàng. Dữ liệu được làm sạch và chia train, validation, test theo tỷ lệ 60/20/20. Mô hình Logistic Regression hiệu chỉnh sigmoid được chọn trên validation theo quy tắc đã định trước. Trên test, ROC-AUC đạt {selected.roc_auc:.3f}, Average Precision đạt {selected.average_precision:.3f} và Brier score đạt {selected.brier:.3f}. Chỉ số phản ánh chất lượng phân loại lịch sử, chưa xác nhận khả năng dự báo trong tương lai.
+Bộ dữ liệu có {source['rows']:,} khách hàng. Dữ liệu được làm sạch và chia train, validation, test theo tỷ lệ 60/20/20. Mô hình {model_name} hiệu chỉnh sigmoid được chọn trên validation theo quy tắc đã định trước. Trên test, ROC-AUC đạt {selected.roc_auc:.3f}, Average Precision đạt {selected.average_precision:.3f} và Brier score đạt {selected.brier:.3f}. Chỉ số phản ánh chất lượng phân loại lịch sử, chưa xác nhận khả năng dự báo trong tương lai.
 
 ## Kết quả kinh doanh mô phỏng
 
-Kịch bản chuẩn có ngân sách {ev['cost']:,.0f} ĐVTT. Mỗi người nhận ưu đãi tiêu chuẩn phát sinh chi phí 22 ĐVTT; save rate giả định 20%. Giá trị khách hàng dùng phí tháng, biên đóng góp 30% và horizon cơ sở 12 tháng có điều chỉnh tenure. Chiến lược EV chọn {ev['selected_count']} khách hàng và tạo net kỳ vọng {ev['expected_net_value']:,.0f} ĐVTT, so với {risk['expected_net_value']:,.0f} ĐVTT của risk-only. Chênh lệch {ev['expected_net_value']-risk['expected_net_value']:,.0f} ĐVTT xuất phát từ việc ưu tiên đồng thời rủi ro và giá trị.
+Kịch bản chuẩn có ngân sách {ev['scenario']['budget']:,.0f} ĐVTT, chi thực trong mô phỏng {ev['cost']:,.0f} ĐVTT. {assumptions} Chiến lược EV chọn {ev['selected_count']} khách hàng và tạo net kỳ vọng {ev['expected_net_value']:,.0f} ĐVTT, so với {risk['expected_net_value']:,.0f} ĐVTT của risk-only và {risk_positive['expected_net_value']:,.0f} ĐVTT của risk-only sau lọc EV dương. Chênh lệch với đối chứng đã lọc là {ev['expected_net_value']-risk_positive['expected_net_value']:,.0f} ĐVTT.
 
 Precision của nhóm EV là {ev['precision_contacted']:.1%}, thấp hơn hoặc khác chiến lược chỉ ưu tiên rủi ro nhưng cần đọc cùng giá trị kinh tế. Xác suất churn cao không đồng nghĩa mọi khách hàng đều đáng nhận ưu đãi như nhau. Tối ưu nhiều ưu đãi và chính sách tenure cũng được kiểm tra; báo cáo giữ nguyên kết quả khi chúng không cải thiện so với một ưu đãi chung.
 
@@ -340,17 +365,23 @@ EDA thiết kế trên tập train; không sử dụng test để tạo features
 
 Biểu đồ đối chiếu churn giữa các loại hợp đồng. Nhóm có tỷ lệ cao chỉ cho thấy liên hệ trong mẫu; không chứng minh đổi hợp đồng sẽ làm giảm churn. Cần xem cả số lượng nhóm để tránh đánh giá một nhóm nhỏ như nhóm lớn.
 
+{eda_findings(eda, 'Contract')} Hàm ý: dùng hợp đồng để kiểm tra phân bố rủi ro, sau đó xét EV và ngân sách; không tự động gửi ưu đãi cho toàn bộ nhóm churn cao.
+
 ![Churn theo tenure](figures/eda_tenure.png)
 
 Tenure giúp xem rủi ro thay đổi theo giai đoạn quan hệ khách hàng, đồng thời tham gia proxy giá trị qua các hệ số giả định. Đây là hai vai trò khác nhau; hệ số giá trị không được suy ra như một kết luận nhân quả từ biểu đồ churn.
+
+{eda_findings(eda, 'tenure_segment')} Hàm ý: tách rủi ro giai đoạn đầu khỏi giả định về giá trị còn lại; kiểm tra kịch bản mọi hệ số tenure bằng 1 trước khi đề xuất chính sách phân khúc.
 
 ![Thanh toán](figures/eda_payment.png)
 
 Khác biệt theo cách thanh toán có thể liên quan đặc điểm khách hàng và dịch vụ. Không kết luận phương thức thanh toán tự nó gây churn. Xem thêm [bảng EDA đầy đủ](tables/eda_segments.csv), [thống kê](tables/eda_descriptive.csv), [tương quan](tables/correlations.csv).
 
+{eda_findings(eda, 'PaymentMethod')} Hàm ý: kiểm tra sai số và calibration theo nhóm; không kết luận thay cách thanh toán sẽ giữ chân khách hàng.
+
 ## 4. Thiết kế kiểm định
 
-Kích thước: {manifest['split_counts']}. Seed 42; stratify Churn; fit median/scaler/encoder trong train fold. Calibration sigmoid dùng dự đoán OOF qua 5 fold. Validation chọn mô hình, ngưỡng và chính sách; test dùng đánh giá cuối. Không refit lại mô hình bằng toàn dataset sau test.
+Kích thước: {manifest['split_counts']}. Seed {cfg['seed']}; stratify Churn; fit median/scaler/encoder trong train fold. Calibration sigmoid dùng dự đoán OOF qua {cfg['cv_folds']} fold. Validation chọn mô hình, ngưỡng và chính sách; test dùng đánh giá cuối. Không refit lại mô hình bằng toàn dataset sau test.
 
 Loại customerID và Churn khỏi features. gender/SeniorCitizen phục vụ audit. Thêm tenure band, số dịch vụ, cờ hợp đồng tháng và autopay. [Model card](../docs/model-card.md) liệt kê toàn bộ features và giới hạn. Điểm train trong scorecard được gắn `in_sample_do_not_evaluate`.
 
@@ -370,7 +401,7 @@ AP ở đây là Average Precision của scikit-learn, không phải tích phân
 
 {table(pd.read_csv(run / 'bootstrap_intervals.csv'))}
 
-Khoảng bootstrap 95% từ 1.000 lần lấy mẫu test phản ánh bất định lấy mẫu của metric, không bao gồm mọi sai lệch nguồn dữ liệu hay chứng minh tác động ưu đãi.
+Khoảng bootstrap 95% từ {cfg['bootstrap_iterations']:,} lần lấy mẫu test phản ánh bất định lấy mẫu của metric, không bao gồm mọi sai lệch nguồn dữ liệu hay chứng minh tác động ưu đãi.
 
 ![Calibration](figures/calibration.png)
 
@@ -390,9 +421,9 @@ Nguồn bổ sung: [hệ số Logistic](tables/logistic_coefficients.csv), [perm
 
 ## 7. Giá trị khách hàng và ưu đãi
 
-`V = MonthlyCharges × margin × min(24, base_horizon × tenure_factor)`.
+`V = MonthlyCharges × margin × min(horizon_cap, base_horizon × tenure_factor)`.
 
-Mặc định margin 30%, base horizon 12 tháng; new/developing/loyal có hệ số 0.75/1/1.25. Mọi giá trị đều có thể chỉnh; kịch bản hệ số tenure bằng 1 được kiểm tra riêng. TotalCharges là thông tin lịch sử, không được cộng như lợi ích tương lai.
+{assumptions} Đây là cấu hình thực tế của lần chạy, không phải hằng số trong báo cáo. Mọi giá trị đều có thể chỉnh; kịch bản hệ số tenure bằng 1 được kiểm tra riêng. TotalCharges là thông tin lịch sử, không được cộng như lợi ích tương lai.
 
 {table(pd.read_csv(run / 'synthetic_offers.csv'))}
 
@@ -407,6 +438,8 @@ Ngân sách chuẩn {ev['scenario']['budget']:,.0f} ĐVTT. Mỗi chiến lược
 ![So sánh targeting](figures/strategy_comparison.png)
 
 EV tạo net kỳ vọng {ev['expected_net_value']:,.2f} so với risk-only {risk['expected_net_value']:,.2f}; chênh {ev['expected_net_value']-risk['expected_net_value']:,.2f} ĐVTT trong kịch bản này. Precision targeting đo mức tập trung churn, không trực tiếp đo giá trị kinh tế. Risk-only có thể precision cao hơn nhưng bỏ qua giá trị khách hàng.
+
+Đối chứng risk_positive_ev chỉ giữ ứng viên EV >0 rồi xếp theo xác suất churn, cùng ưu đãi/ngân sách. Net kỳ vọng {risk_positive['expected_net_value']:,.2f}; EV chênh {ev['expected_net_value']-risk_positive['expected_net_value']:,.2f} ĐVTT. Báo cáo cả đối chứng này để phân biệt lợi ích của loại EV âm với lợi ích của xếp hạng theo giá trị.
 
 `label_based_simulated_net` thay p bằng nhãn test, vẫn dùng q giả định. Đây là mô phỏng hồi cứu, không phải lợi nhuận quan sát được. Nhãn test không tham gia chọn khách hàng.
 
@@ -430,6 +463,14 @@ Trong lưới 21 điểm, EV đạt net lớn nhất lần đầu tại ngân s�
 
 Xem [sensitivity đầy đủ](tables/sensitivity.csv) cho margin 20/30/40%, horizon 6/12/18 tháng và hệ số tenure đồng nhất; [budget curve](tables/budget_curve.csv) có chi phí thực và số người chọn.
 
+Dashboard tính độ nhạy theo chính sách đang chọn (một ưu đãi, nhiều ưu đãi hoặc tenure đã khóa). Fixed giữ nguyên cả cặp khách hàng–ưu đãi. Với nhiều ưu đãi, trục save rate là mốc tiêu chuẩn; các ưu đãi khác thay đổi cùng số điểm phần trăm, chặn [0,1]. Phí ưu đãi cùng nhân hệ số, phí liên hệ giữ nguyên. Bảng báo cáo tĩnh này dùng một ưu đãi tiêu chuẩn. Cột assignment_turnover đo thay đổi cặp khách hàng–ưu đãi, còn turnover chỉ đo thay đổi ID; reference_scenario_id truy về chiến dịch gốc, solver_status/gap công khai chất lượng nghiệm.
+
+### Bất định lấy mẫu của mô phỏng kinh tế
+
+{table(uncertainty[['strategy', 'label_based_simulated_net', 'lower_95', 'upper_95', 'iterations']])}
+
+[Bảng bootstrap kinh tế](tables/economic_uncertainty.csv) dùng cùng chỉ số khách hàng được lấy mẫu cho mọi chiến lược, giữ nguyên danh sách/ưu đãi và giả định. Dòng ev_minus_risk_positive_ev là chênh lệch ghép cặp, không lấy hai khoảng độc lập trừ nhau. Đây là biến thiên lấy mẫu của tổng giá trị mô phỏng dùng nhãn churn trên một quần thể cùng kích thước. Không tối ưu lại sau lấy mẫu; ngân sách của mẫu lặp không phải ràng buộc của một chiến dịch mới. Khoảng này không bao gồm sai số save rate, ước lượng lại mô hình hay hiệu quả nhân quả, và không phải khoảng tin cậy lợi nhuận thật. Đọc cùng khoảng kịch bản fixed/retarget, không thay thế chúng.
+
 ## 10. Chính sách phân khúc và công bằng
 
 27 chính sách gán ưu đãi theo tenure được so sánh trên validation; lựa chọn khóa là `{policy['policy']}`. Nếu cả ba nhóm cùng ưu đãi hoặc multi-offer không tăng net, đó là kết quả hợp lệ; không sửa giả định để tạo câu chuyện tốt hơn.
@@ -442,7 +483,7 @@ Các nhóm có thể khác nhau về chọn ưu đãi, recall và calibration. C
 
 ## 11. Khuyến nghị quản lý
 
-Ưu tiên xem EV dưới ngân sách cùng với độ nhạy, thay vì chỉ chọn khách hàng churn cao. Với cấu hình chuẩn, danh sách {ev['selected_count']} người là phương án tham khảo có thể xuất và kiểm tra. Không coi save rate 20% là điều đã biết; cần xác thực trước khi dự báo lợi ích cho chiến dịch thật. Khi tham số thay đổi, kiểm tra cả fixed và retarget để hiểu rủi ro của quyết định cũ và phương án điều chỉnh.
+Ưu tiên xem EV dưới ngân sách cùng với độ nhạy, thay vì chỉ chọn khách hàng churn cao. Với cấu hình chuẩn, danh sách {ev['selected_count']} người là phương án tham khảo có thể xuất và kiểm tra. Không coi save rate {cfg['offers'][1]['save_rate']:.1%} là điều đã biết; cần xác thực trước khi dự báo lợi ích cho chiến dịch thật. Khi tham số thay đổi, kiểm tra cả fixed và retarget để hiểu rủi ro của quyết định cũ và phương án điều chỉnh.
 
 Không ép tiêu hết ngân sách. So sánh ngân sách tăng thêm với giá trị tăng thêm. Nếu không có EV dương, kết quả phù hợp là không triển khai theo các giả định hiện tại. [Executive brief](executive-brief.md) và [playbook](../docs/retention-playbook.md) phục vụ người ra quyết định.
 
@@ -455,7 +496,7 @@ Dữ liệu mô phỏng học thuật; không có phân bổ ưu đãi ngẫu nh
 1. Mở dashboard; giới thiệu câu hỏi kinh doanh và 5 KPI.
 2. Giải thích dữ liệu demo là test giữ riêng và mọi giá trị tiền là mô phỏng.
 3. Mở Lập chiến dịch; so EV với risk-only trên cùng ngân sách.
-4. Đổi save rate từ 20% xuống 10%; đọc thay đổi danh sách và net.
+4. Giảm save rate tiêu chuẩn từ {cfg['offers'][1]['save_rate']:.1%} còn {cfg['offers'][1]['save_rate']/2:.1%}; đọc thay đổi danh sách và net.
 5. Đổi chi phí hoặc ngân sách; chỉ ra trường hợp không dùng hết ngân sách.
 6. Mở Kịch bản; tính fixed/retarget và xem profit curve.
 7. Xem quality/calibration và SHAP, nêu giới hạn giải thích.

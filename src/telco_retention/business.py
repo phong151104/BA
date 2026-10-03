@@ -82,11 +82,11 @@ def select_options(options, budget, strategy="ev", seed=42, time_limit=30):
     if options.empty or strategy == "none":
         return [], {"status": "empty", "gap": 0.0}
     # Baselines intentionally do not inspect EV: they emulate the stated simple rule.
-    eligible = options.loc[options.expected_net_value.gt(0)].copy() if strategy == "ev" else options.copy()
+    eligible = options.loc[options.expected_net_value.gt(0)].copy() if strategy in ["ev", "risk_positive_ev"] else options.copy()
     if eligible.empty:
         return [], {"status": "no_positive_ev", "gap": 0.0}
     if strategy != "ev":
-        key = {"risk": "churn_probability", "value": "customer_value", "random": "random"}[strategy]
+        key = {"risk": "churn_probability", "risk_positive_ev": "churn_probability", "value": "customer_value", "random": "random"}[strategy]
         return _greedy(eligible, budget, key, seed), {"status": "baseline", "gap": None}
     if eligible.customer_index.is_unique and eligible.total_cost.nunique() == 1:
         return _greedy(eligible, budget), {"status": "optimal_sort", "gap": 0.0}
@@ -133,7 +133,15 @@ def campaign(scores, budget, settings=None, offers=None, strategy="ev", policy=N
     options["selected"] = options.index.isin(selected)
     # One row per customer: chosen offer, otherwise best potential offer.
     result = options.sort_values(["selected", "expected_net_value", "offer_id"], ascending=[False, False, True]).drop_duplicates("customer_id").sort_values("customer_id").reset_index(drop=True)
-    result["selection_reason"] = np.select([result.selected, result.expected_net_value.le(0)], ["Được ưu tiên theo chiến lược " + strategy, "EV không dương"], default="Không được chọn trong giới hạn ngân sách/tổ hợp tối ưu")
+    result["selection_reason"] = np.select(
+        [result.selected, np.full(len(result), strategy == "none"), result.expected_net_value.le(0), result.total_cost.gt(budget)],
+        ["Được ưu tiên theo chiến lược " + strategy, "Không triển khai chiến dịch", "EV không dương", "Ngân sách thấp hơn chi phí ưu đãi"],
+        default="Không được chọn trong giới hạn ngân sách/tổ hợp tối ưu")
+    result["decision_detail"] = result.apply(lambda r:
+        f"p={r.churn_probability:.1%} × q={r.assumed_save_rate:.1%} × V={r.customer_value:,.2f}"
+        f" − chi phí {r.total_cost:,.2f} = EV {r.expected_net_value:,.2f} ĐVTT; "
+        + (f"save rate hòa vốn {r.break_even_save_rate:.1%}" if pd.notna(r.break_even_save_rate) else "không có mức hòa vốn hữu hạn")
+        + ("; baseline vẫn chọn dù EV không dương" if r.selected and r.expected_net_value <= 0 else ""), axis=1) if len(result) else pd.Series(dtype=str)
     scenario = {"settings": cfg, "offers": chosen_offers, "budget": budget, "strategy": strategy, "policy": policy, "seed": seed, "population_hash": hashlib.sha256(customers[["customer_id", "churn_probability", "customer_value"]].to_csv(index=False).encode()).hexdigest()}
     sid = scenario_id(scenario)
     result["scenario_id"] = sid
@@ -141,8 +149,12 @@ def campaign(scores, budget, settings=None, offers=None, strategy="ev", policy=N
 
 
 def fixed_campaign(scores, selected_table, budget, settings, offer, thresholds=None):
-    result = offer_options(value_customers(scores, settings), [offer])
-    result["selected"] = result.customer_id.isin(selected_table.loc[selected_table.selected, "customer_id"])
+    offers = [offer] if isinstance(offer, dict) else offer
+    options = offer_options(value_customers(scores, settings), offers)
+    assignments = selected_table[["customer_id", "offer_id", "selected"]]
+    result = options.merge(assignments, on=["customer_id", "offer_id"], how="inner", validate="one_to_one")
+    if len(result) != len(selected_table):
+        raise ValueError("Fixed sensitivity cần giữ đủ khách hàng và ưu đãi của danh sách gốc")
     stats = summarize(result, budget, thresholds)
     stats["budget_feasible"] = stats["cost"] <= budget + 1e-7
     return result, stats

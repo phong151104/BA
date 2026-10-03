@@ -73,6 +73,13 @@ def validate(frame: pd.DataFrame, training=False):
             df[col] = df[col].map(lambda x: str(int(x)) if pd.notna(x) and str(x) in ["0", "1", "0.0", "1.0"] else x)
         for idx in df.index[~df[col].isin(allowed)]:
             errors.append((int(idx) + 2, col, f"Giá trị ngoài miền: {allowed}"))
+    dependencies = [("PhoneService", "No", "MultipleLines", "No phone service")]
+    dependencies += [("InternetService", "No", col, "No internet service") for col in
+                     ["OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies"]]
+    for parent, absent, child, unavailable in dependencies:
+        mismatch = df[parent].eq(absent) != df[child].eq(unavailable)
+        for idx in df.index[mismatch]:
+            errors.append((int(idx) + 2, child, f"Mâu thuẫn dịch vụ: {child}='{unavailable}' khi và chỉ khi {parent}='{absent}'"))
     if errors:
         raise DataValidationError(errors)
     if "Churn" in df:

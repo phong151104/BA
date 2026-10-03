@@ -2,7 +2,7 @@
 
 ## Nhận diện và mục đích
 
-Run `20261003T133607624165Z-88be4b93`; mô hình `logistic` + sigmoid calibration. Hỗ trợ phân loại churn và ưu tiên mô phỏng giữ chân trong một capstone. Không tự động liên hệ khách hàng.
+Run `20261003T183647103688Z-88be4b93`; mô hình `logistic` + sigmoid calibration. Hỗ trợ phân loại churn và ưu tiên mô phỏng giữ chân trong một capstone. Không tự động liên hệ khách hàng.
 
 ## Target và dữ liệu
 
@@ -32,7 +32,7 @@ Ngưỡng F1 validation: 0.35, chỉ cho metric phân loại. Targeting dùng EV
 | xgboost_raw              |               0.633 |     0.831 |   0.141 |      0.432 |       0.545 |    0.706 | 0.615 |
 | xgboost_calibrated       |               0.633 |     0.831 |   0.143 |      0.440 |       0.576 |    0.615 | 0.595 |
 
-[Khoảng bootstrap 95%](../reports/tables/bootstrap_intervals.csv), 1.000 lần. Chất lượng calibration không được giả định luôn cải thiện; so sánh raw/calibrated được công bố đầy đủ.
+[Khoảng bootstrap 95%](../reports/tables/bootstrap_intervals.csv), 1,000 lần. Chất lượng calibration không được giả định luôn cải thiện; so sánh raw/calibrated được công bố đầy đủ.
 
 ## Giả định và giới hạn
 

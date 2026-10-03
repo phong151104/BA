@@ -98,3 +98,18 @@ def test_upload_limits(sample):
 def test_bad_csv(content):
     with pytest.raises(DataValidationError):
         parse_upload(content)
+
+
+@pytest.mark.parametrize("parent,parent_value,child,child_value", [
+    ("PhoneService", "No", "MultipleLines", "Yes"),
+    ("PhoneService", "Yes", "MultipleLines", "No phone service"),
+    ("InternetService", "No", "OnlineSecurity", "No"),
+    ("InternetService", "DSL", "TechSupport", "No internet service"),
+])
+def test_service_contradictions(sample, parent, parent_value, child, child_value):
+    sample.loc[0, parent] = parent_value
+    sample.loc[0, child] = child_value
+    with pytest.raises(DataValidationError, match="Mâu thuẫn dịch vụ") as exc:
+        parse_upload(sample.to_csv(index=False).encode())
+    assert child in exc.value.errors.column.values
+    assert 2 in exc.value.errors.row.values
