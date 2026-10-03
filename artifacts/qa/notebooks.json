@@ -1,0 +1,22 @@
+[
+  {
+    "notebook": "01-data-eda.ipynb",
+    "status": "passed",
+    "seconds": 1.35446359999969
+  },
+  {
+    "notebook": "02-models-validation.ipynb",
+    "status": "passed",
+    "seconds": 1.1808694000001196
+  },
+  {
+    "notebook": "03-targeting.ipynb",
+    "status": "passed",
+    "seconds": 2.2548006999995778
+  },
+  {
+    "notebook": "04-sensitivity-fairness.ipynb",
+    "status": "passed",
+    "seconds": 1.180710900000122
+  }
+]

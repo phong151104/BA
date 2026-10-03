@@ -1,0 +1,9 @@
+{
+  "policy": {
+    "new": "standard",
+    "developing": "standard",
+    "loyal": "standard"
+  },
+  "chosen_on": "validation",
+  "validation_budget": 3080.0
+}

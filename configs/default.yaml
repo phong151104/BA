@@ -1,0 +1,19 @@
+seed: 42
+cv_folds: 5
+search_iterations: 12
+bootstrap_iterations: 1000
+random_campaign_iterations: 100
+solver_time_limit: 30
+margin: 0.30
+base_horizon: 12
+horizon_cap: 24
+tenure_factors:
+  new: 0.75
+  developing: 1.0
+  loyal: 1.25
+offers:
+  - {offer_id: light, offer_cost: 10.0, contact_cost: 2.0, save_rate: 0.10}
+  - {offer_id: standard, offer_cost: 20.0, contact_cost: 2.0, save_rate: 0.20}
+  - {offer_id: intensive, offer_cost: 40.0, contact_cost: 2.0, save_rate: 0.30}
+currency: DVTT
+assumptions_version: synthetic-v1

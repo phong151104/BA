@@ -1,0 +1,14 @@
+{
+  "browser": "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+  "mode": "local headless fallback; no in-app browser connection",
+  "checks": [
+    "home: five KPIs and targeting table",
+    "budget 0 and restore update KPI correctly",
+    "campaign ZIP downloaded and budget validated",
+    "model quality and SHAP visible",
+    "sensitivity and budget curves calculated interactively",
+    "valid CSV uploaded and scored in browser",
+    "invalid CSV rejected with errors"
+  ],
+  "status": "passed"
+}
