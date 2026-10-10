@@ -207,7 +207,9 @@ def campaign(scores, budget, settings=None, offers=None, strategy="ev", threshol
     options["selected"] = options.index.isin(selected)
     # One row per customer: the chosen offer, otherwise the best potential offer.
     result = options.sort_values(["selected", "expected_net_value", "offer_id"], ascending=[False, False, True]).drop_duplicates("customer_id").sort_values("customer_id").reset_index(drop=True)
-    result["selection_reason"], result["decision_detail"] = explain_rows(result, strategy, budget, cfg.get("currency", "USD"))
+    # The expected-value rule with a catalog of offers is the segment-offer policy; say so in the reason.
+    rule_name = "segment_offers" if strategy == "ev" and len(chosen_offers) > 1 else strategy
+    result["selection_reason"], result["decision_detail"] = explain_rows(result, rule_name, budget, cfg.get("currency", "USD"))
     scenario = {"value": cfg["value"], "offers": chosen_offers, "budget": budget, "strategy": strategy, "max_contacts": max_contacts,
                 "seed": seed if strategy == "random" else None,
                 "population_hash": hashlib.sha256(customers[["customer_id", "churn_probability", "MonthlyCharges", "tenure"]].round(10).to_csv(index=False).encode()).hexdigest()}

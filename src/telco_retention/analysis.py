@@ -418,8 +418,9 @@ def reprice_frozen(table, cfg, draws, outcome="expected"):
     segment = picked.tenure_segment.astype(str).to_numpy()
     q = np.clip(picked.assumed_save_rate.to_numpy(float) + (drawn("save_rate") - default_offer(cfg)["save_rate"]), 0, 1)
     offer_cost = picked.offer_cost.to_numpy(float) * drawn("offer_cost_multiplier")
-    spread = drawn("value.tenure_factor_spread")
-    factor = np.where(segment == "new", 1 - spread, np.where(segment == "loyal", 1 + spread, 1.0))
+    # Moving the spread shifts the new and loyal factors in opposite directions from their configured values.
+    factors, shift = cfg["value"]["tenure_factors"], drawn("value.tenure_factor_spread") - base_value(cfg, "value.tenure_factor_spread")
+    factor = np.clip(np.where(segment == "new", factors["new"] - shift, np.where(segment == "loyal", factors["loyal"] + shift, factors["developing"])), 0, None)
     months = np.minimum(cfg["value"]["horizon_cap_months"], drawn("value.base_horizon_months") * factor)
     monthly = (1 + drawn("value.discount_rate_annual")) ** (1 / 12) - 1
     annuity = np.where(monthly > 0, (1 - (1 + monthly) ** -months) / np.where(monthly > 0, monthly, 1), months)
