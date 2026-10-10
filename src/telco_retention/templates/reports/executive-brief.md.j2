@@ -1,0 +1,49 @@
+{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set be = break_even.break_even_default_save_rate %}{% set unc = uncertainty %}
+# Executive brief: profit-aware retention targeting
+
+**To:** Head of Customer Retention | **From:** Retention analytics team | **Decision requested:** approve a 90-day retention pilot
+
+## Recommendation
+
+Stop allocating the retention budget to "the customers most likely to leave". Allocate it to the customers for whom **churn risk x customer value x the offer's save rate** most exceeds the cost of the offer, and give each customer an offer their segment qualifies for. Start with a **randomised pilot**: one wave of {{ pilot.list_size_per_wave | num }} customers ({{ pilot.recommended_share | pct(0) }} of the {{ pilot.base_population | num }}-customer base), with half held out as a control group. Scale up only if the measured save rate clears the **{{ be | pct }} break-even**.
+
+## Why: the same budget returns more
+
+Results for {{ budget.n_test | num }} held-out customers with a fixed {{ budget.base | usd }} budget (enough to offer {{ budget.share | pct(0) }} of them the standard offer):
+
+| Option | Customers contacted | Expected net value | ROI | Precision among contacted | High-risk/high-value coverage |
+|---|---:|---:|---:|---:|---:|
+| Do nothing | 0 | $0 | n/a | n/a | 0.0% |
+| Call highest churn risk | {{ c.risk.selected_count | num }} | {{ c.risk.expected_net_value | usd }} | {{ c.risk.roi | pct(0) }} | {{ c.risk.precision_contacted | pct }} | {{ c.risk.high_risk_high_value_coverage | pct }} |
+| Expected value, standard offer | {{ c.ev.selected_count | num }} | {{ c.ev.expected_net_value | usd }} | {{ c.ev.roi | pct(0) }} | {{ c.ev.precision_contacted | pct }} | {{ c.ev.high_risk_high_value_coverage | pct }} |
+| **Expected value + segment offers** | **{{ c.segment_offers.selected_count | num }}** | **{{ c.segment_offers.expected_net_value | usd }}** | **{{ c.segment_offers.roi | pct(0) }}** | **{{ c.segment_offers.precision_contacted | pct }}** | **{{ c.segment_offers.high_risk_high_value_coverage | pct }}** |
+
+- **Better targeting earns {{ headline.targeting_effect | usd }} more ({{ (headline.targeting_effect / c.risk.expected_net_value) | pct(0) }}) for the same spend.** Using what these customers actually did, the gain is {{ unc['ev minus risk'].label_based_simulated_net | usd }} (95% interval {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }}).
+- **Why:** risk-only targeting spends the budget on high-risk customers whose remaining value is too small to repay an offer. It reaches only {{ c.risk.high_risk_high_value_coverage | pct(0) }} of the high-risk, high-value customers, against {{ chosen.high_risk_high_value_coverage | pct(0) }} for the recommended rule. It has higher precision but less value.
+- **Segment offers add {{ headline.offer_design_effect | usd }}** under the assumed save rates. Checked against actual outcomes the gain is not distinguishable from zero ({{ unc['segment_offers minus ev'].label_based_simulated_net | usd }}), so the pilot must test the offers, not just the list.
+
+## How much to spend
+
+Each extra budget step returns less (figure). We keep only the steps that still earn at least a {{ recommendation.hurdle_marginal_roi | pct(0) }} marginal return; this was decided on validation data. That rule recommends a budget of **{{ recommendation.recommended_share | pct(0) }} of the base**. On the test customers this means {{ recommended.selected_count | num }} offers for {{ recommended.cost | usd }}, an expected net value of {{ recommended.expected_net_value | usd }} (ROI {{ recommended.roi | pct(0) }}). Above about {{ curve.positive_ev_share | pct(0) }} of the base, no remaining customer has positive expected value, so further budget should not be spent.
+
+![Profit curve](figures/profit_curve.png)
+
+## How sure are we?
+
+- **The model ranks customers well:** ROC-AUC {{ model.selected_test.roc_auc | num(2) }}, PR-AUC {{ model.selected_test.average_precision | num(2) }} (random contact: {{ data.churn_rate | num(2) }}). Probabilities are off by {{ model.selected_test.ece | pct(1) }} on average. It predicts who leaves, not who an offer would keep.
+- **Break-even:** the plan stays profitable while the true save rate is above **{{ be | pct }}**; we assume {{ default_offer.save_rate | pct(0) }}. Below {{ break_even.minimum_viable_save_rate | pct }} nobody is worth contacting.
+- **Scenarios:** expected net value is {{ scenarios.pessimistic.expected_net_value | usd }} pessimistic (no campaign is run), {{ scenarios.base.expected_net_value | usd }} base and {{ scenarios.optimistic.expected_net_value | usd }} optimistic. A list frozen under the pessimistic case would lose {{ (-scenarios.pessimistic.fixed_expected_net_value) | usd }}.
+- **Biggest uncertainties:** {{ tornado[0].label | lower }} and {{ tornado[1].label | lower }}.
+
+## Risks and guardrails
+
+- **No causal evidence yet.** Save rates are documented assumptions. Contacting customers can even raise churn, so the pilot keeps a random control group.
+- **Sample data.** The IBM sample describes a fictional US company with 26.5% churn; real US carriers lose about 1% of postpaid customers per month. The results show that the method works, not how big the prize is. Retrain on our own data before rollout.
+- **Fairness and experience.** Senior customers are contacted {{ fairness_by[strategy ~ '|SeniorCitizen|1'].ratio_to_reference | ratio(1) }} as often as others, because they are higher-risk and pay more; age and gender are not model inputs. Loyal, low-risk customers rarely get offers, so watch for "loyalty penalty" complaints.
+- **Compliance (Vietnam).** Prior consent and a Do-Not-Call check are required. Advertising calls are limited to one per 24 hours, between 08:00 and 17:00 (Decree 91/2020). A data-protection impact assessment is required under the Personal Data Protection Law 2025.
+
+## Decisions requested
+
+1. Approve one pilot wave: {{ pilot.arm_size_per_wave | num }} customers contacted and {{ pilot.arm_size_per_wave | num }} held out. Offer and contact budget about {{ pilot.wave_cost | usd }}.
+2. Name owners: Retention (offers and script), Call centre (capacity), Finance (margin and offer cost), Legal/DPO (consent and DPIA).
+3. Agree the go/no-go rule now. Scale to {{ recommendation.recommended_share | pct(0) }} of the base only if, after {{ pilot.outcome_window_days }} days, the lower 95% bound of the measured save rate is above {{ be | pct }}.

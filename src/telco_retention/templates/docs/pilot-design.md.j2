@@ -1,0 +1,56 @@
+{% set p = pilot %}{% set be = break_even.break_even_default_save_rate %}
+# Pilot design: measuring the real save rate
+
+The data contain no randomised campaign, so the save rate behind every expected value is an assumption ({{ default_offer.save_rate | pct(0) }} for the standard offer). The literature shows why it must be measured, not assumed: risk is not responsiveness [[ascarza2018](references.md#ascarza2018)], and proactive contact can even raise churn [[ascarza2016](references.md#ascarza2016)]. This pilot turns the recommendation into a controlled experiment [[kohavi2020](references.md#kohavi2020)].
+
+## 1. Hypothesis and decision
+
+- **H1:** among customers selected by the recommended rule, receiving the offer lowers {{ p.outcome_window_days }}-day churn compared with not receiving it.
+- **Decision metric:** measured save rate q = 1 - churn(offered) / churn(holdout).
+- **Go rule:** scale to the recommended budget if the lower 95% bound of q is above the break-even save rate of **{{ be | pct }}**; extend if the interval straddles it; stop if q is below it or negative.
+
+## 2. Design
+
+| Element | Choice |
+|---|---|
+| Population | Customers on the recommended list for the wave (positive expected value, within budget and contact cap), after consent and Do-Not-Call suppression |
+| Randomisation unit | Customer; random assignment with a fixed seed, stratified by churn-risk decile and assigned offer |
+| Arms | Offered (each offer type is its own sub-arm) vs holdout ({{ p.holdout_share | pct(0) }}, not contacted) |
+| Wave size | {{ p.list_size_per_wave | num }} customers ({{ p.recommended_share | pct(0) }} of {{ p.base_population | num }}): {{ p.arm_size_per_wave | num }} offered, {{ p.arm_size_per_wave | num }} held out |
+| Outcome window | {{ p.outcome_window_days }} days after first contact attempt |
+| Primary outcome | Churn (disconnection or port-out) within the window |
+| Secondary outcomes | Offer acceptance; net value per customer (realised margin - offer and contact cost); complaints, opt-outs, Do-Not-Call registrations |
+| Guardrail metrics | Contacted churn must not exceed holdout churn; complaint and opt-out rates; sample-ratio check between arms |
+
+## 3. Sample size
+
+Two-sided two-proportion test, alpha {{ p.alpha }}, power {{ p.power | pct(0) }}, equal arms. Expected holdout churn on the list is {{ p.control_churn_expected | pct(1) }} (mean predicted probability; observed {{ p.observed_churn_test_list | pct(1) }} on the test list).
+
+| True save rate | Churn offered | Customers per arm | Total | Waves of {{ p.arm_size_per_wave | num }} per arm |
+|---:|---:|---:|---:|---:|
+{% for r in pilot_power %}
+| {{ r.assumed_save_rate | pct(0) }} | {{ r.treated_churn | pct(1) }} | {{ r.customers_per_arm | num }} | {{ r.total_customers | num }} | {{ r.waves_needed }} |
+{% endfor %}
+
+- To detect a save rate equal to the break-even ({{ be | pct }}) needs about **{{ p.per_arm_break_even | num }} customers per arm**; one wave provides {{ p.arm_size_per_wave | num }}.
+- With one wave, the smallest detectable save rate is about **{{ p.minimum_detectable_save_rate_one_wave | pct }}**.
+- Detecting the assumed {{ default_offer.save_rate | pct(0) }} needs {{ p.required_per_arm_at_base | num }} per arm.
+- Per-offer sub-arms are smaller; offer-level comparisons may need two to three waves, so the first decision is about the list rule as a whole.
+
+## 4. Cost and value of the pilot
+
+Offer and contact cost of the offered arm: about **{{ p.wave_cost | usd }}** ({{ p.arm_size_per_wave | num }} x {{ p.cost_per_contact | usd(2) }} average cost per contact under the recommended mix). The holdout costs nothing directly; its opportunity cost is the expected value not captured from {{ p.arm_size_per_wave | num }} customers, the price of learning the true save rate before committing the full budget.
+
+## 5. Analysis plan
+
+1. Check the sample ratio (offered vs holdout) and balance of risk deciles.
+2. Estimate churn by arm and q with a 95% interval (bootstrap or delta method); report by offer and by risk decile.
+3. Estimate realised net value per offered customer vs holdout.
+4. Update `configs/default.yaml` with measured save rates (by offer) and re-run `python -m telco_retention run-all`; the dashboard and reports then reflect evidence instead of assumptions.
+5. After several waves, use the randomised data to fit an uplift model and target by responsiveness rather than risk [[devriendt2021](references.md#devriendt2021), [lemmens2020](references.md#lemmens2020)].
+
+## 6. Ethics and compliance
+
+- Holding out customers from an offer is acceptable because it is a discretionary marketing benefit, not an essential service; the holdout is temporary and random.
+- Only consented, non-suppressed customers are eligible; contact windows and frequency follow Decree 91/2020 (calls 08:00-17:00, at most one advertising call per 24 hours) [[decree91](references.md#decree91)].
+- The pilot is covered by the data-protection impact assessment for the churn-scoring model [[pdpl2025](references.md#pdpl2025)].

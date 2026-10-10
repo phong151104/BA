@@ -1,0 +1,74 @@
+# 2. Churn model: comparison, calibration and threshold analysis
+
+**Goal.** Produce churn probabilities that rank customers well *and* are honest enough to multiply by money. Required baseline: logistic regression plus a tree-based model, with calibration and threshold analysis; stretch: gradient boosting with SHAP.
+
+Numbers in the text were generated for run `{{ run.id }}`.
+
+```python
+import pandas as pd
+from IPython.display import display, Image
+from telco_retention.common import ROOT, latest_run, read_json
+pd.set_option("display.precision", 4)
+run = latest_run()
+manifest = read_json(run / "manifest.json")
+print("Run:", run.name, "| selected:", manifest["selected_model"], "| threshold:", manifest["threshold"])
+```
+
+## Validation design
+
+- 5-fold stratified cross-validation on train tunes each family (average precision as the objective).
+- Each tuned model is calibrated with a sigmoid fitted on out-of-fold predictions.
+- **Selection on validation** with a rule fixed in advance: {{ model.selection_rule }}.
+- Test is scored once, with bootstrap intervals.
+
+```python
+validation = pd.read_csv(run / "validation_metrics.csv")
+display(validation[["model", "variant", "average_precision", "roc_auc", "brier", "ece", "calibration_slope"]])
+display(pd.DataFrame(manifest["best_parameters"]).T[["cv_average_precision", "params"]])
+```
+
+**Reading.** On validation the calibrated candidates are within a hundredth of each other in average precision, so the rule picks the simplest: **{{ model.label }}**.
+
+## Test results with uncertainty
+
+```python
+test = pd.read_csv(run / "test_metrics.csv")
+display(test[["model", "average_precision", "roc_auc", "brier", "ece", "calibration_slope", "calibration_intercept", "precision", "recall"]])
+display(pd.read_csv(run / "bootstrap_intervals.csv"))
+```
+
+**Interpretation.** PR-AUC {{ model.selected_test.average_precision | num(3) }} against a random baseline of {{ data.churn_rate | num(3) }} (the churn rate) and ROC-AUC {{ model.selected_test.roc_auc | num(3) }}. ECE {{ model.selected_test.ece | num(3) }} means predicted probabilities are on average about {{ (model.selected_test.ece * 100) | round(1) }} percentage points from observed churn; slope {{ model.selected_test.calibration_slope | num(2) }} (target 1) and intercept {{ model.selected_test.calibration_intercept | num(3) }} (target 0) show no material over- or under-confidence.
+
+```python
+display(Image(filename=str(ROOT / "reports/figures/calibration.png")))
+display(Image(filename=str(ROOT / "reports/figures/discrimination.png")))
+```
+
+## Threshold analysis: why one cut-off is not the decision
+
+```python
+display(pd.read_csv(run / "threshold_analysis.csv")[["threshold", "precision", "recall", "f1"]].round(3))
+display(pd.read_csv(run / "threshold_business.csv"))
+display(read_json(run / "break_even.json")["break_even_probability_quantiles"])
+```
+
+**Interpretation.** The F1-best threshold ({{ model.threshold | num(2) }}) treats every customer alike. With value and cost included, the churn probability at which an offer pays off differs by customer, from about {{ break_even.break_even_probability_quantiles.p10 | pct(0) }} for the most valuable to above 100% for the least valuable. Contacting everyone above the F1 threshold spends more and earns less than contacting everyone with positive expected value.
+
+## Gains and drivers
+
+```python
+display(pd.read_csv(run / "gains_test.csv")[["decile", "customers", "churn_rate", "lift", "cumulative_churner_capture"]])
+display(Image(filename=str(ROOT / "reports/figures/gains.png")))
+coefficients = pd.read_csv(run / "logistic_coefficients.csv")
+display(pd.concat([coefficients.nsmallest(6, "coefficient"), coefficients.nlargest(6, "coefficient")]))
+display(Image(filename=str(ROOT / "reports/figures/shap_challenger.png")))
+```
+
+## Error analysis by segment
+
+```python
+errors = pd.read_csv(run / "segment_errors.csv")
+display(errors[["attribute", "group", "n", "small_sample", "average_precision", "recall", "brier", "ece"]])
+```
+
+**So what.** The model is good at ranking and its probabilities are trustworthy enough for expected-value arithmetic. It does not tell us which customers an offer would keep; that remains an assumption tested by the pilot.

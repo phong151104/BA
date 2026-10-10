@@ -1,0 +1,143 @@
+{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set unc = uncertainty %}{% set be = break_even %}
+# Who should get a retention offer?
+## Profit-aware churn and retention targeting - Business Analytics capstone, Topic 7
+
+- Decision: which customers receive an offer, with which offer, and how much budget to commit
+- Data: IBM Telco Customer Churn sample ({{ data.rows | num }} customers)
+- Recommendation: expected-value targeting, tested in a randomised pilot
+
+Notes: Open with the decision, not the algorithm. We were asked how to spend a limited retention budget when both churn risk and customer value matter. In twelve minutes: the problem, the data, the model, the decision rule, the money, how robust it is, risks, and what we ask management to approve.
+
+---
+
+# Today's rule wastes part of the budget
+## Calling the riskiest customers ignores what they are worth and what the offer costs
+
+- Budget covers an offer for only {{ budget.share | pct(0) }} of customers ({{ budget.base | usd }} per {{ budget.n_test | num }})
+- Every offer costs money even if the customer would have stayed
+- A very risky customer with a small bill may not repay the offer
+- Decision owner: Head of Retention; Finance approves budget; Legal/DPO approves contact
+
+Notes: The status quo is "highest churn risk first". Three things are missing: customer value, the cost of the offer, and whether the offer actually changes behaviour. Our KPIs are expected net value, ROI, customers contacted, precision among contacted, and coverage of high-risk, high-value customers.
+
+---
+
+# The data: clean, but a teaching sample
+![](../figures/eda_drivers.png)
+
+- {{ data.churn_rate | pct }} churn; month-to-month, new, fibre and e-cheque customers churn most
+- No offer or campaign data: save rates must be assumed
+- Fictional US company; real US postpaid churn is about 1% a month
+
+Notes: Data readiness verdict: fit to design and demonstrate the method, not to size a real campaign. Cleaning was minor: eleven blank total charges for brand-new customers. Split 60/20/20; every choice made on validation, test touched once.
+
+---
+
+# A calibrated model ranks churners well
+![](../figures/calibration.png)
+
+- Logistic regression chosen over random forest and XGBoost by a pre-set rule
+- PR-AUC {{ model.selected_test.average_precision | num(2) }} vs {{ data.churn_rate | num(2) }} random; ROC-AUC {{ model.selected_test.roc_auc | num(2) }}
+- Probabilities off by {{ model.selected_test.ece | pct(1) }} on average (ECE)
+- Predicts who leaves, not who an offer keeps
+
+Notes: All three model families rank about equally well, so the simpler and well-calibrated model wins. Calibration matters because we multiply probabilities by money. SHAP on the gradient-boosting challenger agrees on the drivers: tenure, contract, fibre, missing tech support.
+
+---
+
+# Risk and value only partly overlap
+![](../figures/risk_value.png)
+
+- Risk-only spends almost the whole budget on high-risk, low-value customers
+- The recommended rule reaches all {{ quadrant.hrhv.customers }} high-risk, high-value customers
+- It adds valuable customers at moderate risk
+
+Notes: Value equals monthly charges times a 30% margin times about a year of discounted months, scaled by tenure. The dashed lines are the 75th percentiles, fixed on validation. The coloured points are who the recommended rule contacts.
+
+---
+
+# The decision rule
+## Expected value = p(churn) x save rate x value - (offer + contact cost)
+
+- Contact only customers with positive expected value
+- Optimiser picks customer and offer within budget, one offer each, max {{ cfg.campaign.max_contact_share | pct(0) }} contacted
+- Four offers with eligibility rules: credit, contract upgrade, service bundle, loyalty reward
+- All costs and save rates are visible, sourced assumptions
+
+Notes: Worked example: a customer paying 70 dollars a month is worth about {{ worked_example.value | usd }}; at 60% risk the standard offer is worth {{ worked_example.ev | usd(2) }}. Save rates are deliberately below the 30% literature convention because risky customers are not always responsive.
+
+---
+
+# Same budget, more value
+| Rule | Customers | Net value | ROI | HR/HV coverage |
+|---|---|---|---|---|
+| Highest churn risk | {{ c.risk.selected_count | num }} | {{ c.risk.expected_net_value | usd }} | {{ c.risk.roi | pct(0) }} | {{ c.risk.high_risk_high_value_coverage | pct(0) }} |
+| Expected value | {{ c.ev.selected_count | num }} | {{ c.ev.expected_net_value | usd }} | {{ c.ev.roi | pct(0) }} | {{ c.ev.high_risk_high_value_coverage | pct(0) }} |
+| EV + segment offers | {{ c.segment_offers.selected_count | num }} | {{ c.segment_offers.expected_net_value | usd }} | {{ c.segment_offers.roi | pct(0) }} | {{ c.segment_offers.high_risk_high_value_coverage | pct(0) }} |
+
+- Better targeting: {{ headline.targeting_effect | signed_usd }}; with actual outcomes {{ unc['ev minus risk'].label_based_simulated_net | signed_usd }} (95% CI {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }})
+
+Notes: Same customers, same budget, same assumptions. Risk-only has higher precision but lower value. Segment offers add {{ headline.offer_design_effect | usd }} only under assumed save rates; with actual outcomes that extra gain is not distinguishable from zero, so the pilot must test offers.
+
+---
+
+# How much to spend
+![](../figures/profit_curve.png)
+
+- Recommended: {{ recommendation.recommended_share | pct(0) }} of customers (chosen on validation)
+- Test: {{ recommended.selected_count | num }} offers, {{ recommended.cost | usd }}, net {{ recommended.expected_net_value | usd }} (ROI {{ recommended.roi | pct(0) }})
+- Stop adding budget when the next step earns less than {{ recommendation.hurdle_marginal_roi | pct(0) }}
+
+Notes: Each extra step of budget reaches customers with lower expected value. Beyond about {{ curve.positive_ev_share | pct(0) }} of customers nobody has positive expected value, so spending more destroys value.
+
+---
+
+# How robust is it?
+![](../figures/tornado.png)
+
+- Break-even save rate {{ be.break_even_default_save_rate | pct }} (assumed {{ default_offer.save_rate | pct(0) }})
+- Pessimistic {{ scenarios.pessimistic.expected_net_value | usd }} (no campaign) / base {{ scenarios.base.expected_net_value | usd }} / optimistic {{ scenarios.optimistic.expected_net_value | usd }}
+- Below {{ be.minimum_viable_save_rate | pct }} save rate: run no campaign
+
+Notes: The save rate and the value horizon dominate. A re-optimised plan never loses money because it drops customers whose value turns negative; a list frozen under pessimistic assumptions would lose {{ (-scenarios.pessimistic.fixed_expected_net_value) | usd }}. This is why we recommend measuring the save rate before scaling.
+
+---
+
+# Fairness and customer experience
+![](../figures/fairness.png)
+
+- Seniors contacted {{ fairness_by[strategy ~ '|SeniorCitizen|1'].ratio_to_reference | ratio(1) }} as often - mostly higher risk, partly higher value
+- No protected attribute is a model input; every wave is audited
+- Loyal low-risk customers rarely get offers: add a loyalty benefit
+
+Notes: An offer is both a benefit (discount) and a burden (a call). We flag the senior gap for review rather than hide it. Contact cap, one retention contact per 30 days, and the Vietnamese legal call window protect experience.
+
+---
+
+# Risks and limits
+- No causal evidence: save rates are assumptions; contact can even raise churn
+- Teaching sample: fictional US data, 26.5% churn vs about 1% a month in reality
+- Vietnam: about 90% prepaid; rebuild the model on our own data
+- Compliance: consent, Do-Not-Call, calls 08:00-17:00, one call per 24 hours, DPIA
+
+Notes: We are explicit about what the analysis cannot claim. The course forbids causal uplift claims from this data, and the literature shows high-risk customers can be the least responsive. That is the reason for the pilot.
+
+---
+
+# The pilot measures what we assumed
+- One wave: {{ pilot.list_size_per_wave | num }} customers, {{ pilot.arm_size_per_wave | num }} offered, {{ pilot.arm_size_per_wave | num }} held out at random
+- Outcome: churn after {{ pilot.outcome_window_days }} days; save rate = 1 - churn(offered) / churn(holdout)
+- Detects a save rate of about {{ pilot.minimum_detectable_save_rate_one_wave | pct(0) }} or more in one wave
+- Offer and contact cost about {{ pilot.wave_cost | usd }}
+
+Notes: Randomising inside the target list gives the causal effect we could not estimate from the data. Each offer is its own arm. Measured save rates replace assumptions in the configuration and the whole analysis re-runs.
+
+---
+
+# Decisions requested
+- Approve one pilot wave sized at {{ recommendation.recommended_share | pct(0) }} of the base, half held out
+- Name owners: Retention, Call centre, Finance, Legal/DPO
+- Agree the go rule now: scale only if the save rate's lower 95% bound is above {{ be.break_even_default_save_rate | pct }}
+- Live demo: dashboard - KPIs, action list, scenarios
+
+Notes: Close with the ask. Then switch to the dashboard demo: change the save rate and budget, show the KPIs and the action list update, export the campaign file with its scenario ID.

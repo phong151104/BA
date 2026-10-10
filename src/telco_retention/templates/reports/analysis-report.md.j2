@@ -1,0 +1,167 @@
+{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set unc = uncertainty %}{% set be = break_even %}
+# Analysis report: profit-aware churn and retention targeting
+
+Run `{{ run.id }}` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
+
+## 1. Summary
+
+- **Question:** with a limited retention budget, which customers should receive an offer when both churn risk and economic value count?
+- **Answer:** rank customers by expected net value of an offer (p(churn) x save rate x value - cost), let an optimiser pick the customer-offer combination within budget, and size the budget where the marginal return falls below {{ recommendation.hurdle_marginal_roi | pct(0) }}.
+- **Impact (test split, same {{ budget.base | usd }} budget):** {{ strategy_label | lower }} {{ chosen.expected_net_value | usd }} vs {{ c.risk.expected_net_value | usd }} for risk-only targeting (+{{ headline.delta_vs_risk | usd }}); label-based check of the targeting gain {{ unc['ev minus risk'].label_based_simulated_net | usd }} (95% interval {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }}).
+- **Budget:** {{ recommendation.recommended_share | pct(0) }} of the base (validation rule) gives {{ recommended.expected_net_value | usd }} on test from {{ recommended.cost | usd }}.
+- **Main risk:** the save rate is assumed. Break-even {{ be.break_even_default_save_rate | pct }} vs assumed {{ default_offer.save_rate | pct(0) }}; a randomised pilot measures it before scale-up.
+
+## 2. Business question and decision
+
+The decision owner (Head of Customer Retention) chooses, for each campaign wave, the contact list, the offer per customer and the budget. Today's rule contacts the highest-risk customers. The [business case](../docs/business-case.md) lists stakeholders, options and KPI definitions; the course requirements are mapped to evidence in [requirements traceability](../docs/requirements-traceability.md).
+
+## 3. Data and readiness
+
+IBM Telco Customer Churn sample: {{ data.rows | num }} customers, {{ data.columns }} columns, {{ data.churn_rate | pct }} churners, fictional US company ([source log](../docs/source-log.md), [data dictionary](../docs/data-dictionary.md), [cleaning log](../docs/cleaning-log.md)). Cleaning removed {{ data.quality.duplicates_removed }} duplicates and set {{ data.quality.total_charges_filled_zero }} blank `TotalCharges` of new customers to 0. Stratified split train/validation/test = {{ data.splits.train | num }} / {{ data.splits.validation | num }} / {{ data.splits.test | num }}; all choices are made on validation and test is used once. The [data readiness review](../docs/data-readiness-review.md) concludes the data are fit to design the method but not to size a real campaign (fictional, single snapshot, no offer-response data).
+
+## 4. Who churns, and who is worth saving
+
+![Churn by segment](figures/eda_drivers.png)
+
+On train, churn is highest for {% for a in ['Contract', 'tenure_segment', 'InternetService', 'PaymentMethod'] %}{% set top = eda[a][0] %}{% set low = eda[a][-1] %}**{{ top.group }}** ({{ top.churn_rate | pct(0) }} vs {{ low.churn_rate | pct(0) }} for {{ low.group }}){{ "; " if not loop.last else "." }}{% endfor %} Customers without TechSupport or OnlineSecurity also churn more. These are associations in observational data, not causes.
+
+Risk and value only partly overlap. Using validation cut-offs (75th percentiles: risk {{ thresholds.risk | num(3) }}, value {{ thresholds.value | usd }}), the test customers fall into four segments:
+
+{{ matrix | md_table([("quadrant", "Segment", None), ("customers", "Customers", "num"), ("observed_churn", "Observed churn", "pct"), ("mean_customer_value", "Mean value", "usd"), ("value_at_risk_share", "Share of value at risk", "pct"), ("selected_risk", "Contacted: risk-only", "num"), ("selected_" ~ strategy, "Contacted: recommended", "num")]) }}
+
+The high-risk/low-value segment holds the most value at risk in total ({{ quadrant.hrlv.value_at_risk_share | pct(0) }}) but each customer is worth little; risk-only targeting spends almost all its budget there. The recommended rule reaches all {{ quadrant.hrhv.customers }} high-risk/high-value customers and adds valuable customers at moderate risk.
+
+![Risk x value](figures/risk_value.png)
+
+## 5. Churn model
+
+**Candidates:** logistic regression (baseline), random forest (tree-based, required), XGBoost gradient boosting (stretch), each tuned by 5-fold cross-validation on average precision and calibrated with a sigmoid on out-of-fold predictions; a prior-only baseline anchors the metrics.
+
+**Selection (validation, rule fixed in advance):** {{ model.selection_rule }} -> **calibrated {{ model.label }}**.
+
+**Test performance:**
+
+{{ model.test | md_table([("model", "Model", None), ("average_precision", "PR-AUC", "num3"), ("roc_auc", "ROC-AUC", "num3"), ("brier", "Brier", "num3"), ("ece", "ECE", "num3"), ("calibration_slope", "Calibration slope", "num2"), ("recall", "Recall @ threshold", "pct")]) }}
+
+The deployed model's PR-AUC is {{ model.selected_test.average_precision | num(3) }} (95% interval {{ model.intervals.average_precision.lower_95 | num(3) }}-{{ model.intervals.average_precision.upper_95 | num(3) }}) against a random baseline of {{ data.churn_rate | num(3) }}; ROC-AUC {{ model.selected_test.roc_auc | num(3) }}. The three model families rank almost equally well, so the simpler, interpretable and well-calibrated logistic model is deployed.
+
+![Discrimination](figures/discrimination.png)
+
+**Calibration.** Expected value multiplies a probability by money, so calibration matters as much as ranking. The deployed model's ECE is {{ model.selected_test.ece | num(3) }}, slope {{ model.selected_test.calibration_slope | num(2) }} (target 1) and intercept {{ model.selected_test.calibration_intercept | num(3) }} (target 0). Sigmoid calibration made little difference to logistic regression and worsened the tree models' ECE on test; this is reported as found.
+
+![Calibration](figures/calibration.png)
+
+**Threshold analysis.** The F1-optimal threshold on validation is {{ model.threshold | num(2) }}. A threshold, however, ignores value and cost. On test:
+
+{{ threshold_rules | md_table([("rule", "Rule", None), ("customers", "Customers", "num"), ("cost", "Cost", "usd"), ("expected_net_value", "Expected net value", "usd"), ("precision", "Precision", "pct"), ("recall", "Recall", "pct")]) }}
+
+Contacting everyone above the F1 threshold costs more and earns less than contacting everyone with positive expected value. The churn probability a customer needs before an offer pays off (break-even probability) ranges from {{ be.break_even_probability_quantiles.p10 | pct(0) }} for the most valuable decile to above 100% (never worth it) for the least valuable, which is why one global threshold cannot be right.
+
+![Gains](figures/gains.png)
+
+**Error analysis.** Recall and calibration by contract, internet service, payment method, gender and seniority are in [segment errors](tables/segment_errors.csv). The riskiest decile churns at {{ model.gains[0].churn_rate | pct(0) }} (lift {{ model.gains[0].lift | num(2) }}x); the top three deciles capture {{ model.gains[2].cumulative_churner_capture | pct(0) }} of churners.
+
+![Model drivers](figures/model_drivers.png)
+
+The challenger XGBoost model is explained with SHAP; its leading features ({{ model.shap_top[:4] | map(attribute='feature') | join(', ') }}) agree with the logistic coefficients.
+
+![SHAP challenger](figures/shap_challenger.png)
+
+## 6. Decision logic and results at the fixed budget
+
+**Value proxy:** monthly charges x margin {{ cfg.value.margin | pct(0) }} x discounted months, with a base horizon of {{ cfg.value.base_horizon_months }} months scaled by tenure ({{ cfg.value.tenure_factors.new }} / {{ cfg.value.tenure_factors.developing }} / {{ cfg.value.tenure_factors.loyal }}) and a {{ cfg.value.discount_rate_annual | pct(0) }} annual discount rate. It is a 12-month truncated value, not a lifetime value.
+
+**Expected value of an offer:** p(churn) x save rate x value - (offer cost + contact cost); offer cost is charged to every contacted customer (unconditional credit), which is conservative.
+
+**Selection:** a mixed-integer knapsack (scipy/HiGHS) maximises total expected value subject to the budget, one offer per customer, offer eligibility and a {{ cfg.campaign.max_contact_share | pct(0) }} contact cap; customers with non-positive EV are never contacted. With one offer and equal costs, sorting by EV is provably optimal and is used directly.
+
+**Offers:** a synthetic catalog of four offers with eligibility rules ([assumption register](../docs/assumption-register.md#offer-catalog)). On validation, segment offers beat the single standard offer by {{ decisions.strategy_selection.relative_gain | pct(0) }}, above the {{ cfg.campaign.strategy_selection.min_relative_gain | pct(0) }} rule, so the recommended rule is **{{ strategy_label | lower }}**.
+
+**Results on test, same budget ({{ budget.base | usd }}):**
+
+{{ comparison.values() | list | md_table([("label", "Rule", None), ("selected_count", "Customers", "num"), ("cost", "Cost", "usd"), ("expected_net_value", "Expected net value", "usd"), ("roi", "ROI", "pct"), ("precision_contacted", "Precision", "pct"), ("high_risk_high_value_coverage", "HR/HV coverage", "pct"), ("label_based_simulated_net", "Label-based net", "usd")]) }}
+
+![Strategy comparison](figures/strategy_comparison.png)
+
+- **Targeting effect:** expected value vs risk-only with the same offer: {{ headline.targeting_effect | signed_usd }} expected; label-based (actual churn, assumed save rate) {{ unc['ev minus risk'].label_based_simulated_net | signed_usd }}, paired bootstrap 95% interval {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }}.
+- **Offer-design effect:** segment offers vs single offer: {{ headline.offer_design_effect | signed_usd }} expected, label-based {{ unc['segment_offers minus ev'].label_based_simulated_net | signed_usd }} ({{ unc['segment_offers minus ev'].lower_95 | usd }} to {{ unc['segment_offers minus ev'].upper_95 | usd }}). Because this gain comes from assumed offer-specific save rates, it is not evidence that the offers work; the pilot tests each offer as its own arm.
+- **Precision vs value:** risk-only has higher precision ({{ c.risk.precision_contacted | pct(0) }} vs {{ chosen.precision_contacted | pct(0) }}) but lower value, because it contacts high-risk customers whose remaining value cannot repay an offer. Coverage of high-risk/high-value customers is {{ chosen.high_risk_high_value_coverage | pct(0) }} vs {{ c.risk.high_risk_high_value_coverage | pct(0) }}.
+- **Random contact and value-only targeting lose money** ({{ c.random_mean.expected_net_value | usd }} and {{ c.value.expected_net_value | usd }}): offers to customers who would have stayed are pure cost.
+
+![Who each rule contacts](figures/quadrant_selection.png)
+
+## 7. How robust is the answer?
+
+**One assumption at a time (tornado, list re-optimised within the same budget):**
+
+{{ tornado | md_table([("label", "Assumption", None), ("low", "Low", None), ("high", "High", None), ("net_low_retarget", "Net at low", "usd"), ("net_high_retarget", "Net at high", "usd"), ("net_low_fixed", "Frozen list at low", "usd"), ("net_high_fixed", "Frozen list at high", "usd")]) }}
+
+![Tornado](figures/tornado.png)
+
+**Save rate x offer cost.** Over the grid, the re-optimised plan ranges from {{ sensitivity.retarget_min | usd }} to {{ sensitivity.retarget_max | usd }}; a frozen list ranges from {{ sensitivity.fixed_min | usd }} to {{ sensitivity.fixed_max | usd }}. Re-optimising never loses money because it stops contacting customers whose EV turns negative; a frozen list can.
+
+![Sensitivity grid](figures/sensitivity_heatmap.png)
+
+**Combined scenarios:**
+
+| Scenario | Assumptions | Customers | Net (re-optimised) | Net (frozen list) |
+|---|---|---:|---:|---:|
+{% for name in ['pessimistic', 'base', 'optimistic'] %}{% set s = scenarios[name] %}
+| {{ name | capitalize }} | `{{ s.overrides }}` | {{ s.selected_count | num }} | {{ s.expected_net_value | usd }} | {{ s.fixed_expected_net_value | usd }} |
+{% endfor %}
+
+**Break-even.** The recommended list breaks even at a standard-offer save rate of **{{ be.break_even_default_save_rate | pct }}** (all offers scaled proportionally) or at offer costs {{ be.offer_cost_multiplier | ratio(2) }} today's; below a save rate of {{ be.minimum_viable_save_rate | pct }}, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
+
+## 8. How much to spend
+
+![Profit curve](figures/profit_curve.png)
+
+Expected net value rises with the budget at a falling marginal return. The recommendation rule (largest budget whose last step still earns {{ recommendation.hurdle_marginal_roi | pct(0) }}) was applied on validation and chose **{{ recommendation.recommended_share | pct(0) }}** of customers (net-maximising share on validation: {{ recommendation.net_maximising_share | pct(0) }}). Applied to test:
+
+| Budget | Customers | Cost | Expected net value | ROI | Label-based net |
+|---|---:|---:|---:|---:|---:|
+| Base ({{ budget.share | pct(0) }}) | {{ chosen.selected_count | num }} | {{ chosen.cost | usd }} | {{ chosen.expected_net_value | usd }} | {{ chosen.roi | pct(0) }} | {{ chosen.label_based_simulated_net | usd }} |
+| Recommended ({{ recommended.budget_share | pct(0) }}) | {{ recommended.selected_count | num }} | {{ recommended.cost | usd }} | {{ recommended.expected_net_value | usd }} | {{ recommended.roi | pct(0) }} | {{ recommended.label_based_simulated_net | usd }} |
+
+Beyond about {{ curve.positive_ev_share | pct(0) }} of customers ({{ curve.positive_ev_customers | num }} on test, {{ curve.positive_ev_cost | usd }}) no customer has positive EV and extra budget should stay unspent. Scaled to the {{ scaled.base_population | num }}-customer base, the recommended wave is about {{ scaled.recommended_budget | usd }} for {{ scaled.recommended_net | usd }} expected net value (linear scaling, indicative only).
+
+## 9. Fairness and customer experience
+
+![Fairness](figures/fairness.png)
+
+{% set senior = fairness_by[strategy ~ '|SeniorCitizen|1'] %}{% set senior_risk = fairness_by['risk|SeniorCitizen|1'] %}{% set female = fairness_by[strategy ~ '|gender|Female'] %}
+- **Seniors** are contacted {{ senior.ratio_to_reference | ratio(2) }} as often as non-seniors under the recommended rule (risk-only: {{ senior_risk.ratio_to_reference | ratio(2) }}). Adjusted for risk decile the ratio falls to {{ senior.risk_adjusted_ratio | ratio(2) }}: most of the gap comes from higher churn risk, the rest from higher monthly charges (value). Being selected means receiving a discount and a call, so the gap is both a benefit and a burden; it is flagged for review rather than corrected automatically.
+- **Gender:** ratio {{ female.ratio_to_reference | ratio(2) }} (interval {{ female.ratio_lower_95 | num(2) }}-{{ female.ratio_upper_95 | num(2) }}), within normal variation.
+- **Loyalty:** one- and two-year contract customers are not contacted because their churn risk is low; long-tenure customers get fewer offers than new ones. A loyalty reward is in the catalog and the playbook recommends a non-targeted loyalty benefit to avoid a "loyalty penalty" perception.
+- **Contact burden:** the cap ({{ cfg.campaign.max_contact_share | pct(0) }} of customers), one retention contact per 30 days, and the legal call window (08:00-17:00, one advertising call per 24 hours) limit intrusiveness.
+
+Gender and seniority are not model inputs. Full table: [fairness.csv](tables/fairness.csv).
+
+## 10. Limitations and external validity
+
+1. **No causal uplift.** The data contain no randomised campaign; all save rates are assumptions. High-risk customers may be the least responsive and contact can backfire (Ascarza 2018; Ascarza et al. 2016). The pilot addresses this.
+2. **Teaching sample.** Fictional US company; 26.5% churn label vs about 1% real monthly postpaid churn at US carriers in 2025; IBM describes the churn window inconsistently (month vs quarter). Results demonstrate the method; magnitudes do not transfer.
+3. **Vietnam context.** About 90% of Vietnamese mobile subscriptions are prepaid; churn is observed as inactivity or porting, and contract-based features do not exist. The model must be rebuilt on operator data.
+4. **Snapshot and random split.** No time-based validation; drift after deployment is unknown.
+5. **Value proxy.** No cost-to-serve, no re-churn after a save, no network effects; margin and horizon are assumptions.
+6. **Label-based checks** reuse the assumed save rate; they validate *who* is targeted, not *whether offers work*.
+
+## 11. Recommendations and next steps
+
+1. Adopt expected-value targeting ({{ strategy_label | lower }}) for the next wave, sized at {{ recommendation.recommended_share | pct(0) }} of the base.
+2. Run it as a randomised pilot: {{ pilot.list_size_per_wave | num }} customers, half held out, {{ pilot.outcome_window_days }}-day outcome ([pilot design](../docs/pilot-design.md)); go only if the measured save rate's lower bound exceeds {{ be.break_even_default_save_rate | pct }}.
+3. Replace assumed save rates, margin and costs with measured values; re-run the pipeline.
+4. Retrain on own data with time-based validation; after several waves, move to uplift targeting.
+5. Operate under the controls in [governance and risks](../docs/governance-and-risks.md) and the [retention playbook](../docs/retention-playbook.md).
+
+## 12. Reproducibility
+
+`python -m telco_retention run-all` downloads (checksum-verified), prepares, trains, evaluates, simulates and regenerates every table, figure, document, notebook, the brief (DOCX/PDF) and the deck. The run manifest stores the configuration, dependency versions and code hashes; the dashboard shows the same scenario ID as this report for the default assumptions. Verification evidence: [verification](../docs/verification.md).
+
+## Appendix: figures
+
+| Figure | Population | Caption |
+|---|---|---|
+{% for key, f in figures.items() %}
+| [{{ f.title }}](figures/{{ f.file }}) | {{ f.population }} | {{ f.caption }} |
+{% endfor %}

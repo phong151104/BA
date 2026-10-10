@@ -1,0 +1,19 @@
+{% set chosen = comparison[strategy] %}
+# Dashboard demo script (5 minutes)
+
+**Before the session:** run `.\.venv\Scripts\python.exe -m streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true` and open http://127.0.0.1:8501. Keep the browser at 100% zoom. Expected default values come from run `{{ run.id }}`.
+
+| Time | Page / action | What to say | What the audience should see |
+|---|---|---|---|
+| 0:00 | **Overview** | "This is the decision page. The strip at the top lists every assumption behind the numbers." | Assumption strip with scenario `{{ chosen.scenario_id }}` |
+| 0:30 | Read the five KPI cards | "With the base budget we contact {{ chosen.selected_count }} customers for an expected net value of {{ chosen.expected_net_value | usd }}, {{ headline.delta_vs_risk | usd }} more than calling the riskiest customers. Precision {{ chosen.precision_contacted | pct(0) }}; we reach {{ chosen.high_risk_high_value_coverage | pct(0) }} of high-risk, high-value customers." | KPI row: {{ chosen.expected_net_value | usd }}, {{ chosen.roi | pct(1) }}, {{ chosen.selected_count }}, {{ chosen.precision_contacted | pct(1) }}, {{ chosen.high_risk_high_value_coverage | pct(1) }} |
+| 1:00 | Risk x value chart and segment table | "Risk-only would spend almost everything in the high-risk, low-value corner. Our rule reaches every high-risk, high-value customer." | Scatter with threshold lines; table with contacted counts by segment |
+| 1:45 | **Campaign builder** -> comparison table | "Same budget, six rules. Random and value-only lose money; expected value wins." | Comparison table |
+| 2:15 | Change *Save rate* to 0.10 | "If the offer keeps only 10% of would-be churners, the plan shrinks; fewer customers are worth contacting." | KPIs drop; customers contacted falls |
+| 2:45 | Set it back to {{ default_offer.save_rate }}; open *Why is a customer in or out?* | "Every decision is explained with its own numbers and break-even save rate." | Formula with p, save rate, value, cost |
+| 3:15 | Click **Export campaign** | "The export contains the list, the assumptions and the scenario ID, so anyone can trace it." | ZIP download |
+| 3:30 | **Scenarios & budget** -> *Run scenario analysis* | "Break-even save rate {{ break_even.break_even_default_save_rate | pct }}. The tornado shows the save rate and horizon matter most. The profit curve shows where extra budget stops paying." | Break-even metrics, tornado, profit curve with recommended marker |
+| 4:30 | **Model & data** | "Calibrated logistic regression; the XGBoost challenger with SHAP is shown separately and is not deployed. New customer files can be scored here." | Metrics with intervals, calibration, gains, SHAP |
+| 5:00 | Close | "We ask for a randomised pilot to measure the save rate before scaling." | Back to Overview |
+
+**If something fails:** the screenshots in `artifacts/qa/` show every page with the default run; the executive brief PDF contains the same numbers.
