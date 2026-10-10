@@ -28,6 +28,7 @@ st.markdown("""<style>
 .stApp {background:#f9f9f7;} .block-container {padding-top:3.2rem; max-width:1480px;}
 h1,h2,h3 {color:#0b0b0b;} [data-testid="stMetric"] {background:#fcfcfb;border:1px solid rgba(11,11,11,.10);border-radius:12px;padding:14px 16px;}
 [data-testid="stSidebar"] {background:#f1f0ec;}
+[data-testid="stMetricLabel"] * {white-space:normal !important; overflow:visible !important; text-overflow:clip !important;}
 .strip {background:#fcfcfb;border:1px solid rgba(11,11,11,.10);border-radius:10px;padding:8px 14px;margin:2px 0 14px;font-size:13px;color:#52514e;line-height:1.6;}
 .strip b {color:#0b0b0b;font-weight:600;}
 .hero h2 {margin:0 0 4px;} .hero p {color:#52514e;margin:0 0 10px;font-size:15px;}
@@ -70,6 +71,11 @@ def control(key, default):
 
 def usd(x, digits=0):
     return "n/a" if x is None else (f"-${abs(x):,.{digits}f}" if x < 0 else f"${x:,.{digits}f}")
+
+
+def md(text):
+    """Escape dollar signs so Streamlit markdown does not render money as LaTeX."""
+    return text.replace("$", r"\$")
 
 
 def pct(x, digits=1):
@@ -275,7 +281,7 @@ if page == "Model & data":
     st.stop()
 
 metric_cards(stats, baseline, labelled)
-st.caption(f"Budget used {usd(stats['cost'])} of {usd(budget)} · expected customers saved {stats['expected_saved']:.1f} · solver: {stats['solver']['status']} · compute {st.session_state.last_compute_seconds:.2f}s")
+st.caption(md(f"Budget used {usd(stats['cost'])} of {usd(budget)} · expected customers saved {stats['expected_saved']:.1f} · solver: {stats['solver']['status']} · compute {st.session_state.last_compute_seconds:.2f}s"))
 if stats["solver"]["status"] in ["feasible_time_limit", "heuristic_fallback"]:
     st.warning(f"Global optimality not proven. Solver gap: {stats['solver']['gap']}")
 if stats["selected_count"] == 0:
@@ -287,9 +293,9 @@ if page == "Overview":
     options = offer_options(value_customers(population, cfg), [default_offer(cfg)])
     be = break_even(target, cfg, options)
     if stats["selected_count"]:
-        st.success(f"**Recommended action:** offer **{stats['selected_count']:,} customers** a retention offer for **{usd(stats['cost'])}**. Expected net value **{usd(stats['expected_net_value'])}** "
+        st.success(md(f"**Recommended action:** offer **{stats['selected_count']:,} customers** a retention offer for **{usd(stats['cost'])}**. Expected net value **{usd(stats['expected_net_value'])}** "
                    f"(ROI {pct(stats['roi'])}), **{usd(stats['expected_net_value'] - baseline['expected_net_value'])} more** than calling the highest-risk customers with the same budget. "
-                   f"The list stays profitable while the true save rate is above **{pct(be.get('break_even_default_save_rate'))}**; validate it with the pilot before scaling.")
+                   f"The list stays profitable while the true save rate is above **{pct(be.get('break_even_default_save_rate'))}**; validate it with the pilot before scaling."))
     left, right = st.columns([1.45, 1])
     chart = target.assign(decision=np.where(target.selected, "Contacted", "Not contacted"))
     fig = px.scatter(chart, x="churn_probability", y="customer_value", color="decision", color_discrete_map={"Contacted": BLUE, "Not contacted": GREY}, opacity=.75,
@@ -314,8 +320,8 @@ if page == "Overview":
     top10 = target.loc[target.selected].nlargest(10, "expected_net_value")
     st.dataframe(top10[["customer_id", "churn_probability", "customer_value", "offer_id", "expected_net_value", "tenure_segment", "Contract"]], hide_index=True, width="stretch", column_config={
         "customer_id": "Customer", "churn_probability": st.column_config.NumberColumn("Churn probability", format="%.2f"),
-        "customer_value": st.column_config.NumberColumn("Value (USD)", format="$%.0f"), "offer_id": "Offer",
-        "expected_net_value": st.column_config.NumberColumn("Expected net value", format="$%.2f"), "tenure_segment": "Tenure", "Contract": "Contract"})
+        "customer_value": st.column_config.NumberColumn("Value (USD)", format="dollar"), "offer_id": "Offer",
+        "expected_net_value": st.column_config.NumberColumn("Expected net value", format="dollar"), "tenure_segment": "Tenure", "Contract": "Contract"})
     st.caption("The full, exportable action list is on the Campaign builder page.")
     with st.expander("How the decision works"):
         st.markdown(f"""
@@ -335,8 +341,8 @@ if page == "Campaign builder":
         rows.append({"rule": STRATEGY_LABELS[strategy], **{k: item.get(k) for k in ["selected_count", "cost", "expected_net_value", "roi", "precision_contacted" if labelled else "expected_precision", "high_risk_high_value_coverage"]}})
     table = pd.DataFrame(rows).rename(columns={"expected_precision": "precision_contacted"})
     st.dataframe(table, hide_index=True, width="stretch", column_config={
-        "rule": "Targeting rule", "selected_count": "Customers", "cost": st.column_config.NumberColumn("Cost", format="$%.0f"),
-        "expected_net_value": st.column_config.NumberColumn("Expected net value", format="$%.0f"), "roi": st.column_config.NumberColumn("ROI", format="percent"),
+        "rule": "Targeting rule", "selected_count": "Customers", "cost": st.column_config.NumberColumn("Cost", format="dollar"),
+        "expected_net_value": st.column_config.NumberColumn("Expected net value", format="dollar"), "roi": st.column_config.NumberColumn("ROI", format="percent"),
         "precision_contacted": st.column_config.NumberColumn("Precision among contacted" + ("" if labelled else " (expected)"), format="percent"),
         "high_risk_high_value_coverage": st.column_config.NumberColumn("High-risk/high-value coverage", format="percent")})
     st.caption("All rules use the same customers, budget and assumptions. Risk and value rules ignore expected value; 'positive EV only' first drops customers with non-positive EV, then ranks by risk.")
@@ -350,8 +356,8 @@ if page == "Campaign builder":
     st.dataframe(visible[["customer_id", "churn_probability", "tenure_segment", "Contract", "customer_value", "offer_id", "assumed_save_rate", "total_cost", "expected_net_value", "selected", "selection_reason"]],
                  hide_index=True, width="stretch", column_config={
         "customer_id": "Customer", "churn_probability": st.column_config.NumberColumn("Churn probability", format="%.3f"), "tenure_segment": "Tenure",
-        "customer_value": st.column_config.NumberColumn("Value (USD)", format="$%.2f"), "offer_id": "Offer", "assumed_save_rate": st.column_config.NumberColumn("Save rate", format="percent"),
-        "total_cost": st.column_config.NumberColumn("Cost", format="$%.2f"), "expected_net_value": st.column_config.NumberColumn("Expected net value", format="$%.2f"),
+        "customer_value": st.column_config.NumberColumn("Value (USD)", format="dollar"), "offer_id": "Offer", "assumed_save_rate": st.column_config.NumberColumn("Save rate", format="percent"),
+        "total_cost": st.column_config.NumberColumn("Cost", format="dollar"), "expected_net_value": st.column_config.NumberColumn("Expected net value", format="dollar"),
         "selected": "Contact", "selection_reason": "Reason"})
     if not visible.empty:
         with st.expander("Why is a customer in or out of the list?"):
@@ -391,14 +397,15 @@ if page == "Scenarios & budget":
         st.plotly_chart(fig, width="stretch")
         scen = results["scenarios"].copy()
         st.dataframe(scen[["scenario", "selected_count", "cost", "expected_net_value", "roi", "fixed_expected_net_value"]], hide_index=True, width="stretch", column_config={
-            "scenario": "Scenario", "selected_count": "Customers (re-optimised)", "cost": st.column_config.NumberColumn("Cost", format="$%.0f"),
-            "expected_net_value": st.column_config.NumberColumn("Net value, re-optimised", format="$%.0f"), "roi": st.column_config.NumberColumn("ROI", format="percent"),
-            "fixed_expected_net_value": st.column_config.NumberColumn("Net value, frozen list", format="$%.0f")})
+            "scenario": "Scenario", "selected_count": "Customers (re-optimised)", "cost": st.column_config.NumberColumn("Cost", format="dollar"),
+            "expected_net_value": st.column_config.NumberColumn("Net value, re-optimised", format="dollar"), "roi": st.column_config.NumberColumn("ROI", format="percent"),
+            "fixed_expected_net_value": st.column_config.NumberColumn("Net value, frozen list", format="dollar")})
         st.caption("Pessimistic / optimistic combine several register assumptions at once; see docs/assumption-register.md for the ranges and sources.")
         curve = results["curve"].copy()
         curve["rule"] = curve.strategy.map(STRATEGY_LABELS)
         current_share = budget / max(len(population) * (default_offer(cfg)["offer_cost"] + default_offer(cfg)["contact_cost"]), 1e-9)
-        fig = px.line(curve, x="budget_share", y="expected_net_value", color="rule", markers=True, color_discrete_sequence=[BLUE, ORANGE],
+        fig = px.line(curve, x="budget_share", y="expected_net_value", color="rule", markers=True,
+                      color_discrete_map={STRATEGY_LABELS["ev"]: BLUE, STRATEGY_LABELS["risk"]: ORANGE, STRATEGY_LABELS["segment_offers"]: AQUA},
                       title="Profit curve: expected net value by budget size", labels={"budget_share": "Budget as share of customers x standard offer cost", "expected_net_value": "Expected net value (USD)", "rule": ""})
         fig.add_vline(x=current_share, line_dash="dash", line_color=MUTED, annotation_text="current budget")
         fig.add_vline(x=decisions["budget_recommendation"]["recommended_share"], line_dash="dot", line_color=INK, annotation_text="recommended (validation, default assumptions)", annotation_position="bottom right")
