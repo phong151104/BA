@@ -164,6 +164,20 @@ Gender and seniority are not model inputs. Full table: [fairness.csv](tables/fai
 5. **Value proxy.** No cost-to-serve, no re-churn after a save, no network effects; margin and horizon are assumptions.
 6. **Label-based checks** reuse the assumed save rate; they validate *who* is targeted, not *whether offers work*.
 
+### Outside the sample: lower churn and Vietnamese prices
+{% set s = stress.by %}
+
+The sample's {{ data.churn_rate | pct }} churn is far above real operators'. To show what that does to the answer, every predicted probability was shifted by one constant on the log-odds scale until the average fell to {% for t in stress.targets %}{{ t | pct(0) }}{{ ", " if not loop.last }}{% endfor %} (the ranking of customers does not change; [Saerens et al., 2002](../docs/references.md#saerens2002)). A second set of rows prices the same customers like a Vietnamese home-fibre operator: a {{ stress.vn_bill_vnd | num }} VND monthly bill ({{ stress.vn_bill_usd | usd(2) }} at {{ stress.usd_vnd | num }} VND/USD), offers scaled to keep the same share of the bill, and contact by one branded SMS ({{ stress.vn_contact_vnd | num }} VND). No budget limit; the {{ cfg.campaign.max_contact_share | pct(0) }} contact cap still applies.
+
+{{ stress.rows | md_table([("economy", "Prices", None), ("mean_probability", "Average churn", "pct0"), ("positive_ev_customers", "Worth an offer", "num"), ("positive_ev_share", "Share", "pct0"), ("net_no_budget_limit", "Expected net (USD)", "usd"), ("offer_room", "Affordable offer for best 10% (share of bill)", "pct0"), ("pilot_per_arm", "Pilot customers per arm to detect the assumed save rate", "num")]) }}
+
+- **Lower churn shrinks the list fast.** At {{ stress.targets[0] | pct(0) }} average churn only {{ s['sample|' ~ ('%g' % stress.targets[0])].positive_ev_share | pct(0) }} of customers are worth the {{ default_offer.offer_cost | usd }} offer plus {{ default_offer.contact_cost | usd }} contact (against {{ s['sample|base'].positive_ev_share | pct(0) }} in the sample); at {{ stress.targets[-1] | pct(0) }}, {{ s['sample|' ~ ('%g' % stress.targets[-1])].positive_ev_share | pct(0) }}.
+- **Cheap contact matters more than the offer.** With Vietnamese prices the money per customer is small, but an SMS costs almost nothing, so {{ s['vietnam|' ~ ('%g' % stress.targets[0])].positive_ev_share | pct(0) }} of customers stay worth an offer at {{ stress.targets[0] | pct(0) }} churn.
+- **The pilot must grow.** Lower churn on the list means fewer departures to observe: from {{ s['sample|base'].pilot_per_arm | num }} customers per arm in the sample to {{ s['sample|' ~ ('%g' % stress.targets[0])].pilot_per_arm | num }} at {{ stress.targets[0] | pct(0) }} churn, before any time effects.
+- The value horizon is held fixed; with lower churn, saved customers would stay longer, so these rows understate value. They show direction, not a forecast.
+
+![Outside the sample](figures/stress_test.png)
+
 ## 11. Recommendations and next steps
 
 1. Adopt expected-value targeting ({{ strategy_label | lower }}) for the next wave, with the recommended budget ({{ budget.recommended_per_base_customer | usd(2) }} per customer in the base).

@@ -389,6 +389,56 @@ def pilot_plan(target, cfg, recommended_share, break_even_rate):
     return pd.DataFrame(rows), summary
 
 
+def prior_shift(p, target):
+    """Move every probability by one logit constant so the mean equals `target` (Saerens et al., 2002); ranks are unchanged."""
+    logit = np.log(np.clip(p, 1e-9, 1 - 1e-9) / (1 - np.clip(p, 1e-9, 1 - 1e-9)))
+    shift = float(brentq(lambda d: (1 / (1 + np.exp(-(logit + d)))).mean() - target, -20, 20))
+    return 1 / (1 + np.exp(-(logit + shift))), shift
+
+
+def vietnam_economics(cfg, mean_bill):
+    """Sample customers priced like a Vietnamese home-fibre operator: bills and offers scale together, contact is one SMS."""
+    vn = cfg["vietnam_scenario"]
+    multiplier = vn["monthly_bill_vnd"] / vn["usd_vnd"] / mean_bill
+    out = deepcopy(cfg)
+    for offer in out["offers"]:
+        offer["offer_cost"] = offer["offer_cost"] * multiplier
+        offer["contact_cost"] = vn["contact_cost_vnd"] / vn["usd_vnd"]
+    return out, multiplier
+
+
+def stress_test(test, cfg, strategy, recommended_share, thresholds=None):
+    """How the answer changes outside the sample: lower average churn, and Vietnamese price levels."""
+    vn_cfg, multiplier = vietnam_economics(cfg, float(test.MonthlyCharges.mean()))
+    economies = {"Sample company (USD)": (cfg, 1.0), "Vietnam-like prices": (vn_cfg, multiplier)}
+    pilot = cfg["pilot"]
+    rows = []
+    for economy, (settings, scale) in economies.items():
+        offer = default_offer(settings)
+        for target in [None, *cfg["stress_test"]["target_churn"]]:
+            scores = test.copy()
+            scores["MonthlyCharges"] = scores.MonthlyCharges * scale
+            shift = 0.0
+            if target is not None:
+                scores["churn_probability"], shift = prior_shift(scores.churn_probability.to_numpy(), target)
+            unlimited = len(scores) * max(o["offer_cost"] + o["contact_cost"] for o in settings["offers"])
+            table, stats = run_strategy(scores, unlimited, settings, strategy, thresholds)
+            picked = table.loc[table.selected]
+            _, reco = run_strategy(scores, campaign_budget(len(scores), settings, recommended_share), settings, strategy, thresholds)
+            valued = value_customers(scores, settings)
+            headroom = valued.churn_probability * offer["save_rate"] * valued.customer_value - offer["contact_cost"]
+            list_churn = float(picked.churn_probability.mean()) if len(picked) else None
+            rows.append({"economy": economy, "bill_multiplier": scale, "mean_monthly_bill": float(scores.MonthlyCharges.mean()),
+                         "target_churn": target, "mean_probability": float(scores.churn_probability.mean()), "logit_shift": shift,
+                         "positive_ev_customers": stats["selected_count"], "positive_ev_share": stats["selected_count"] / len(scores),
+                         "net_no_budget_limit": stats["expected_net_value"], "cost_no_budget_limit": stats["cost"], "roi_no_budget_limit": stats["roi"],
+                         "contacted_at_recommended_share": reco["selected_count"], "net_at_recommended_share": reco["expected_net_value"],
+                         "standard_offer_cost": offer["offer_cost"], "contact_cost": offer["contact_cost"],
+                         "affordable_offer_cost_top10": float(headroom.quantile(0.9)), "list_expected_churn": list_churn,
+                         "pilot_per_arm": pilot_sample_size(list_churn, offer["save_rate"], pilot["alpha"], pilot["power"]) if list_churn else None})
+    return pd.DataFrame(rows)
+
+
 def churn_reasons(run, cfg, scores, reco_table, min_segment=100):
     """Why churners left (IBM extended sample), overall and on the recommended list; descriptive only, never a model input."""
     ext = cfg["extended"]
@@ -526,6 +576,7 @@ def simulate(run=None):
     write_json(run / "pilot_plan.json", pilot)
     save_csv(offer_mix(details["segment_offers"]), run / "segment_offer_mix.csv")
     save_csv(model_profit_check(run, cfg, scores), run / "model_profit_check.csv")
+    save_csv(stress_test(test, cfg, strategy, recommendation["recommended_share"], thresholds), run / "stress_test.csv")
     reasons, reason_segments, reason_summary, cltv = churn_reasons(run, cfg, scores, reco_table)
     save_csv(reasons, run / "churn_reasons.csv")
     save_csv(reason_segments, run / "churn_reasons_by_segment.csv")

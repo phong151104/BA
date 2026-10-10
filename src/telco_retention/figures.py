@@ -16,7 +16,7 @@ COLORS = {"ev": "#2a78d6", "risk": "#eb6834", "segment_offers": "#1baf7a", "risk
 INK, SECONDARY, MUTED, GRID, AXIS, SURFACE, GREY = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb", "#b9b8b2"
 DIVERGING = LinearSegmentedColormap.from_list("net", ["#d03b3b", "#f0efec", "#2a78d6"])
 FIGURES = ["eda_drivers", "calibration", "discrimination", "gains", "risk_value", "quadrant_selection", "strategy_comparison",
-           "profit_curve", "tornado", "sensitivity_heatmap", "fairness", "model_drivers", "shap_challenger", "churn_reasons"]
+           "profit_curve", "tornado", "sensitivity_heatmap", "fairness", "model_drivers", "shap_challenger", "churn_reasons", "stress_test"]
 
 
 def pretty_feature(name):
@@ -295,6 +295,27 @@ def figures(run):
     ax.set_title(f"Only {summary['addressable_share']:.0%} of churners left for price or a competitor's offer")
     finish(fig, "churn_reasons", "Why churners left", "Reason categories as grouped by IBM; recorded after customers left, so descriptive only, never a model input.",
            f"all {summary['churners']:,} churners in the IBM extended sample; list churners from the test split")
+
+    # 15. Outside the sample: lower churn and Vietnamese prices (two panels, one measure each).
+    stress = pd.read_csv(run / "stress_test.csv")
+    stress["churn_label"] = [f"{p:.0%}" + (" (sample)" if pd.isna(t) else "") for p, t in zip(stress.mean_probability, stress.target_churn)]
+    stress["offer_room"] = stress.affordable_offer_cost_top10 / stress.mean_monthly_bill
+    fig, (left, right) = plt.subplots(1, 2, figsize=(11, 4.6))
+    palette = {"Sample company (USD)": COLORS["ev"], "Vietnam-like prices": COLORS["segment_offers"]}
+    for economy, part in stress.groupby("economy", sort=False):
+        x = np.arange(len(part))
+        left.plot(x, part.positive_ev_share, marker="o", markersize=7, color=palette[economy], label=economy)
+        right.plot(x, part.offer_room, marker="o", markersize=7, color=palette[economy], label=economy)
+        left.set_xticks(x, part.churn_label); right.set_xticks(x, part.churn_label)
+    offer_share = float((stress.standard_offer_cost / stress.mean_monthly_bill).iloc[0])
+    right.axhline(offer_share, color=MUTED, linestyle="--", linewidth=1)
+    right.text(len(x) - 1, offer_share, f"standard offer = {offer_share:.0%} of a bill", fontsize=8, color=SECONDARY, ha="right", va="bottom")
+    left.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}"); right.yaxis.set_major_formatter(lambda v, _: f"{v:.0%}")
+    left.set_title("Customers worth an offer"); right.set_title("Affordable offer for the best 10%, as share of a bill")
+    left.set_xlabel("Average churn probability"); right.set_xlabel("Average churn probability")
+    left.legend(fontsize=8.5); left.set_ylim(bottom=0); right.set_ylim(bottom=0)
+    finish(fig, "stress_test", "Outside the sample", "Probabilities shifted to lower average churn with ranks unchanged; Vietnam-like prices scale bills and offers to a "
+           f"{cfg['vietnam_scenario']['monthly_bill_vnd']:,} VND bill\nand contact by SMS. Value horizon held fixed. Contact cap applies.")
 
     write_json(dest / "catalog.json", catalog)
     return catalog

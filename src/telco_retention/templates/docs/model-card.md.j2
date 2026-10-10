@@ -85,7 +85,7 @@ The challengers rank about as well as logistic regression, so the selection rule
 
   Flagged customers who stayed look like those who left (mean tenure {{ ep.fp.mean_tenure | num(0) }} vs {{ ep.tp.mean_tenure | num(0) }} months; {{ ep.fp.month_to_month_share | pct(0) }} vs {{ ep.tp.month_to_month_share | pct(0) }} month-to-month): the snapshot cannot separate them. Missed churners have {{ "longer" if ep.fn.mean_tenure > ep.tp.mean_tenure else "shorter" }} tenure ({{ ep.fn.mean_tenure | num(0) }} months) and only {{ ep.fn.month_to_month_share | pct(0) }} are month-to-month. Targeting does not use this threshold: an offer to a customer who would have stayed costs the offer, a missed churner costs their value, and both enter the expected-value formula through the probability.
 
-- **Model choice checked in money:** each calibrated candidate picks customers for the same budget and standard offer; "label-based" values the list with the customers' actual churn.
+- **Model choice checked in money** (profit-based model selection, [verbraken2013](references.md#verbraken2013)): each calibrated candidate picks customers for the same budget and standard offer; "label-based" values the list with the customers' actual churn.
 
 {{ model.profit_check | md_table([("population", "Population", None), ("model", "Model", None), ("selected_count", "Contacted", "num"), ("expected_net_value", "Expected net", "usd"), ("label_based_net", "Label-based net", "usd"), ("precision_contacted", "Precision", "pct0")]) }}
 

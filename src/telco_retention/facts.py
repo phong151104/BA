@@ -40,6 +40,16 @@ def by_key(frame, key):
     return {row[key]: row for row in records(frame)}
 
 
+def stress_facts(stress, cfg):
+    """Stress-test rows keyed for templates: `sample|base`, `sample|0.15`, `vietnam|0.1`, ..."""
+    vn = cfg["vietnam_scenario"]
+    rows = records(stress.assign(offer_room=stress.affordable_offer_cost_top10 / stress.mean_monthly_bill,
+                                 standard_offer_share=stress.standard_offer_cost / stress.mean_monthly_bill))
+    keyed = {("sample" if r["economy"].startswith("Sample") else "vietnam") + "|" + ("base" if r["target_churn"] is None else f"{r['target_churn']:g}"): r for r in rows}
+    return {"rows": rows, "by": keyed, "targets": cfg["stress_test"]["target_churn"], "vn_bill_vnd": vn["monthly_bill_vnd"], "usd_vnd": vn["usd_vnd"],
+            "vn_bill_usd": vn["monthly_bill_vnd"] / vn["usd_vnd"], "vn_contact_vnd": vn["contact_cost_vnd"], "vn_contact_usd": vn["contact_cost_vnd"] / vn["usd_vnd"]}
+
+
 def build_facts(run):
     run = ROOT / "artifacts/runs" / run.name
     csv = lambda name: pd.read_csv(run / name)
@@ -113,6 +123,7 @@ def build_facts(run):
                     "by_reason": records(csv("churn_reasons.csv").query("population == 'all churners'").sort_values("churners", ascending=False)),
                     "segments": records(csv("churn_reasons_by_segment.csv"))},
         "cltv": read_json(run / "cltv_check.json"),
+        "stress": stress_facts(csv("stress_test.csv"), cfg),
         "model": {"selected": selected_model, "label": MODEL_LABELS[selected_model], "threshold": manifest["threshold"], "selection_rule": manifest["selection_rule"],
                   "features": manifest["feature_columns"], "best_parameters": manifest["best_parameters"],
                   "feature_design": {"chosen": manifest["feature_set"], "rule": manifest["feature_rule"], "ablation": records(csv("feature_ablation.csv")),
@@ -196,7 +207,7 @@ def build_facts(run):
         "model.feature_design": rel("feature_ablation.csv"), "model.odds_ratios": rel("odds_ratios.csv"), "model.scorecard": rel("scorecard_points.csv"),
         "model.error_profiles": rel("error_profiles.csv"), "model.segment_errors": rel("segment_errors.csv"), "model.profit_check": rel("model_profit_check.csv"),
         "reasons": rel("churn_reasons_summary.json"), "reasons.by_reason": rel("churn_reasons.csv"), "reasons.segments": rel("churn_reasons_by_segment.csv"),
-        "cltv": rel("cltv_check.json"), "extended.join": rel("extended_join.json"),
+        "cltv": rel("cltv_check.json"), "extended.join": rel("extended_join.json"), "stress": rel("stress_test.csv"),
     }
     return facts
 

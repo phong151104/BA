@@ -25,13 +25,13 @@ required = ["model.joblib", "manifest.json", "validation_metrics.csv", "test_met
             "validation_decisions.json", "recommended_campaign.json", "fairness.csv", "pilot_plan.json", "pilot_power.csv", "segment_offer_mix.csv",
             "offer_catalog.csv", "shap_global.csv", "calibration.csv", "gains_test.csv", "bootstrap_intervals.csv", "dataset_source.json", "customers.csv",
             "feature_ablation.csv", "odds_ratios.csv", "scorecard_points.csv", "scorecard_bands.csv", "scorecard_meta.json", "error_profiles.csv", "model_profit_check.csv",
-            "customer_context.csv", "extended_join.json", "extended_source.json", "churn_reasons.csv", "churn_reasons_by_segment.csv", "churn_reasons_summary.json", "cltv_check.json"]
+            "customer_context.csv", "extended_join.json", "extended_source.json", "churn_reasons.csv", "churn_reasons_by_segment.csv", "churn_reasons_summary.json", "cltv_check.json", "stress_test.csv"]
 missing = [name for name in required if not (run / name).is_file()]
 assert not missing, missing
 grids = cfg["sensitivity"]
 sensitivity_rows = 2 * (len(grids["save_rate"]) * len(grids["offer_cost_multiplier"]) + sum(len(grids[a]) for a in ["contact_cost", "value.margin", "value.base_horizon_months", "value.discount_rate_annual"]))
 expected_sizes = {"random_campaigns.csv": cfg["random_campaign_iterations"], "sensitivity.csv": sensitivity_rows, "tornado.csv": len(cfg["assumption_register"]),
-                  "budget_curve.csv": len(share_grid(cfg)) * 6, "scenarios.csv": len(grids["scenarios"])}
+                  "budget_curve.csv": len(share_grid(cfg)) * 6, "scenarios.csv": len(grids["scenarios"]), "stress_test.csv": 2 * (1 + len(cfg["stress_test"]["target_churn"]))}
 for name, size in expected_sizes.items():
     assert len(pd.read_csv(run / name)) == size, (name, size)
 assert len(read_json(ROOT / "reports/figures/catalog.json")) == len(FIGURES)

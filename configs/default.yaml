@@ -84,6 +84,18 @@ pilot:
   outcome_window_days: 90
   save_rate_grid: [0.05, 0.10, 0.15, 0.20, 0.30]
 
+stress_test:
+  # Prior shift (Saerens et al., 2002): one logit constant moves every probability so the average churn equals a lower level;
+  # the ranking of customers is unchanged. The value horizon is held fixed, which understates value at lower churn.
+  target_churn: [0.15, 0.10, 0.05]
+
+vietnam_scenario:
+  # Illustrative only: the sample's customers priced like a Vietnamese home-fibre operator. Sources: docs/references.md.
+  usd_vnd: 25603             # State Bank of Vietnam central rate, 2026-09-09 [sbv2026]
+  monthly_bill_vnd: 250000   # home fibre; entry packages cost 190,000-195,000 VND a month in 2026 [phongvu2026] (team assumption above entry level)
+  contact_cost_vnd: 500      # one branded SMS; domestic SMS cost 200-500 VND [sentdm2025]
+  # Offer costs keep the same share of the monthly bill as in the sample (team assumption).
+
 extended:
   # IBM's extended sample of the same 7,043 customers. Only churn reasons and the CLTV index are kept, for description;
   # they are never model inputs (a reason is known only after a customer has left). IBM's own churn score is not used.

@@ -3,7 +3,7 @@ import pandas as pd
 import pytest
 from scipy.stats import norm
 from telco_retention.analysis import (apply_overrides, campaign_budget, compare, economic_uncertainty, fairness_audit, pilot_decision, pilot_plan, pilot_sample_size, profit_curve,
-                                      recommend_budget, select_strategy, sensitivity, share_grid, tornado, break_even, risk_value_matrix)
+                                      recommend_budget, select_strategy, sensitivity, share_grid, tornado, break_even, risk_value_matrix, prior_shift, stress_test)
 from telco_retention.business import campaign, default_offer, offer_options, value_customers
 from telco_retention.common import config
 
@@ -152,6 +152,27 @@ def test_break_even_save_rate_zeroes_frozen_list():
     q = changed["offers"][[o["offer_id"] for o in changed["offers"]].index(cfg["campaign"]["default_offer"])]["save_rate"]
     assert (picked.churn_probability * q * picked.customer_value - picked.total_cost).sum() == pytest.approx(0, abs=1e-6)
     assert be["minimum_viable_save_rate"] <= be["break_even_default_save_rate"]
+
+
+def test_prior_shift_hits_the_target_and_keeps_the_ranking():
+    p = np.random.default_rng(1).uniform(0.02, 0.9, 500)
+    shifted, delta = prior_shift(p, 0.10)
+    assert shifted.mean() == pytest.approx(0.10, abs=1e-9) and delta < 0
+    assert (np.argsort(shifted, kind="mergesort") == np.argsort(p, kind="mergesort")).all()
+
+
+def test_stress_test_rows_and_sample_row_match_an_unlimited_campaign():
+    cfg = cfg_small()
+    data = sample()
+    table = stress_test(data, cfg, "ev", 0.10)
+    assert len(table) == 2 * (1 + len(cfg["stress_test"]["target_churn"]))
+    base = table.loc[table.economy.str.startswith("Sample") & table.target_churn.isna()].iloc[0]
+    _, stats = campaign(data, 10 ** 6, cfg)
+    assert base.positive_ev_customers == stats["selected_count"] and base.net_no_budget_limit == pytest.approx(stats["expected_net_value"])
+    sample_rows = table.loc[table.economy.str.startswith("Sample")]
+    assert sample_rows.positive_ev_customers.is_monotonic_decreasing
+    vn = table.loc[table.economy.str.startswith("Vietnam")].iloc[0]
+    assert vn.mean_monthly_bill == pytest.approx(cfg["vietnam_scenario"]["monthly_bill_vnd"] / cfg["vietnam_scenario"]["usd_vnd"])
 
 
 def test_risk_value_matrix_partitions_customers():
