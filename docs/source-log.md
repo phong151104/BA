@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/source-log.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/source-log.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
 # Source log
 
 | Field | Value |
@@ -13,8 +13,27 @@
 | SHA-256 | `88be4b93fbe0cc83421af1c503794c97c342eca914c1576db7c276e61d61358a` |
 | Rows x columns | 7,043 x 21 |
 | Licence | Kaggle metadata: "Data files © Original Authors". Dataset attribution: IBM sample / BlastChar. Consult source data card for distribution rights; software license does not extend to source data. |
-| Joins | None: single source file, no external customer data joined |
+| Joins | IBM extended sample joined one-to-one on customerID (7,043 of 7,043 matched; 7 shared fields agree for every customer); only churn reasons and the CLTV index are kept, in a separate file used for description, never as model inputs |
 | Filters | Exact duplicate rows removed from the full file before splitting; no other rows filtered (0 rows removed) |
+
+## Second source: churn reasons (joined for description only)
+
+| Field | Value |
+|---|---|
+| Dataset | IBM Telco customer churn, extended version (same 7,043 fictional customers, 33 columns) ([TanKY, 2020](references.md#kaggle2020ibm)) |
+| Download source | **Kaggle yeanzc/telco-customer-churn-ibm-dataset** |
+| Download URL | https://www.kaggle.com/api/v1/datasets/download/yeanzc/telco-customer-churn-ibm-dataset |
+| Dataset page | https://www.kaggle.com/datasets/yeanzc/telco-customer-churn-ibm-dataset |
+| Original file | `Telco_customer_churn.xlsx` |
+| Downloaded (UTC) | 2026-10-10T14:48:44.721775+00:00 |
+| SHA-256 | `1bcbc0ccc9b352175216979102628e579cfbde2c3ff57b005de168a433122640` |
+| Rows x columns | 7,043 x 33 |
+| Licence | IBM Cognos Analytics sample data republished on Kaggle; consult the data card for distribution rights. |
+| Join | One-to-one on `customerID = CustomerID`: 7,043 of 7,043 customers matched; Churn 100%, tenure 100%, MonthlyCharges 100%, Contract 100%, InternetService 100%, PaymentMethod 100%, TechSupport 100% agreement |
+| Fields kept | Churn Reason, CLTV, stored in `data/processed/customer_context.csv`, separate from the modelling file |
+| Fields not used | Churn Score, location and all other columns. IBM's churn score comes from IBM's own model with undocumented inputs, so it could carry information unavailable before a customer leaves; it is never stored |
+
+Churn reasons are recorded only for customers who left, after they left, so they can never be a model input; they are used to judge which offers can plausibly work ([analysis report](../reports/analysis-report.md#why-customers-leave)). The CLTV index is IBM's undocumented formula and is used only to cross-check the value proxy.
 
 ## Provenance notes
 

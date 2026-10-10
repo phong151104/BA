@@ -1,0 +1,6 @@
+﻿feature_set,best_C,cv_average_precision,cv_standard_error,encoded_columns,matrix_rank,full_rank,within_one_se,eligible,selected
+all inputs,1.0,0.6637143451475499,0.014493637459668331,21,21,True,True,True,False
+without TotalCharges,1.0,0.6613690870433591,0.013032544043964586,20,20,True,True,True,True
+"without TotalCharges, with tenure band",1.0,0.664083270249145,0.012693739885547879,22,22,True,True,True,False
+all inputs with tenure band,1.0,0.6647133365855161,0.013697876462377976,23,23,True,True,True,False
+previous design (reference),0.1,0.6649033037297131,0.013302187957998946,48,24,False,True,False,False

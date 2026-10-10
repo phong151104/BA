@@ -4,90 +4,118 @@
     "title": "Observed churn rate by segment",
     "caption": "Descriptive association only; it does not show that changing a segment would change churn.",
     "population": "train split (4,225 customers)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "calibration.png",
     "title": "Calibration (reliability) curve",
     "caption": "Ten equal-size bins of predicted probability. ECE = expected calibration error.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "discrimination.png",
     "title": "Discrimination of the deployed model",
     "caption": "AP (average precision) is the area under the precision-recall curve; it is the primary metric because churners are 27% of customers.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "gains.png",
     "title": "Cumulative gains",
     "caption": "Ranking quality only. Whom to contact is decided by expected value, not by risk alone.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "risk_value.png",
     "title": "Risk x value map",
     "caption": "Dashed lines: 75th percentiles of risk and value, fitted on validation and frozen. Value = margin x discounted remaining months.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "quadrant_selection.png",
     "title": "Who each rule contacts",
     "caption": "Value at risk = sum of churn probability x customer value in the quadrant.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "strategy_comparison.png",
     "title": "Strategy comparison at the fixed budget",
     "caption": "Expected value under the stated save-rate and cost assumptions; not realised profit.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "profit_curve.png",
     "title": "Profit curve and marginal ROI",
     "caption": "Recommendation chosen on validation (largest budget whose last step still clears the hurdle) and shown here on test.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "tornado.png",
     "title": "One-way sensitivity (tornado)",
     "caption": "Each bar changes one assumption to the low/high end of its register range and re-selects customers within the same budget.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "sensitivity_heatmap.png",
     "title": "Save rate x offer cost sensitivity",
     "caption": "Frozen vs re-optimised list.",
     "population": "test",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "fairness.png",
     "title": "Allocation audit by protected attribute",
     "caption": "Gender and SeniorCitizen are not model inputs; they are used only for this audit.",
-    "population": "test split (1,409 customers, never used for selection)",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "model_drivers.png",
     "title": "Deployed model drivers",
-    "caption": "Logistic regression before calibration; associations, not causes. Orange raises predicted risk, blue lowers it.",
+    "caption": "Calibrated logistic model. Categories vs their lowest-churn level, flags vs not having the service,\ntenure per 12 months. Associations, not causes.",
     "population": "train split",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "run_id": "20261010T155849068129Z-88be4b93"
   },
   {
     "file": "shap_challenger.png",
     "title": "Challenger model SHAP",
     "caption": "TreeSHAP on 200 validation customers; explains the raw XGBoost challenger, not the deployed calibrated logistic model.",
     "population": "validation sample",
-    "run_id": "20261010T131542424757Z-88be4b93"
+    "run_id": "20261010T155849068129Z-88be4b93"
+  },
+  {
+    "file": "churn_reasons.png",
+    "title": "Why churners left",
+    "caption": "Reason categories as grouped by IBM; recorded after customers left, so descriptive only, never a model input.",
+    "population": "all 1,869 churners in the IBM extended sample; list churners from the test split",
+    "run_id": "20261010T155849068129Z-88be4b93"
+  },
+  {
+    "file": "stress_test.png",
+    "title": "Outside the sample",
+    "caption": "Probabilities shifted to lower average churn with ranks unchanged; Vietnam-like prices scale bills and offers to a 250,000 VND bill\nand contact by SMS. Value horizon held fixed. Contact cap applies.",
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
+  },
+  {
+    "file": "monte_carlo.png",
+    "title": "Joint uncertainty of the assumptions",
+    "caption": "5,000 draws; every register assumption drawn at once from a triangular distribution (low, base, high).\nLists and offers are frozen, as they would be in a pilot; shaded area = loss; the most extreme 0.2% at each end are not drawn.",
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
+  },
+  {
+    "file": "target_profile.png",
+    "title": "Target profile",
+    "caption": "Share of customers with each attribute, on the recommended list and among all test customers.",
+    "population": "1,409 test customers, held out from every choice",
+    "run_id": "20261010T155849068129Z-88be4b93"
   }
 ]

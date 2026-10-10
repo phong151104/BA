@@ -1,5 +1,27 @@
 # Change log
 
+## 2.1.0
+
+**Business answer**
+- The executive brief opens with the money at stake and a plain answer to "who": fibre customers on month-to-month contracts with high bills; low-risk and low-bill customers are left out. One gain figure (recommended rule vs risk-only, split into targeting and offer design) is used in every document and on the dashboard.
+- New: Vietnam deployment note (what transfers, local prices, prepaid churn, Decree 91/2020, Personal Data Protection Law 2025); roadmap with phases, owners and effort; failure path if the pilot says stop; at most two pilot extensions; pilot value and price of learning.
+- Deck rebuilt to 14 slides with an executive summary, action titles, a "who we target" slide, a downside slide, an outside-the-sample slide and a separate demo slide.
+- Overclaims removed ("earns", "the method works", "conservative 20%", "never loses money", pessimistic "$0"); fairness stated with the risk-only comparison and the risk-adjusted ratio; loyalty claims shown only when the loyalty offer is used.
+
+**Analysis**
+- Feature review on train: the first design one-hot coded every level next to derived copies (48 columns, rank 24); categories are now coded against their lowest-churn level, services are 0/1 flags, and a rule fixed in advance chose the smallest full-rank set within one standard error.
+- Odds ratios of the deployed model (calibration folded in) and a points scorecard for the call centre, checked against the model.
+- Diagnostics: tenure slice in segment errors, true/false positive and negative profiles, every candidate valued in money at the same budget, validation-to-test gap; all candidates reported at the chosen threshold.
+- Second source: IBM's extended sample of the same customers, joined only after every ID and seven shared fields matched; churn reasons and the CLTV index are kept apart from the model data and used to bound what an offer can achieve and to cross-check the value proxy.
+- Stress test: probabilities shifted to 15%, 10% and 5% average churn (ranking unchanged) and Vietnamese price levels with SMS contact.
+- Monte Carlo of all register assumptions at once (5,000 draws): chance of a loss for frozen lists, drivers, and the value of knowing the assumptions; tenure factors added to the register (A7).
+- Discount-rate and hurdle rationales made consistent with a US sample company.
+
+**Dashboard and engineering**
+- Dashboard rebuilt as three pages: Decision (KPIs, who gets an offer, action list, export), Assumptions & sensitivity (all inputs, live chance of a loss, scenario analysis, stress test) and Model evidence (metrics, odds ratios, points card, errors, data, upload). Technical IDs moved to an expander.
+- Release checks run on macOS and Linux (forward-slash code hashes, line-ending-neutral document comparison, committed PDFs kept and reported when Word is missing); generated files use LF endings.
+- The upload template uses new customer IDs; DOCX export keeps list numbering and shows links as text.
+
 ## 2.0.0
 
 **Business deliverables**

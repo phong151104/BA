@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/data-readiness-review.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/data-readiness-review.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
 # Data readiness review
 
 **Question:** is the IBM Telco sample fit to support the retention-targeting decision?
@@ -12,7 +12,7 @@
 | Downloaded | 2026-10-03T11:36:37 UTC; SHA-256 `88be4b93fbe0cc83421af1c503794c97c342eca914c1576db7c276e61d61358a` |
 | Size | 7,043 customers x 21 columns, one row per customer |
 | Licence | Kaggle shows "Data files © Original Authors"; the raw file is kept for reproducibility of coursework only |
-| Joins | None: one file, no external customer data |
+| Joins | IBM extended sample joined one-to-one on customerID (7,043 of 7,043 matched; 7 shared fields agree for every customer); only churn reasons and the CLTV index are kept, in a separate file used for description, never as model inputs ([source log](source-log.md#second-source-churn-reasons-joined-for-description-only)) |
 
 ## 2. Completeness and validity
 
@@ -33,8 +33,9 @@ All checks are automated (`telco_retention.data.validate`) and the same checks r
 | Need | Available? | Consequence |
 |---|---|---|
 | Churn label | Yes, but its window is ambiguous: "within the last month" (Kaggle, IBM base sample) vs "this quarter" (IBM extended sample) | Treat probabilities as relative risk within this sample; recalibrate on own data |
-| Predictors observed before churn | Partly: tenure, contract and charges are a single snapshot; `TotalCharges` largely duplicates tenure x charges | Random split only; no time-based validation possible; no leakage of the label itself |
-| Customer value inputs | Monthly charges and tenure; no cost-to-serve or margin | Value is a documented proxy using an assumed margin |
+| Predictors observed before churn | Partly: tenure, contract and charges are a single snapshot; `TotalCharges` is almost exactly tenure x charges and was dropped in the feature review | Random split only; no time-based validation possible; no leakage of the label itself |
+| Customer value inputs | Monthly charges and tenure; no cost-to-serve or margin. IBM's CLTV index ranks customers differently (Spearman 0.18 with our proxy; it follows tenure, 0.37, more than the bill, 0.11) | Value is a documented proxy using an assumed margin; the value definition is a real source of uncertainty, tested through margin, horizon and tenure factors |
+| Reasons for leaving | Yes, from the extended sample, for all 1,869 churners, recorded after they left | Descriptive only: 46% left for price or a competitor's offer, which an offer can address; 42% for staff attitude or dissatisfaction |
 | Offer cost and response | **No** | Synthetic offer table with assumed save rates; causal effect must be measured in a pilot |
 | Representativeness | Fictional, US, home phone + internet, 26.5% churn (real US postpaid churn is about 1% per month) | Results illustrate the method; magnitudes do not transfer |
 | Protected attributes | `gender`, `SeniorCitizen` available | Excluded from the model; used only for the fairness audit |

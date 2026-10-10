@@ -1,0 +1,23 @@
+{
+  "list": {
+    "customers": 324,
+    "median_monthly_charges": 89.32499999999999,
+    "mean_tenure": 20.01851851851852,
+    "mean_probability": 0.5987633378055841,
+    "mean_customer_value": 304.66485857557336
+  },
+  "not_contacted": {
+    "customers": 1085,
+    "median_monthly_charges": 56.1,
+    "mean_tenure": 36.18617511520738,
+    "mean_probability": 0.17161379946886451,
+    "mean_customer_value": 217.40921165718024
+  },
+  "all": {
+    "customers": 1409,
+    "median_monthly_charges": 70.35,
+    "mean_tenure": 32.46841731724627,
+    "mean_probability": 0.26983697223046643,
+    "mean_customer_value": 237.4736755333757
+  }
+}

@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/cleaning-log.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/cleaning-log.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
 # Cleaning log
 
 | Step | Decision | Rows affected |
@@ -9,7 +9,8 @@
 | Other numeric gaps | Median imputation fitted on train inside the model pipeline; the same train medians fill gaps before valuing customers | 0 in the source |
 | `SeniorCitizen` | Normalised to the strings "0"/"1" | all |
 | Label | `Churn` Yes/No mapped to `churn` 1/0; not used as a feature | all |
-| Service consistency | "No phone service" / "No internet service" kept as their own categories and checked against the parent service | 0 violations |
+| Service consistency | "No phone service" / "No internet service" kept as their own categories and checked against the parent service; as model inputs they count as "does not have the service" | 0 violations |
+| Extended-sample join | Join on customer ID only after every shared field agrees; keep churn reason (churners only) and CLTV in a separate file; map the 20 reasons to IBM's five categories | 7,043 matched |
 | Outliers | Valid extreme values kept; nothing trimmed | 0 |
 | Split | Stratified 60/20/20 train/validation/test, seed 42; IDs saved in `data/processed/splits.csv` | 4,225 / 1,409 / 1,409 |
 

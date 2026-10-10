@@ -1,4 +1,0 @@
-﻿rule,customers,cost,expected_net_value,precision,recall
-Probability >= 0.35 (F1 threshold),487,12175.0,1404.8478570573227,0.5441478439425051,0.7085561497326203
-Expected value > 0 (no budget limit),329,8225.0,2915.913261171591,0.5683890577507599,0.5
-"Expected value, ranked within the fixed budget",140,3500.0,2130.15450640768,0.6214285714285714,

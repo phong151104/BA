@@ -1,5 +1,0 @@
-﻿offer_id,label,offer_cost,contact_cost,save_rate,eligibility
-standard,One-time $20 bill credit,20.0,5.0,0.2,All customers
-contract_upgrade,$35 credit for moving to a 1-year contract,35.0,5.0,0.3,Contract in ['Month-to-month']
-service_bundle,6 months free TechSupport + OnlineSecurity,12.0,5.0,0.15,"InternetService in ['DSL', 'Fiber optic']; TechSupport in ['No']"
-loyalty_reward,$10 loyalty reward,10.0,5.0,0.1,tenure_segment in ['loyal']

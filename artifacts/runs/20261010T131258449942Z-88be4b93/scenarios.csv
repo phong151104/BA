@@ -1,4 +1,0 @@
-﻿scenario,overrides,selected_count,cost,expected_net_value,roi,expected_saved,fixed_expected_net_value,fixed_roi
-pessimistic,"{""save_rate"": 0.1, ""offer_cost_multiplier"": 1.25, ""contact_cost"": 8.0, ""value.margin"": 0.25, ""value.base_horizon_months"": 9}",0,0.0,0.0,,0.0,-2797.0971411404553,-0.6028551411477893
-base,{},152,3499.0,2420.146734576114,0.6916681150546196,17.9097125939941,2420.146734576114,0.6916681150546196
-optimistic,"{""save_rate"": 0.3, ""offer_cost_multiplier"": 0.75, ""contact_cost"": 2.0, ""value.margin"": 0.4, ""value.base_horizon_months"": 15}",313,3500.0,18525.19297597013,5.2929122788486085,46.742478797676334,12338.315578996106,5.2319794674000235

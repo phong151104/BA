@@ -1,49 +1,67 @@
 {
   "status": "passed",
   "python": "3.13.9",
-  "run_id": "20261010T131542424757Z-88be4b93",
+  "run_id": "20261010T155849068129Z-88be4b93",
   "artifacts": {
-    "required": 27,
+    "required": 48,
     "sizes": {
       "random_campaigns.csv": 100,
       "sensitivity.csv": 114,
-      "tornado.csv": 6,
+      "tornado.csv": 7,
       "budget_curve.csv": 186,
-      "scenarios.csv": 3
+      "scenarios.csv": 3,
+      "stress_test.csv": 8,
+      "monte_carlo_draws.csv": 5000,
+      "monte_carlo_drivers.csv": 7
     }
   },
   "pilot": {
-    "list_size_per_wave": 1550,
-    "arm_size_per_wave": 775,
-    "break_even_save_rate": 0.13918912698611383
+    "list_size_per_wave": 1620,
+    "arm_size_per_wave": 810,
+    "break_even_save_rate": 0.13764159184359395
+  },
+  "extended_join": {
+    "matched": 7043,
+    "field_agreement": {
+      "Churn": 1.0,
+      "tenure": 1.0,
+      "MonthlyCharges": 1.0,
+      "Contract": 1.0,
+      "InternetService": 1.0,
+      "PaymentMethod": 1.0,
+      "TechSupport": 1.0
+    }
   },
   "documents": {
-    "rendered": 15,
+    "rendered": 17,
     "drift": []
   },
   "links": "no broken relative links",
   "deliverables": {
-    "brief_words": 775,
+    "brief_words": 796,
     "brief_pages": 2,
-    "slides": 13,
-    "slides_with_notes": 13,
-    "deck_pdf_pages": 13
+    "slides": 14,
+    "slides_with_notes": 14,
+    "deck_pdf_pages": 14,
+    "pdf_status": "current",
+    "pdf_run_id": "20261010T155849068129Z-88be4b93"
   },
   "reproducibility": {
-    "compared_with": "20261010T131258449942Z-88be4b93",
-    "current": "20261010T131542424757Z-88be4b93",
+    "compared_with": "20261010T155515972611Z-88be4b93",
+    "current": "20261010T155849068129Z-88be4b93",
     "metrics_atol": 1e-10,
     "selected_customers_and_offers_equal": true,
-    "scenario_ids_equal": true
+    "scenario_ids_equal": true,
+    "monte_carlo_stress_scorecard_equal": true
   },
   "ui_seconds": {
     "warmed": [
-      0.1672538999991957,
-      0.6114931000047363,
-      0.8485946000000695,
-      0.8388487000047462,
-      0.1560023999918485
+      0.22979009999835398,
+      0.6093431000044802,
+      0.6605446000030497,
+      0.5505560000019614,
+      0.21871010000177193
     ],
-    "max": 0.8485946000000695
+    "max": 0.6605446000030497
   }
 }

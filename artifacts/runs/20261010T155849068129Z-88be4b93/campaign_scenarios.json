@@ -1,0 +1,324 @@
+{
+  "none": {
+    "selected_count": 0,
+    "cost": 0.0,
+    "remaining_budget": 3500.0,
+    "expected_saved": 0.0,
+    "expected_retained_value": 0.0,
+    "expected_net_value": 0.0,
+    "roi": null,
+    "expected_precision": null,
+    "precision_contacted": null,
+    "label_based_simulated_net": 0.0,
+    "high_risk_high_value_count": 57,
+    "high_risk_high_value_coverage": 0.0,
+    "scenario_id": "ca0d339c91c4",
+    "solver": {
+      "status": "empty",
+      "gap": 0.0
+    },
+    "scenario": {
+      "value": {
+        "margin": 0.3,
+        "base_horizon_months": 12,
+        "horizon_cap_months": 24,
+        "tenure_factors": {
+          "new": 0.75,
+          "developing": 1.0,
+          "loyal": 1.25
+        },
+        "discount_rate_annual": 0.1
+      },
+      "offers": [
+        {
+          "offer_id": "standard",
+          "label": "One-time $20 bill credit",
+          "offer_cost": 20.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.2,
+          "eligibility": {}
+        }
+      ],
+      "budget": 3500.0,
+      "strategy": "none",
+      "max_contacts": 423,
+      "seed": null,
+      "population_hash": "60bd4ec9b8a57e0daedb9c2e7a5283eb12da1159392a9cb317e48017ae5b0171"
+    }
+  },
+  "risk": {
+    "selected_count": 140,
+    "cost": 3500.0,
+    "remaining_budget": 0.0,
+    "expected_saved": 20.369816776073193,
+    "expected_retained_value": 4800.58876173075,
+    "expected_net_value": 1300.5887617307496,
+    "roi": 0.37159678906592847,
+    "expected_precision": 0.7274934562883283,
+    "precision_contacted": 0.7071428571428572,
+    "label_based_simulated_net": 1078.8840462387848,
+    "high_risk_high_value_count": 57,
+    "high_risk_high_value_coverage": 0.12280701754385964,
+    "scenario_id": "657e1d2c53e9",
+    "solver": {
+      "status": "baseline",
+      "gap": null
+    },
+    "scenario": {
+      "value": {
+        "margin": 0.3,
+        "base_horizon_months": 12,
+        "horizon_cap_months": 24,
+        "tenure_factors": {
+          "new": 0.75,
+          "developing": 1.0,
+          "loyal": 1.25
+        },
+        "discount_rate_annual": 0.1
+      },
+      "offers": [
+        {
+          "offer_id": "standard",
+          "label": "One-time $20 bill credit",
+          "offer_cost": 20.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.2,
+          "eligibility": {}
+        }
+      ],
+      "budget": 3500.0,
+      "strategy": "risk",
+      "max_contacts": 423,
+      "seed": null,
+      "population_hash": "60bd4ec9b8a57e0daedb9c2e7a5283eb12da1159392a9cb317e48017ae5b0171"
+    }
+  },
+  "risk_positive_ev": {
+    "selected_count": 140,
+    "cost": 3500.0,
+    "remaining_budget": 0.0,
+    "expected_saved": 20.342368846423774,
+    "expected_retained_value": 4866.586486247717,
+    "expected_net_value": 1366.586486247717,
+    "roi": 0.390453281785062,
+    "expected_precision": 0.7265131730865633,
+    "precision_contacted": 0.6928571428571428,
+    "label_based_simulated_net": 1105.0199547613936,
+    "high_risk_high_value_count": 57,
+    "high_risk_high_value_coverage": 0.12280701754385964,
+    "scenario_id": "253bec5b82d9",
+    "solver": {
+      "status": "baseline",
+      "gap": null
+    },
+    "scenario": {
+      "value": {
+        "margin": 0.3,
+        "base_horizon_months": 12,
+        "horizon_cap_months": 24,
+        "tenure_factors": {
+          "new": 0.75,
+          "developing": 1.0,
+          "loyal": 1.25
+        },
+        "discount_rate_annual": 0.1
+      },
+      "offers": [
+        {
+          "offer_id": "standard",
+          "label": "One-time $20 bill credit",
+          "offer_cost": 20.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.2,
+          "eligibility": {}
+        }
+      ],
+      "budget": 3500.0,
+      "strategy": "risk_positive_ev",
+      "max_contacts": 423,
+      "seed": null,
+      "population_hash": "60bd4ec9b8a57e0daedb9c2e7a5283eb12da1159392a9cb317e48017ae5b0171"
+    }
+  },
+  "value": {
+    "selected_count": 140,
+    "cost": 3500.0,
+    "remaining_budget": 0.0,
+    "expected_saved": 5.521589977221191,
+    "expected_retained_value": 2462.508551001967,
+    "expected_net_value": -1037.4914489980329,
+    "roi": -0.29642612828515225,
+    "expected_precision": 0.19719964204361398,
+    "precision_contacted": 0.2857142857142857,
+    "label_based_simulated_net": 89.90086498662377,
+    "high_risk_high_value_count": 57,
+    "high_risk_high_value_coverage": 0.2982456140350877,
+    "scenario_id": "65389beaa530",
+    "solver": {
+      "status": "baseline",
+      "gap": null
+    },
+    "scenario": {
+      "value": {
+        "margin": 0.3,
+        "base_horizon_months": 12,
+        "horizon_cap_months": 24,
+        "tenure_factors": {
+          "new": 0.75,
+          "developing": 1.0,
+          "loyal": 1.25
+        },
+        "discount_rate_annual": 0.1
+      },
+      "offers": [
+        {
+          "offer_id": "standard",
+          "label": "One-time $20 bill credit",
+          "offer_cost": 20.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.2,
+          "eligibility": {}
+        }
+      ],
+      "budget": 3500.0,
+      "strategy": "value",
+      "max_contacts": 423,
+      "seed": null,
+      "population_hash": "60bd4ec9b8a57e0daedb9c2e7a5283eb12da1159392a9cb317e48017ae5b0171"
+    }
+  },
+  "ev": {
+    "selected_count": 140,
+    "cost": 3500.0,
+    "remaining_budget": 0.0,
+    "expected_saved": 17.810184768735944,
+    "expected_retained_value": 5840.018225994814,
+    "expected_net_value": 2340.018225994814,
+    "roi": 0.6685766359985184,
+    "expected_precision": 0.6360780274548551,
+    "precision_contacted": 0.6,
+    "label_based_simulated_net": 1977.0621146087378,
+    "high_risk_high_value_count": 57,
+    "high_risk_high_value_coverage": 0.9649122807017544,
+    "scenario_id": "413836e7a9d3",
+    "solver": {
+      "status": "optimal_sort",
+      "gap": 0.0
+    },
+    "scenario": {
+      "value": {
+        "margin": 0.3,
+        "base_horizon_months": 12,
+        "horizon_cap_months": 24,
+        "tenure_factors": {
+          "new": 0.75,
+          "developing": 1.0,
+          "loyal": 1.25
+        },
+        "discount_rate_annual": 0.1
+      },
+      "offers": [
+        {
+          "offer_id": "standard",
+          "label": "One-time $20 bill credit",
+          "offer_cost": 20.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.2,
+          "eligibility": {}
+        }
+      ],
+      "budget": 3500.0,
+      "strategy": "ev",
+      "max_contacts": 423,
+      "seed": null,
+      "population_hash": "60bd4ec9b8a57e0daedb9c2e7a5283eb12da1159392a9cb317e48017ae5b0171"
+    }
+  },
+  "segment_offers": {
+    "selected_count": 153,
+    "cost": 3500.0,
+    "remaining_budget": 0.0,
+    "expected_saved": 18.284603394548625,
+    "expected_retained_value": 6168.20328956302,
+    "expected_net_value": 2668.20328956302,
+    "roi": 0.7623437970180057,
+    "expected_precision": 0.6321643955073863,
+    "precision_contacted": 0.6013071895424836,
+    "label_based_simulated_net": 2155.6976444809607,
+    "high_risk_high_value_count": 57,
+    "high_risk_high_value_coverage": 0.9824561403508771,
+    "scenario_id": "e0347326ca4d",
+    "solver": {
+      "status": "optimal",
+      "gap": 0.0
+    },
+    "scenario": {
+      "value": {
+        "margin": 0.3,
+        "base_horizon_months": 12,
+        "horizon_cap_months": 24,
+        "tenure_factors": {
+          "new": 0.75,
+          "developing": 1.0,
+          "loyal": 1.25
+        },
+        "discount_rate_annual": 0.1
+      },
+      "offers": [
+        {
+          "offer_id": "standard",
+          "label": "One-time $20 bill credit",
+          "offer_cost": 20.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.2,
+          "eligibility": {}
+        },
+        {
+          "offer_id": "contract_upgrade",
+          "label": "$35 credit for moving to a 1-year contract",
+          "offer_cost": 35.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.3,
+          "eligibility": {
+            "Contract": [
+              "Month-to-month"
+            ]
+          }
+        },
+        {
+          "offer_id": "service_bundle",
+          "label": "6 months free TechSupport + OnlineSecurity",
+          "offer_cost": 12.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.15,
+          "eligibility": {
+            "InternetService": [
+              "DSL",
+              "Fiber optic"
+            ],
+            "TechSupport": [
+              "No"
+            ]
+          }
+        },
+        {
+          "offer_id": "loyalty_reward",
+          "label": "$10 loyalty reward",
+          "offer_cost": 10.0,
+          "contact_cost": 5.0,
+          "save_rate": 0.1,
+          "eligibility": {
+            "tenure_segment": [
+              "loyal"
+            ]
+          }
+        }
+      ],
+      "budget": 3500.0,
+      "strategy": "ev",
+      "max_contacts": 423,
+      "seed": null,
+      "population_hash": "60bd4ec9b8a57e0daedb9c2e7a5283eb12da1159392a9cb317e48017ae5b0171"
+    }
+  }
+}

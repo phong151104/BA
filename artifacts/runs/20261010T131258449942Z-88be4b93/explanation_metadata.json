@@ -1,8 +1,0 @@
-{
-  "model": "xgboost_raw",
-  "scale": "log_odds",
-  "population": "validation sample",
-  "n": 200,
-  "not_causal": true,
-  "not_calibrated_probability_decomposition": true
-}

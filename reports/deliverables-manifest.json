@@ -1,16 +1,18 @@
 {
-  "run_id": "20261010T131542424757Z-88be4b93",
-  "created_at_utc": "2026-10-10T13:17:42.726353+00:00",
-  "brief_words": 775,
-  "slides": 13,
-  "slides_with_notes": 13,
+  "run_id": "20261010T155849068129Z-88be4b93",
+  "created_at_utc": "2026-10-10T16:02:03.206232+00:00",
+  "brief_words": 796,
+  "slides": 14,
+  "slides_with_notes": 14,
   "deck_lint": [],
+  "pdf_status": "current",
   "brief_pages": 2,
-  "deck_pdf_pages": 13,
+  "deck_pdf_pages": 14,
+  "pdf_run_id": "20261010T155849068129Z-88be4b93",
   "sha256": {
-    "reports/executive-brief.docx": "db547252f2e57a58bbdf715bf07e0c3024e2c9a05824ede06eedf79a3ddb9bd2",
-    "reports/executive-brief.pdf": "fd6b6fedd20835b3c2c315d50a8916b2606f587c595d97650dcf816c0fe6298d",
-    "reports/presentation/retention-deck.pptx": "89203ab6c65a7ac427f96a59524ef02408cafd35a089926c9c5c3bb87c7bccf8",
-    "reports/presentation/retention-deck.pdf": "63889897369b19ad9b4ce889ebd58f342449508ea33f342308cabc46ff4c94b3"
+    "reports/executive-brief.docx": "475704cab95323f04bdcaaaa0fa10dfa1e382fd92eb5ba261d7cba69f09a0f7a",
+    "reports/executive-brief.pdf": "fbb521618c0605d110d0427b7275dc8ef2c33ba8bb7197ff3eec185b4fcd981e",
+    "reports/presentation/retention-deck.pptx": "bb25992b1bcfd090e601dbd77748f6509d67aecd0192d01a4334879ef7105908",
+    "reports/presentation/retention-deck.pdf": "08a1d3026e7fd08bb4e1cbe9455c6f80ed075ac983f3289378428103771c6c55"
   }
 }

@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/data-dictionary.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/data-dictionary.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
 # Data dictionary
 
 ## Source fields
@@ -24,7 +24,7 @@
 | `PaperlessBilling` | Paperless billing | Yes; No | feature |
 | `PaymentMethod` | Payment method | Electronic check; Mailed check; Bank transfer (automatic); Credit card (automatic) | feature |
 | `MonthlyCharges` | Current monthly charge (USD) | non-negative number | feature |
-| `TotalCharges` | Total billed to date (USD); history only, not added to future value | non-negative number | feature |
+| `TotalCharges` | Total billed to date (USD); history only, not added to future value | non-negative number | not a model input |
 | `Churn` | Left within the observation window; target label, never a feature | Yes; No | target |
 
 ## Derived fields
@@ -33,10 +33,9 @@
 |---|---|---|
 | `churn` | 0/1 | `Churn` mapped Yes=1, No=0; label only |
 | `split` | train / validation / test | Role of the row in validation design |
-| `tenure_band`, `tenure_segment` | new / developing / loyal | tenure <= 12, 13-24, > 24 months; model feature and business segment |
-| `addon_count` | integer 0-6 | Number of add-on services equal to "Yes" |
-| `monthly_contract` | 0/1 | Contract is month-to-month |
-| `autopay` | 0/1 | Payment method is automatic |
+| Service and account flags | 0/1 | Partner, Dependents, PhoneService, PaperlessBilling, MultipleLines, OnlineSecurity, OnlineBackup, DeviceProtection, TechSupport, StreamingTV, StreamingMovies: 1 if the field is "Yes". "No phone service" and "No internet service" count as 0, so that information is carried only by `PhoneService` and `InternetService` |
+| Reference coding | 0/1 columns | `InternetService` against "No"; `Contract` against "Two year"; `PaymentMethod` against "Credit card (automatic)" (the lowest-churn level), so each coefficient compares a level with that reference |
+| `tenure_band`, `tenure_segment` | new / developing / loyal | tenure <= 12, 13-24, > 24 months; business segment (tested as a model feature, not selected) |
 | `churn_probability` | probability | Calibrated model output |
 | `risk_band` | low / medium / high | <= 0.25, 0.25-0.5, > 0.5; descriptive only |
 | `prediction_origin` | text | in_sample_do_not_evaluate (train), selection_holdout (validation), untouched_test (test), or upload status |
@@ -55,6 +54,14 @@
 | `selection_reason`, `decision_detail` | text | Why the customer is in or out, with the EV formula filled in |
 | `scenario_id` | text | Hash of value settings, offers, budget, strategy, contact cap and customer list |
 | `quadrant` | text | Risk x value segment using validation 75th-percentile cut-offs |
+
+## Context fields from the extended sample (never model inputs)
+
+| Field | Type / unit | Definition |
+|---|---|---|
+| `churn_reason` | text, churners only | The customer's stated reason for leaving (20 values), recorded after they left |
+| `churn_category` | Competitor / Dissatisfaction / Attitude / Price / Other | IBM's grouping of the reasons; Competitor and Price are treated as addressable by a price or contract offer |
+| `cltv` | index, 7,043 customers | IBM's predicted lifetime-value index (undocumented formula); cross-check only |
 
 ## Rules applied to every input file
 

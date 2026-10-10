@@ -1,0 +1,17 @@
+{
+  "control_churn_expected": 0.5987633378055841,
+  "observed_churn_test_list": 0.5648148148148148,
+  "recommended_share": 0.26,
+  "contacted_share": 0.22995031937544358,
+  "base_population": 7043,
+  "list_size_per_wave": 1620,
+  "arm_size_per_wave": 810,
+  "break_even_save_rate": 0.13764159184359395,
+  "per_arm_break_even": 569.0,
+  "minimum_detectable_save_rate_one_wave": 0.11524601062339812,
+  "decision_rule": "go if the 95% interval of q is above 0 and q >= break-even; stop if q <= 0 or the interval is below break-even; otherwise extend",
+  "alpha": 0.05,
+  "power": 0.8,
+  "holdout_share": 0.5,
+  "outcome_window_days": 90
+}

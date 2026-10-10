@@ -1,9 +1,10 @@
 ﻿tenure_segment,Contract,offer_id,customers
-new,Month-to-month,contract_upgrade,5
-new,Month-to-month,service_bundle,45
+new,Month-to-month,contract_upgrade,1
+new,Month-to-month,service_bundle,39
 new,Month-to-month,standard,2
 developing,Month-to-month,contract_upgrade,10
-developing,Month-to-month,service_bundle,18
-loyal,Month-to-month,contract_upgrade,22
-loyal,Month-to-month,service_bundle,44
-loyal,Month-to-month,standard,6
+developing,Month-to-month,service_bundle,28
+developing,Month-to-month,standard,1
+loyal,Month-to-month,contract_upgrade,26
+loyal,Month-to-month,service_bundle,43
+loyal,Month-to-month,standard,3

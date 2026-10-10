@@ -1,0 +1,61 @@
+﻿churn_category,churn_reason,churners,population,share,addressable_by_offer
+Attitude,Attitude of service provider,135,all churners,0.07223113964686999,False
+Attitude,Attitude of support person,192,all churners,0.10272873194221509,False
+Competitor,Competitor had better devices,130,all churners,0.06955591225254147,True
+Competitor,Competitor made better offer,140,all churners,0.0749063670411985,True
+Competitor,Competitor offered higher download speeds,189,all churners,0.10112359550561797,True
+Competitor,Competitor offered more data,162,all churners,0.08667736757624397,True
+Dissatisfaction,Lack of self-service on Website,88,all churners,0.047084002140181914,False
+Dissatisfaction,Limited range of services,44,all churners,0.023542001070090957,False
+Dissatisfaction,Network reliability,103,all churners,0.05510968432316747,False
+Dissatisfaction,Poor expertise of online support,19,all churners,0.010165864098448368,False
+Dissatisfaction,Poor expertise of phone support,20,all churners,0.010700909577314071,False
+Dissatisfaction,Product dissatisfaction,102,all churners,0.05457463884430177,False
+Dissatisfaction,Service dissatisfaction,89,all churners,0.047619047619047616,False
+Other,Deceased,6,all churners,0.0032102728731942215,False
+Other,Don't know,154,all churners,0.08239700374531835,False
+Other,Moved,53,all churners,0.02835741037988229,False
+Price,Extra data charges,57,all churners,0.030497592295345103,True
+Price,Lack of affordable download/upload speed,44,all churners,0.023542001070090957,True
+Price,Long distance charges,44,all churners,0.023542001070090957,True
+Price,Price too high,98,all churners,0.052434456928838954,True
+Attitude,Attitude of service provider,14,churners on the recommended list (test),0.07650273224043716,False
+Attitude,Attitude of support person,16,churners on the recommended list (test),0.08743169398907104,False
+Competitor,Competitor had better devices,11,churners on the recommended list (test),0.060109289617486336,True
+Competitor,Competitor made better offer,19,churners on the recommended list (test),0.10382513661202186,True
+Competitor,Competitor offered higher download speeds,18,churners on the recommended list (test),0.09836065573770492,True
+Competitor,Competitor offered more data,13,churners on the recommended list (test),0.07103825136612021,True
+Dissatisfaction,Lack of self-service on Website,12,churners on the recommended list (test),0.06557377049180328,False
+Dissatisfaction,Limited range of services,7,churners on the recommended list (test),0.03825136612021858,False
+Dissatisfaction,Network reliability,10,churners on the recommended list (test),0.0546448087431694,False
+Dissatisfaction,Poor expertise of online support,2,churners on the recommended list (test),0.01092896174863388,False
+Dissatisfaction,Poor expertise of phone support,2,churners on the recommended list (test),0.01092896174863388,False
+Dissatisfaction,Product dissatisfaction,8,churners on the recommended list (test),0.04371584699453552,False
+Dissatisfaction,Service dissatisfaction,9,churners on the recommended list (test),0.04918032786885246,False
+Other,Deceased,1,churners on the recommended list (test),0.00546448087431694,False
+Other,Don't know,15,churners on the recommended list (test),0.08196721311475409,False
+Other,Moved,2,churners on the recommended list (test),0.01092896174863388,False
+Price,Extra data charges,6,churners on the recommended list (test),0.03278688524590164,True
+Price,Lack of affordable download/upload speed,3,churners on the recommended list (test),0.01639344262295082,True
+Price,Long distance charges,5,churners on the recommended list (test),0.0273224043715847,True
+Price,Price too high,10,churners on the recommended list (test),0.0546448087431694,True
+Attitude,Attitude of service provider,10,test churners not contacted,0.05235602094240838,False
+Attitude,Attitude of support person,22,test churners not contacted,0.11518324607329843,False
+Competitor,Competitor had better devices,15,test churners not contacted,0.07853403141361257,True
+Competitor,Competitor made better offer,12,test churners not contacted,0.06282722513089005,True
+Competitor,Competitor offered higher download speeds,15,test churners not contacted,0.07853403141361257,True
+Competitor,Competitor offered more data,19,test churners not contacted,0.09947643979057591,True
+Dissatisfaction,Lack of self-service on Website,12,test churners not contacted,0.06282722513089005,False
+Dissatisfaction,Limited range of services,5,test churners not contacted,0.02617801047120419,False
+Dissatisfaction,Network reliability,10,test churners not contacted,0.05235602094240838,False
+Dissatisfaction,Poor expertise of online support,2,test churners not contacted,0.010471204188481676,False
+Dissatisfaction,Poor expertise of phone support,1,test churners not contacted,0.005235602094240838,False
+Dissatisfaction,Product dissatisfaction,10,test churners not contacted,0.05235602094240838,False
+Dissatisfaction,Service dissatisfaction,6,test churners not contacted,0.031413612565445025,False
+Other,Deceased,1,test churners not contacted,0.005235602094240838,False
+Other,Don't know,14,test churners not contacted,0.07329842931937172,False
+Other,Moved,6,test churners not contacted,0.031413612565445025,False
+Price,Extra data charges,7,test churners not contacted,0.03664921465968586,True
+Price,Lack of affordable download/upload speed,5,test churners not contacted,0.02617801047120419,True
+Price,Long distance charges,5,test churners not contacted,0.02617801047120419,True
+Price,Price too high,14,test churners not contacted,0.07329842931937172,True
