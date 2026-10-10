@@ -18,16 +18,55 @@ from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.inspection import permutation_importance
+from scipy.optimize import brentq
 from xgboost import XGBClassifier
 from .common import ROOT, config, digest, latest_run, now, read_json, save_csv, write_json
 from .data import features, NUMERIC, prepare
+
+
+def calibration_stats(y, p, n_bins=10):
+    """ECE on quantile bins, calibration slope and calibration-in-the-large intercept."""
+    y, p = np.asarray(y, dtype=float), np.clip(np.asarray(p, dtype=float), 1e-6, 1 - 1e-6)
+    if len(np.unique(y)) < 2:
+        return {"ece": None, "calibration_slope": None, "calibration_intercept": None}
+    bins = pd.qcut(pd.Series(p).rank(method="first"), min(n_bins, len(p)), labels=False)
+    gaps = pd.DataFrame({"y": y, "p": p, "bin": bins}).groupby("bin").agg(y=("y", "mean"), p=("p", "mean"), n=("y", "size"))
+    ece = float((gaps.n * (gaps.y - gaps.p).abs()).sum() / len(y))
+    logit = np.log(p / (1 - p))
+    # A constant predictor (e.g. the prior-only baseline) has no defined slope.
+    slope = float(LogisticRegression(penalty=None, max_iter=1000).fit(logit.reshape(-1, 1), y).coef_[0, 0]) if logit.std() > 1e-8 else None
+    intercept = float(brentq(lambda a: (1 / (1 + np.exp(-(a + logit)))).mean() - y.mean(), -10, 10))
+    return {"ece": ece, "calibration_slope": slope, "calibration_intercept": intercept}
 
 
 def metrics(y, p, threshold=0.5):
     hard = np.asarray(p) >= threshold
     return {"average_precision": average_precision_score(y, p), "roc_auc": roc_auc_score(y, p) if len(np.unique(y)) > 1 else None,
             "brier": brier_score_loss(y, p), "log_loss": log_loss(y, p, labels=[0, 1]),
-            "precision": precision_score(y, hard, zero_division=0), "recall": recall_score(y, hard, zero_division=0), "f1": f1_score(y, hard, zero_division=0)}
+            "precision": precision_score(y, hard, zero_division=0), "recall": recall_score(y, hard, zero_division=0), "f1": f1_score(y, hard, zero_division=0),
+            **calibration_stats(y, p)}
+
+
+def gains_table(y, p, n_bins=10):
+    """Deciles by predicted risk: churn rate, lift and cumulative share of churners captured."""
+    frame = pd.DataFrame({"y": np.asarray(y), "p": np.asarray(p)}).sort_values("p", ascending=False, kind="mergesort").reset_index(drop=True)
+    frame["decile"] = np.arange(len(frame)) * n_bins // len(frame) + 1
+    out = frame.groupby("decile").agg(customers=("y", "size"), churners=("y", "sum"), mean_probability=("p", "mean"), min_probability=("p", "min")).reset_index()
+    out["churn_rate"] = out.churners / out.customers
+    out["lift"] = out.churn_rate / frame.y.mean()
+    out["cumulative_customer_share"] = out.customers.cumsum() / len(frame)
+    out["cumulative_churner_capture"] = out.churners.cumsum() / frame.y.sum()
+    return out
+
+
+def precision_at_k(y, p, shares=(0.05, 0.10, 0.20, 0.30)):
+    order = np.argsort(-np.asarray(p), kind="mergesort")
+    y = np.asarray(y)[order]
+    rows = []
+    for share in shares:
+        k = max(1, int(round(share * len(y))))
+        rows.append({"contact_share": share, "customers": k, "precision": y[:k].mean(), "recall": y[:k].sum() / y.sum(), "lift": y[:k].mean() / y.mean()})
+    return pd.DataFrame(rows)
 
 
 def preprocessing(X):
@@ -166,27 +205,29 @@ def evaluate(run=None):
     save_csv(pd.DataFrame({"precision": precision, "recall": recall}), run / "pr_curve.csv")
     fpr, tpr, _ = roc_curve(y, p)
     save_csv(pd.DataFrame({"fpr": fpr, "tpr": tpr}), run / "roc_curve.csv")
+    save_csv(gains_table(y, p), run / "gains_test.csv")
+    save_csv(precision_at_k(y, p), run / "precision_at_k.csv")
     diagnostic = []
     for col in ["Contract", "InternetService", "PaymentMethod", "gender", "SeniorCitizen"]:
         for group, part in scores.loc[scores.split.eq("test")].groupby(col):
             diagnostic.append({"attribute": col, "group": group, "n": len(part), "small_sample": len(part) < 50, **metrics(part.churn, part.churn_probability, threshold)})
     save_csv(pd.DataFrame(diagnostic), run / "segment_errors.csv")
-    explain(run, models, df)
+    explain(run, models, df, cfg["seed"])
     return run
 
 
-def explain(run, models, df):
+def explain(run, models, df, seed=42):
     # Explain validation only, and explicitly explain the raw classifiers.
     val = df.loc[df.split.eq("validation")]
     X, y = features(val), val.churn
     lr = models["logistic_raw"]
     save_csv(pd.DataFrame({"feature": lr.named_steps["prep"].get_feature_names_out(), "coefficient": lr.named_steps["model"].coef_[0]}).sort_values("coefficient"), run / "logistic_coefficients.csv")
     for name in ["random_forest", "xgboost"]:
-        result = permutation_importance(models[name + "_raw"], X, y, scoring="average_precision", n_repeats=5, random_state=42, n_jobs=2)
+        result = permutation_importance(models[name + "_raw"], X, y, scoring="average_precision", n_repeats=5, random_state=seed, n_jobs=2)
         save_csv(pd.DataFrame({"feature": X.columns, "importance": result.importances_mean, "std": result.importances_std}).sort_values("importance", ascending=False), run / f"permutation_{name}.csv")
     import shap
     xgb = models["xgboost_raw"]
-    sample = X.sample(n=min(200, len(X)), random_state=42)
+    sample = X.sample(n=min(200, len(X)), random_state=seed)
     transformed = xgb.named_steps["prep"].transform(sample)
     names = xgb.named_steps["prep"].get_feature_names_out()
     # XGBoost's native TreeSHAP avoids version-specific JSON parser issues in SHAP.

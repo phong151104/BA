@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+import shutil
+from copy import deepcopy
 from pathlib import Path
 from datetime import datetime, timezone
 import numpy as np
@@ -35,6 +37,19 @@ def jsonable(value):
     return value
 
 
+def canonical(value):
+    """Numbers compare by value, so 12 and 12.0 hash identically."""
+    if isinstance(value, dict):
+        return {str(k): canonical(v) for k, v in value.items()}
+    if isinstance(value, (list, tuple, np.ndarray)):
+        return [canonical(v) for v in value]
+    if isinstance(value, (bool, np.bool_)):
+        return bool(value)
+    if isinstance(value, (int, float, np.integer, np.floating)):
+        return round(float(value), 10) if np.isfinite(value) else None
+    return value
+
+
 def write_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -58,9 +73,51 @@ def now():
 def latest_run():
     pointer = ROOT / "artifacts/latest.json"
     if not pointer.exists():
-        raise FileNotFoundError("Chưa có mô hình. Chạy: python -m telco_retention run-all")
+        raise FileNotFoundError("No trained model yet. Run: python -m telco_retention run-all")
     return ROOT / "artifacts/runs" / read_json(pointer)["run_id"]
+
+
+def prune_runs(keep=2):
+    """Delete all but the newest `keep` runs; the run in latest.json is always kept."""
+    runs = sorted(p for p in (ROOT / "artifacts/runs").iterdir() if p.is_dir())
+    current = latest_run()
+    kept = set(runs[-keep:]) | {current}
+    removed = [p for p in runs if p not in kept]
+    for path in removed:
+        shutil.rmtree(path)
+    return [p.name for p in removed]
 
 
 def table(frame, digits=3):
     return frame.to_markdown(index=False, floatfmt=f".{digits}f")
+
+
+def _offer_index(cfg, offer_id):
+    for i, offer in enumerate(cfg["offers"]):
+        if offer["offer_id"] == offer_id:
+            return i
+    raise KeyError(f"Unknown offer_id: {offer_id}")
+
+
+def get_param(cfg, path):
+    """Read a dotted config path; `offers.<offer_id>.<field>` addresses an offer by ID."""
+    parts = path.split(".")
+    node = cfg
+    if parts[0] == "offers":
+        node, parts = cfg["offers"][_offer_index(cfg, parts[1])], parts[2:]
+    for part in parts:
+        node = node[part]
+    return node
+
+
+def set_param(cfg, path, value):
+    """Return a copy of cfg with one dotted path replaced."""
+    out = deepcopy(cfg)
+    parts = path.split(".")
+    node = out
+    if parts[0] == "offers":
+        node, parts = out["offers"][_offer_index(out, parts[1])], parts[2:]
+    for part in parts[:-1]:
+        node = node[part]
+    node[parts[-1]] = value
+    return out

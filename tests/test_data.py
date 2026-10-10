@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from telco_retention.common import ROOT, latest_run, read_json
-from telco_retention.data import validate, parse_upload, features, DataValidationError
+from telco_retention.data import validate, parse_upload, features, tenure_segment, DataValidationError
 
 
 @pytest.fixture
@@ -90,7 +90,7 @@ def test_upload_limits(sample):
         parse_upload(b"a" * (10 * 1024 * 1024 + 1))
     many = pd.concat([sample.iloc[:1]] * 50001, ignore_index=True)
     many["customerID"] = [f"ID{x}" for x in range(len(many))]
-    with pytest.raises(DataValidationError, match="50.000"):
+    with pytest.raises(DataValidationError, match="50,000"):
         parse_upload(many.to_csv(index=False).encode())
 
 
@@ -109,7 +109,18 @@ def test_bad_csv(content):
 def test_service_contradictions(sample, parent, parent_value, child, child_value):
     sample.loc[0, parent] = parent_value
     sample.loc[0, child] = child_value
-    with pytest.raises(DataValidationError, match="Mâu thuẫn dịch vụ") as exc:
+    with pytest.raises(DataValidationError, match="Service contradiction") as exc:
         parse_upload(sample.to_csv(index=False).encode())
     assert child in exc.value.errors.column.values
     assert 2 in exc.value.errors.row.values
+
+
+def test_tenure_segment_is_ordered_and_matches_cut_points():
+    seg = tenure_segment(pd.Series([0, 12, 13, 24, 25, 72]))
+    assert list(seg.astype(str)) == ["new", "new", "developing", "developing", "loyal", "loyal"]
+    assert list(seg.cat.categories) == ["new", "developing", "loyal"] and seg.cat.ordered
+
+
+def test_split_proportions():
+    split = pd.read_csv(ROOT / "data/processed/splits.csv").split.value_counts(normalize=True)
+    assert split["train"] == pytest.approx(0.6, abs=0.001) and split["validation"] == pytest.approx(0.2, abs=0.001)

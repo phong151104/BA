@@ -22,6 +22,8 @@ DOMAINS = {
     "PaymentMethod": ["Electronic check", "Mailed check", "Bank transfer (automatic)", "Credit card (automatic)"],
     "Churn": ["Yes", "No"],
 }
+SEGMENTS = ["new", "developing", "loyal"]
+TENURE_BINS = [12, 24]  # <=12 months new, 13-24 developing, >24 loyal
 SCHEMA = ["customerID", "gender", "SeniorCitizen", "Partner", "Dependents", "tenure", "PhoneService", "MultipleLines", "InternetService", "OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies", "Contract", "PaperlessBilling", "PaymentMethod", "MonthlyCharges", "TotalCharges", "Churn"]
 OPTIONAL = {"gender", "SeniorCitizen", "Churn"}
 
@@ -37,11 +39,11 @@ def validate(frame: pd.DataFrame, training=False):
     errors = []
     required = set(SCHEMA) if training else set(SCHEMA) - OPTIONAL
     for col in sorted(required - set(df.columns)):
-        errors.append((0, col, "Thiếu cột bắt buộc"))
+        errors.append((0, col, "Required column missing"))
     if errors:
         raise DataValidationError(errors)
     if len(df) == 0:
-        raise DataValidationError([(0, "file", "CSV không có khách hàng")])
+        raise DataValidationError([(0, "file", "CSV contains no customers")])
     extra = sorted(set(df.columns) - set(SCHEMA))
     df = df[[c for c in SCHEMA if c in df]].copy()
     missing_before = df.isna().sum().to_dict()
@@ -51,9 +53,9 @@ def validate(frame: pd.DataFrame, training=False):
     if training:
         df = df.drop_duplicates().copy()
     for idx in df.index[df.customerID.isna() | df.customerID.eq("")]:
-        errors.append((int(idx) + 2, "customerID", "ID rỗng"))
+        errors.append((int(idx) + 2, "customerID", "Empty ID"))
     for idx in df.index[df.customerID.duplicated(keep=False)]:
-        errors.append((int(idx) + 2, "customerID", "ID trùng"))
+        errors.append((int(idx) + 2, "customerID", "Duplicate ID"))
     for col in NUMERIC:
         raw = df[col].map(lambda x: np.nan if isinstance(x, str) and not x.strip() else x)
         num = pd.to_numeric(raw, errors="coerce")
@@ -61,7 +63,7 @@ def validate(frame: pd.DataFrame, training=False):
         if col == "tenure":
             bad |= num.notna() & (num % 1 != 0)
         for idx in df.index[bad]:
-            errors.append((int(idx) + 2, col, "Số phải hữu hạn, không âm; tenure phải nguyên"))
+            errors.append((int(idx) + 2, col, "Must be a finite, non-negative number; tenure must be an integer"))
         df[col] = num
     blank_total = int(df.TotalCharges.isna().sum())
     fill_zero = df.tenure.eq(0) & df.TotalCharges.isna()
@@ -72,14 +74,14 @@ def validate(frame: pd.DataFrame, training=False):
         if col == "SeniorCitizen":
             df[col] = df[col].map(lambda x: str(int(x)) if pd.notna(x) and str(x) in ["0", "1", "0.0", "1.0"] else x)
         for idx in df.index[~df[col].isin(allowed)]:
-            errors.append((int(idx) + 2, col, f"Giá trị ngoài miền: {allowed}"))
+            errors.append((int(idx) + 2, col, f"Value outside allowed domain: {allowed}"))
     dependencies = [("PhoneService", "No", "MultipleLines", "No phone service")]
     dependencies += [("InternetService", "No", col, "No internet service") for col in
                      ["OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies"]]
     for parent, absent, child, unavailable in dependencies:
         mismatch = df[parent].eq(absent) != df[child].eq(unavailable)
         for idx in df.index[mismatch]:
-            errors.append((int(idx) + 2, child, f"Mâu thuẫn dịch vụ: {child}='{unavailable}' khi và chỉ khi {parent}='{absent}'"))
+            errors.append((int(idx) + 2, child, f"Service contradiction: {child}='{unavailable}' if and only if {parent}='{absent}'"))
     if errors:
         raise DataValidationError(errors)
     if "Churn" in df:
@@ -90,20 +92,21 @@ def validate(frame: pd.DataFrame, training=False):
         "missing_before": missing_before, "missing_after": df.isna().sum().to_dict(),
         "ignored_columns": extra, "unique_ids": df.customerID.nunique(),
         "churn_counts": df.churn.value_counts().to_dict() if "churn" in df else {},
-        "joins": "Không nối nguồn khách hàng bên ngoài", "filters": "Chỉ loại bản ghi trùng hoàn toàn trong dữ liệu huấn luyện",
+        "joins": "None: single source file, no external customer data joined",
+        "filters": "Exact duplicate rows removed from the full file before splitting; no other rows filtered" if training else "None",
     }
 
 
 def parse_upload(content: bytes):
     if len(content) > 10 * 1024 * 1024:
-        raise DataValidationError([(0, "file", "Giới hạn 10 MB")])
+        raise DataValidationError([(0, "file", "Limit is 10 MB")])
     try:
         text = content.decode("utf-8-sig")
         df = pd.read_csv(io.StringIO(text), dtype={"customerID": str}, nrows=50001)
     except (UnicodeError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
-        raise DataValidationError([(0, "file", "Cần CSV UTF-8, phân cách phẩy")]) from exc
+        raise DataValidationError([(0, "file", "A UTF-8, comma-separated CSV is required")]) from exc
     if len(df) > 50000:
-        raise DataValidationError([(0, "file", "Giới hạn 50.000 khách hàng")])
+        raise DataValidationError([(0, "file", "Limit is 50,000 customers")])
     return validate(df, training=False)
 
 
@@ -114,7 +117,7 @@ def download():
     if path.exists():
         manifest = read_json(manifest_path)
         if digest(path.read_bytes()) != manifest["sha256"]:
-            raise ValueError("Checksum dữ liệu thô không khớp. Không tự ghi đè dữ liệu.")
+            raise ValueError("Raw data checksum does not match source.json. Refusing to overwrite raw data.")
         return path
     attempts = []
     for source, url in [("Kaggle blastchar/telco-customer-churn", KAGGLE), ("IBM GitHub", IBM)]:
@@ -140,7 +143,7 @@ def download():
             return path
         except (requests.RequestException, zipfile.BadZipFile, StopIteration, ValueError) as exc:
             attempts.append({"source": source, "error": str(exc)[:500]})
-    raise RuntimeError(f"Không tải được dữ liệu: {attempts}")
+    raise RuntimeError(f"Could not download the dataset: {attempts}")
 
 
 def prepare():
@@ -167,9 +170,14 @@ def prepare():
     return df
 
 
+def tenure_segment(tenure):
+    """Ordered tenure segment used by the model feature, the value proxy and every report."""
+    return pd.cut(tenure, [-np.inf, *TENURE_BINS, np.inf], labels=SEGMENTS, ordered=True)
+
+
 def features(df):
     out = df[[c for c in SCHEMA if c not in OPTIONAL | {"customerID"}]].copy()
-    out["tenure_band"] = pd.cut(out.tenure, [-np.inf, 12, 24, np.inf], labels=["new", "developing", "loyal"]).astype(object)
+    out["tenure_band"] = tenure_segment(out.tenure).astype(object)
     services = ["OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies"]
     out["addon_count"] = out[services].eq("Yes").sum(axis=1)
     out["monthly_contract"] = out.Contract.eq("Month-to-month").astype(int)
