@@ -225,6 +225,24 @@ def score_frame(df, bundle=None, origin="uploaded_unverified"):
     return out
 
 
+OUTCOMES = {"tp": "Flagged and left (true positive)", "fp": "Flagged but stayed (false positive)",
+            "fn": "Missed and left (false negative)", "tn": "Not flagged and stayed (true negative)"}
+
+
+def error_profiles(scored, threshold):
+    """Who the model gets right and wrong at the threshold: size, risk and profile of each outcome group."""
+    flagged, left = scored.churn_probability >= threshold, scored.churn.eq(1)
+    outcome = np.select([flagged & left, flagged & ~left, ~flagged & left], [OUTCOMES["tp"], OUTCOMES["fp"], OUTCOMES["fn"]], OUTCOMES["tn"])
+    rows = []
+    for key, label in OUTCOMES.items():
+        part = scored.loc[outcome == label]
+        rows.append({"outcome": label, "key": key, "customers": len(part), "share": len(part) / len(scored),
+                     "mean_probability": part.churn_probability.mean(), "mean_tenure": part.tenure.mean(), "median_monthly_charges": part.MonthlyCharges.median(),
+                     "fibre_share": part.InternetService.eq("Fiber optic").mean(), "month_to_month_share": part.Contract.eq("Month-to-month").mean(),
+                     "echeck_share": part.PaymentMethod.eq("Electronic check").mean(), "senior_share": part.SeniorCitizen.astype(str).eq("1").mean()})
+    return pd.DataFrame(rows)
+
+
 def deployed_linear(bundle):
     """Deployed logistic model as one linear score: logit = slope x (intercept + coef . x) + offset, with the sigmoid calibration folded in."""
     if bundle["metadata"]["selected_model"] != "logistic":
@@ -385,10 +403,12 @@ def evaluate(run=None):
     save_csv(gains_table(y, p), run / "gains_test.csv")
     save_csv(precision_at_k(y, p), run / "precision_at_k.csv")
     diagnostic = []
-    for col in ["Contract", "InternetService", "PaymentMethod", "gender", "SeniorCitizen"]:
-        for group, part in scores.loc[scores.split.eq("test")].groupby(col):
+    tested = scores.loc[scores.split.eq("test")].assign(tenure_segment=lambda d: tenure_segment(d.tenure).astype(str))
+    for col in ["tenure_segment", "Contract", "InternetService", "PaymentMethod", "gender", "SeniorCitizen"]:
+        for group, part in tested.groupby(col):
             diagnostic.append({"attribute": col, "group": group, "n": len(part), "small_sample": len(part) < 50, **metrics(part.churn, part.churn_probability, threshold)})
     save_csv(pd.DataFrame(diagnostic), run / "segment_errors.csv")
+    save_csv(error_profiles(tested, threshold), run / "error_profiles.csv")
     scorecard_outputs(run, bundle, df, cfg)
     explain(run, models, df, columns, cfg["seed"])
     return run

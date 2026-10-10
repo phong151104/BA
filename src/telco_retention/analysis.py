@@ -389,6 +389,26 @@ def pilot_plan(target, cfg, recommended_share, break_even_rate):
     return pd.DataFrame(rows), summary
 
 
+def model_profit_check(run, cfg, scores):
+    """Money check of the model choice: every calibrated candidate ranks the same customers for the same budget and standard offer."""
+    import joblib
+    from .data import features
+    models = joblib.load(run / "candidates.joblib")
+    columns = read_json(run / "manifest.json")["feature_columns"]
+    rows = []
+    for population in ["validation", "test"]:
+        part = scores.loc[scores.split.eq(population)]
+        budget = campaign_budget(len(part), cfg)
+        X = features(part)[columns]
+        for name, model in models.items():
+            if name.endswith("_calibrated"):
+                _, stats = run_strategy(part.assign(churn_probability=model.predict_proba(X)[:, 1]), budget, cfg, "ev")
+                rows.append({"population": population, "model": name.removesuffix("_calibrated"), "budget": budget, "selected_count": stats["selected_count"],
+                             "expected_net_value": stats["expected_net_value"], "label_based_net": stats["label_based_simulated_net"],
+                             "precision_contacted": stats["precision_contacted"]})
+    return pd.DataFrame(rows)
+
+
 def offer_mix(target):
     picked = target.loc[target.selected]
     if picked.empty:
@@ -458,6 +478,7 @@ def simulate(run=None):
     save_csv(power, run / "pilot_power.csv")
     write_json(run / "pilot_plan.json", pilot)
     save_csv(offer_mix(details["segment_offers"]), run / "segment_offer_mix.csv")
+    save_csv(model_profit_check(run, cfg, scores), run / "model_profit_check.csv")
     offers = pd.DataFrame(cfg["offers"])
     offers["eligibility"] = offers.eligibility.map(lambda rule: "; ".join(f"{k} in {v}" for k, v in rule.items()) or "All customers")
     save_csv(offers, run / "offer_catalog.csv")

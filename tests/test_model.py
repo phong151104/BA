@@ -90,6 +90,16 @@ def test_feature_ablation_follows_its_rule():
     assert not table.loc[table.feature_set.str.startswith("previous"), "full_rank"].iloc[0]
 
 
+def test_error_profiles_match_confusion_matrix_and_profit_check_is_complete():
+    run = latest_run()
+    profiles = pd.read_csv(run / "error_profiles.csv").set_index("key").customers
+    cm = pd.read_csv(run / "confusion_matrix.csv").set_index("actual")
+    assert [profiles.tp, profiles.fp, profiles.fn, profiles.tn] == [cm.pred_yes["yes"], cm.pred_yes["no"], cm.pred_no["yes"], cm.pred_no["no"]]
+    check = pd.read_csv(run / "model_profit_check.csv")
+    assert len(check) == 6 and set(check.population) == {"validation", "test"}
+    assert (check.groupby("population").budget.nunique() == 1).all()
+
+
 def test_candidates_reported_at_the_chosen_threshold():
     run = latest_run()
     threshold = read_json(run / "manifest.json")["threshold"]

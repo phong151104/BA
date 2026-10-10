@@ -24,7 +24,7 @@ required = ["model.joblib", "manifest.json", "validation_metrics.csv", "test_met
             "risk_value_matrix.csv", "threshold_business.csv", "break_even.json", "tornado.csv", "scenarios.csv", "sensitivity.csv", "budget_curve.csv",
             "validation_decisions.json", "recommended_campaign.json", "fairness.csv", "pilot_plan.json", "pilot_power.csv", "segment_offer_mix.csv",
             "offer_catalog.csv", "shap_global.csv", "calibration.csv", "gains_test.csv", "bootstrap_intervals.csv", "dataset_source.json", "customers.csv",
-            "feature_ablation.csv", "odds_ratios.csv", "scorecard_points.csv", "scorecard_bands.csv", "scorecard_meta.json"]
+            "feature_ablation.csv", "odds_ratios.csv", "scorecard_points.csv", "scorecard_bands.csv", "scorecard_meta.json", "error_profiles.csv", "model_profit_check.csv"]
 missing = [name for name in required if not (run / name).is_file()]
 assert not missing, missing
 grids = cfg["sensitivity"]

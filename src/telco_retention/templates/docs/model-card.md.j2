@@ -66,7 +66,30 @@ All candidates on test (same threshold):
 
 {{ model.test | md_table([("model", "Model", None), ("average_precision", "PR-AUC", "num3"), ("roc_auc", "ROC-AUC", "num3"), ("brier", "Brier", "num3"), ("ece", "ECE", "num3"), ("calibration_slope", "Slope", "num2")]) }}
 
-The challengers rank about as well as logistic regression; the selection rule prefers the simpler, well-calibrated model. Calibration changed the logistic model little; it worsened the tree models' ECE on test, which is reported rather than hidden.
+The challengers rank about as well as logistic regression, so the selection rule prefers the simpler model.
+
+### Diagnostics and error analysis
+{% set g = model.validation_test_gap %}{% set w = model.weakest_segment %}{% set sc = model.senior_calibration %}{% set ep = model.error_profiles %}
+
+- **Validation to test:** PR-AUC {{ g.validation_ap | num(3) }} on validation and {{ g.test_ap | num(3) }} on test (test 95% interval {{ g.test_ap_lower | num(3) }}-{{ g.test_ap_upper | num(3) }}). {% if g.validation_inside_test_interval %}The validation figure lies inside the test interval, so the gap is within the noise between two samples of {{ data.splits.test | num }} customers.{% else %}The validation figure lies outside the test interval; validation also served to choose the model and threshold, so the test figure is the one to quote.{% endif %}
+
+- **By segment** (test, threshold {{ model.threshold | num(2) }}):
+
+{{ model.segment_errors | rejectattr('attribute', 'in', ['gender']) | list | md_table([("attribute", "Segment", None), ("group", "Group", None), ("n", "Customers", "num"), ("average_precision", "PR-AUC", "num3"), ("roc_auc", "ROC-AUC", "num3"), ("ece", "ECE", "num3"), ("calibration_slope", "Slope", "num2")]) }}
+
+  Ranking inside a segment is weaker than overall (lowest: {{ w.attribute }} = {{ w.group }}, ROC-AUC {{ w.roc_auc | num(3) }}), because contract, tenure and internet type are themselves the strongest signals; much of the model's power comes from telling these segments apart. Calibration is weakest for senior customers (ECE {{ sc.senior.ece | num(3) }} vs {{ sc.other.ece | num(3) }}, slope {{ sc.senior.calibration_slope | num(2) }}): the model {{ "under" if sc.senior.calibration_intercept > 0 else "over" }}-predicts their churn on average and its predictions for them are {{ "too spread out" if sc.senior.calibration_slope < 1 else "too compressed" }}. Seniors are also the group the targeting contacts most often ([section 8](#8-fairness-and-customer-experience)), so their outcomes should be read separately in the pilot.
+
+- **Who the model gets wrong** at the {{ model.threshold | num(2) }} threshold:
+
+{{ ep.values() | list | md_table([("outcome", "Outcome", None), ("customers", "Customers", "num"), ("mean_probability", "Mean probability", "pct0"), ("mean_tenure", "Mean tenure (months)", "num1"), ("median_monthly_charges", "Median bill", "usd"), ("month_to_month_share", "Month-to-month", "pct0"), ("fibre_share", "Fibre", "pct0")]) }}
+
+  Flagged customers who stayed look like those who left (mean tenure {{ ep.fp.mean_tenure | num(0) }} vs {{ ep.tp.mean_tenure | num(0) }} months; {{ ep.fp.month_to_month_share | pct(0) }} vs {{ ep.tp.month_to_month_share | pct(0) }} month-to-month): the snapshot cannot separate them. Missed churners have {{ "longer" if ep.fn.mean_tenure > ep.tp.mean_tenure else "shorter" }} tenure ({{ ep.fn.mean_tenure | num(0) }} months) and only {{ ep.fn.month_to_month_share | pct(0) }} are month-to-month. Targeting does not use this threshold: an offer to a customer who would have stayed costs the offer, a missed churner costs their value, and both enter the expected-value formula through the probability.
+
+- **Model choice checked in money:** each calibrated candidate picks customers for the same budget and standard offer; "label-based" values the list with the customers' actual churn.
+
+{{ model.profit_check | md_table([("population", "Population", None), ("model", "Model", None), ("selected_count", "Contacted", "num"), ("expected_net_value", "Expected net", "usd"), ("label_based_net", "Label-based net", "usd"), ("precision_contacted", "Precision", "pct0")]) }}
+
+  On validation the label-based values are within {{ model.profit_check_spread_validation | usd }} of each other and the deployed model ranks {{ model.profit_check_selected_rank_validation }} of {{ model.profit_check | selectattr('population', 'equalto', 'validation') | list | length }}{{ ", so the simpler model costs nothing in money" if model.profit_check_selected_rank_validation == 1 else ", so choosing the simpler model costs little in money" }}. Test values are reported, not used for the choice.
 
 ## 7. Explanations
 

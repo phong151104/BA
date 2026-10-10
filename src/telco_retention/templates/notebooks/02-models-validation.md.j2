@@ -59,16 +59,24 @@ display(read_json(run / "break_even.json")["break_even_probability_quantiles"])
 ```python
 display(pd.read_csv(run / "gains_test.csv")[["decile", "customers", "churn_rate", "lift", "cumulative_churner_capture"]])
 display(Image(filename=str(ROOT / "reports/figures/gains.png")))
-coefficients = pd.read_csv(run / "logistic_coefficients.csv")
-display(pd.concat([coefficients.nsmallest(6, "coefficient"), coefficients.nlargest(6, "coefficient")]))
+display(pd.read_csv(run / "feature_ablation.csv").round(4))
+display(pd.read_csv(run / "odds_ratios.csv")[["variable", "comparison", "odds_ratio"]].round(2))
+display(Image(filename=str(ROOT / "reports/figures/model_drivers.png")))
 display(Image(filename=str(ROOT / "reports/figures/shap_challenger.png")))
 ```
 
-## Error analysis by segment
+**Interpretation.** The feature review kept the design with the fewest columns among full-rank sets that rank churners as well as the best ({{ model.feature_design.chosen }}). Coded against the lowest-churn level, every coefficient is an odds ratio: {% for r in model.odds_ratios[:2] %}{{ r.variable }} {{ r.comparison }} multiplies the odds of churning by {{ r.odds_ratio | num(2) }}{{ " and " if loop.first }}{% endfor %}. These are associations in a snapshot, not causes. A points version of the model for the call centre is in [the churn scorecard](../docs/churn-scorecard.md).
+
+## Error analysis
+{% set w = model.weakest_segment %}{% set ep = model.error_profiles %}
 
 ```python
 errors = pd.read_csv(run / "segment_errors.csv")
-display(errors[["attribute", "group", "n", "small_sample", "average_precision", "recall", "brier", "ece"]])
+display(errors[["attribute", "group", "n", "small_sample", "average_precision", "roc_auc", "ece", "calibration_slope"]].round(3))
+display(pd.read_csv(run / "error_profiles.csv").drop(columns="key").round(3))
+display(pd.read_csv(run / "model_profit_check.csv").round(2))
 ```
+
+**Interpretation.** Ranking inside a segment is weaker than overall (lowest: {{ w.attribute }} = {{ w.group }}, ROC-AUC {{ w.roc_auc | num(3) }}), because contract, tenure and internet type are the strongest signals. Calibration is weakest for senior customers, the group the targeting contacts most often. Flagged customers who stayed resemble those who left ({{ ep.fp.month_to_month_share | pct(0) }} vs {{ ep.tp.month_to_month_share | pct(0) }} month-to-month); missed churners average {{ ep.fn.mean_tenure | num(0) }} months of tenure. In money, the three candidates are within {{ model.profit_check_spread_validation | usd }} of each other on validation, so the simpler model is a safe choice.
 
 **So what.** The model is good at ranking and its probabilities are trustworthy enough for expected-value arithmetic. It does not tell us which customers an offer would keep; that remains an assumption tested by the pilot.

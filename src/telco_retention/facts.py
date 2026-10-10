@@ -88,6 +88,14 @@ def build_facts(run):
     intervals = by_key(csv("bootstrap_intervals.csv"), "metric")
     coefficients = csv("logistic_coefficients.csv").assign(odds_ratio=lambda d: np.exp(d.coefficient))
     card_meta = read_json(run / "scorecard_meta.json")
+    val_metrics = csv("validation_metrics.csv")
+    val_row = val_metrics.query("model == @selected_model and variant == 'calibrated'").iloc[0]
+    segments = csv("segment_errors.csv")
+    sizable = segments.loc[~segments.small_sample & ~segments.attribute.isin(["gender", "SeniorCitizen"])]
+    weakest = sizable.loc[sizable.roc_auc.idxmin()]
+    seniors = segments.query("attribute == 'SeniorCitizen'").assign(group=lambda d: d.group.astype(str)).set_index("group")
+    profit = csv("model_profit_check.csv")
+    profit_val = profit.query("population == 'validation'")
     eda = csv("eda_segments.csv")
     eda_groups = {attribute: records(part.sort_values("churn_rate", ascending=False)) for attribute, part in eda.groupby("attribute")}
     train = customers.query("split == 'train'")
@@ -110,6 +118,16 @@ def build_facts(run):
                   "gains": records(csv("gains_test.csv")), "precision_at_k": records(csv("precision_at_k.csv")),
                   "top_positive": records(coefficients.nlargest(6, "coefficient")), "top_negative": records(coefficients.nsmallest(6, "coefficient")),
                   "shap_top": records(csv("shap_global.csv").head(8)), "segment_errors": records(csv("segment_errors.csv")),
+                  "error_profiles": {r["key"]: r for r in records(csv("error_profiles.csv"))},
+                  "validation_test_gap": {"validation_ap": float(val_row.average_precision), "test_ap": float(selected_row.average_precision),
+                                          "validation_roc": float(val_row.roc_auc), "test_roc": float(selected_row.roc_auc),
+                                          "test_ap_lower": intervals["average_precision"]["lower_95"], "test_ap_upper": intervals["average_precision"]["upper_95"],
+                                          "validation_inside_test_interval": bool(intervals["average_precision"]["lower_95"] <= val_row.average_precision <= intervals["average_precision"]["upper_95"])},
+                  "weakest_segment": records(weakest.to_frame().T)[0],
+                  "senior_calibration": {"senior": records(seniors.loc[["1"]].reset_index())[0], "other": records(seniors.loc[["0"]].reset_index())[0]},
+                  "profit_check": records(profit),
+                  "profit_check_spread_validation": float(profit_val.label_based_net.max() - profit_val.label_based_net.min()),
+                  "profit_check_selected_rank_validation": int(profit_val.label_based_net.rank(ascending=False, method="min")[profit_val.model.eq(selected_model)].iloc[0]),
                   "scorecard_meta": card_meta,
                   "odds_ratios": records(csv("odds_ratios.csv")) if card_meta["available"] else [],
                   "scorecard": records(csv("scorecard_points.csv")) if card_meta["available"] else [],
@@ -170,6 +188,8 @@ def build_facts(run):
         "model.validation": rel("validation_metrics.csv"), "model.intervals": rel("bootstrap_intervals.csv"), "model.gains": rel("gains_test.csv"),
         "eda": rel("eda_segments.csv"), "data.quality": rel("data_quality.json"), "data.source": rel("dataset_source.json"), "cfg": rel("manifest.json"),
         "offers": rel("offer_catalog.csv"), "offer_mix": rel("segment_offer_mix.csv"),
+        "model.feature_design": rel("feature_ablation.csv"), "model.odds_ratios": rel("odds_ratios.csv"), "model.scorecard": rel("scorecard_points.csv"),
+        "model.error_profiles": rel("error_profiles.csv"), "model.segment_errors": rel("segment_errors.csv"), "model.profit_check": rel("model_profit_check.csv"),
     }
     return facts
 
