@@ -1,4 +1,4 @@
-"""All deliverables are in English. CLAUDE.md, class materials and original source titles are exempt."""
+"""All deliverables are in English. Original source titles in the reference list are exempt."""
 import re
 from telco_retention.common import ROOT
 

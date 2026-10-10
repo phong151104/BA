@@ -82,6 +82,6 @@ def render_documents(ctx, root=ROOT, documents=None):
         header = f"<!-- Generated from src/telco_retention/templates/{template} for run {ctx['run']['id']}. Edit the template, not this file. -->\n"
         path = Path(root) / output
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(header + text, encoding="utf-8")
+        path.write_text(header + text, encoding="utf-8", newline="\n")
         written.append(path)
     return written

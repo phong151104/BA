@@ -25,6 +25,11 @@ def test_raw_quality_and_splits():
     assert not groups[0] & groups[1] and not groups[0] & groups[2] and not groups[1] & groups[2]
 
 
+def test_upload_template_has_new_ids():
+    template = pd.read_csv(ROOT / "data/examples/customers_unlabeled.csv")
+    assert not set(template.customerID) & set(pd.read_csv(ROOT / "data/processed/splits.csv").customerID)
+
+
 def test_feature_exclusions(sample):
     frame, _ = validate(sample)
     X = features(frame)

@@ -95,11 +95,15 @@ with sync_playwright() as p:
     page.get_by_text("Model & data", exact=True).click()
     page.locator('input[type="file"]').set_input_files(str(ROOT / "data/examples/customers_unlabeled.csv"))
     page.get_by_text("Scored 20 customers", exact=False).wait_for(timeout=60000)
-    page.get_by_text("Some IDs match the project's own data", exact=False).wait_for()
+    assert page.get_by_text("Some IDs match the project's own data", exact=False).count() == 0
     settle(page)
     page.get_by_text("Score new customers", exact=True).scroll_into_view_if_needed()
     page.screenshot(path=str(output / "dashboard-upload.png"), full_page=True)
-    result["checks"].append("valid CSV scored; ID overlap disclosed")
+    known = pd.read_csv(ROOT / "data/examples/customers_unlabeled.csv").head(3)
+    known.loc[0, "customerID"] = pd.read_csv(ROOT / "data/processed/splits.csv").query("split == 'test'").customerID.iloc[0]
+    page.locator('input[type="file"]').set_input_files({"name": "known.csv", "mimeType": "text/csv", "buffer": known.to_csv(index=False).encode()})
+    page.get_by_text("Some IDs match the project's own data", exact=False).wait_for()
+    result["checks"].append("valid CSV scored without warnings; a known ID is disclosed")
     contradictory = pd.read_csv(ROOT / "data/examples/customers_unlabeled.csv")
     contradictory.loc[0, ["PhoneService", "MultipleLines"]] = ["No", "Yes"]
     page.locator('input[type="file"]').set_input_files({"name": "contradictory.csv", "mimeType": "text/csv", "buffer": contradictory.to_csv(index=False).encode()})

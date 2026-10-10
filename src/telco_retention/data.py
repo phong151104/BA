@@ -166,7 +166,10 @@ def prepare():
     save_csv(df, ROOT / "data/processed/customers.csv")
     save_csv(df[["customerID", "split"]], ROOT / "data/processed/splits.csv")
     write_json(ROOT / "data/processed/quality.json", quality)
-    save_csv(df.loc[test[:20], [c for c in SCHEMA if c not in OPTIONAL]], ROOT / "data/examples/customers_unlabeled.csv")
+    # The upload template gets fresh IDs, so it behaves like customers the model has not seen.
+    template = df.loc[test[:20], [c for c in SCHEMA if c not in OPTIONAL]].copy()
+    template["customerID"] = [f"DEMO-{i:04d}" for i in range(1, len(template) + 1)]
+    save_csv(template, ROOT / "data/examples/customers_unlabeled.csv")
     return df
 
 

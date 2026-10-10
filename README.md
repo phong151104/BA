@@ -15,7 +15,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true --browser.gatherUsageStats false
 ```
 
-On macOS or Linux, use `python3 -m venv .venv` and replace `.\.venv\Scripts\python.exe` with `.venv/bin/python` in every command (the lock file skips the Windows-only packages automatically).
+On macOS or Linux, install Python 3.13 (the package requires 3.13; for example `uv python install 3.13` or `pyenv install 3.13`), create the environment with `python3.13 -m venv .venv` and replace `.\.venv\Scripts\python.exe` with `.venv/bin/python` in every command (the lock file skips the Windows-only packages automatically).
 
 Open http://127.0.0.1:8501. Data, the trained model and all results are already in the repository, so the dashboard runs offline; a network connection is only needed to install packages or download the data on a fresh run.
 
@@ -41,6 +41,8 @@ Individual steps, in order:
 .\.venv\Scripts\python.exe -m telco_retention prune --keep 2
 ```
 
+The four notebooks in `notebooks/` are committed with their outputs, so they can be read on GitHub or in any notebook viewer. To re-run one, open it in VS Code (Jupyter extension) and pick the `.venv` interpreter as the kernel, or install JupyterLab into the environment (`pip install jupyterlab`); `report` regenerates and re-executes all of them.
+
 ## Tests and release checks
 
 ```powershell
@@ -49,6 +51,8 @@ Individual steps, in order:
 .\.venv\Scripts\python.exe scripts/verify_release.py
 .\.venv\Scripts\python.exe scripts/browser_qa.py   # needs the dashboard running and Chrome or Edge
 ```
+
+`verify_release.py` compares the latest run with an earlier run made from the same code and configuration, so run `run-all` twice before it (then `prune --keep 2`). Without Word and PowerPoint the committed PDFs are kept and the check reports which run they came from.
 
 Evidence of the last verification is in [docs/verification.md](docs/verification.md) and `artifacts/qa/`.
 

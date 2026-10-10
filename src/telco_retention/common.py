@@ -53,7 +53,7 @@ def canonical(value):
 def write_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(jsonable(value), indent=2, ensure_ascii=False, allow_nan=False), encoding="utf-8")
+    path.write_text(json.dumps(jsonable(value), indent=2, ensure_ascii=False, allow_nan=False) + "\n", encoding="utf-8", newline="\n")
 
 
 def read_json(path):
@@ -63,7 +63,7 @@ def read_json(path):
 def save_csv(frame, path):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    frame.to_csv(path, index=False, encoding="utf-8-sig")
+    frame.to_csv(path, index=False, encoding="utf-8-sig", lineterminator="\n")
 
 
 def now():

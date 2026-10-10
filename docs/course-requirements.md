@@ -1,6 +1,6 @@
 # Course requirements (Business Analytics capstone, Topic 7)
 
-This is a transcription of the course brief (`class_materials/BA_Instruction_1-3.jpg`), kept so that every requirement can be traced. [requirements-traceability.md](requirements-traceability.md) maps each item to the evidence in this repository.
+This is a transcription of the course brief (three instruction pages: format and expectations, the 6-week work plan, and Topic 7), kept so that every requirement can be traced. [requirements-traceability.md](requirements-traceability.md) maps each item to the evidence in this repository.
 
 ## Format and expectations
 

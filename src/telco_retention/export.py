@@ -10,7 +10,7 @@ from docx.shared import Cm, Pt, RGBColor
 from pptx import Presentation
 from pptx.dml.color import RGBColor as PptColor
 from pptx.util import Emu, Inches, Pt as PptPt
-from .common import ROOT, digest, latest_run, now, write_json
+from .common import ROOT, digest, latest_run, now, read_json, write_json
 
 INK, SECONDARY, ACCENT = "0B0B0B", "52514E", "2A78D6"
 IMAGE = re.compile(r"!\[([^\]]*)\]\(([^)]+)\)")
@@ -244,18 +244,28 @@ def export(run=None, pdf="auto"):
     deck_md, deck_pptx, deck_pdf = reports / "presentation/deck.md", reports / "presentation/retention-deck.pptx", reports / "presentation/retention-deck.pdf"
     markdown_to_docx(brief_md, brief_docx, image_width_cm=15)
     _, slides = build_deck(deck_md, deck_pptx)
+    previous_path = reports / "deliverables-manifest.json"
+    previous = read_json(previous_path) if previous_path.exists() else {}
     manifest = {"run_id": run.name, "created_at_utc": now(), "brief_words": len(re.sub(r"<!--.*?-->", "", brief_md.read_text(encoding="utf-8"), flags=re.S).split()),
-                "slides": len(slides), "slides_with_notes": sum(bool(s["notes"]) for s in slides), "deck_lint": deck_lint(slides)}
+                "slides": len(slides), "slides_with_notes": sum(bool(s["notes"]) for s in slides), "deck_lint": deck_lint(slides), "pdf_status": "skipped"}
     if pdf != "skip":
         try:
             docx_to_pdf(brief_docx, brief_pdf)
             manifest["brief_pages"] = pdf_page_count(brief_pdf)
             pptx_to_pdf(deck_pptx, deck_pdf)
             manifest["deck_pdf_pages"] = pdf_page_count(deck_pdf)
+            manifest.update(pdf_status="current", pdf_run_id=run.name)
         except ExportUnavailable as exc:
             if pdf == "require":
                 raise
-            manifest["pdf_error"] = str(exc)
+            manifest.update(pdf_status="unavailable", pdf_error=str(exc))
+    if manifest["pdf_status"] != "current":
+        # Keep the committed PDFs but say which run they were made from.
+        for key in ["brief_pages", "deck_pdf_pages"]:
+            manifest.pop(key, None)
+            if key in previous:
+                manifest[key] = previous[key]
+        manifest["pdf_run_id"] = previous.get("pdf_run_id", previous.get("run_id") if "brief_pages" in previous else None)
     manifest["sha256"] = {str(p.relative_to(ROOT)).replace("\\", "/"): digest(p.read_bytes()) for p in [brief_docx, brief_pdf, deck_pptx, deck_pdf] if p.exists()}
     write_json(reports / "deliverables-manifest.json", manifest)
     return manifest

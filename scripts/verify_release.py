@@ -1,5 +1,4 @@
 """Release checks against real artifacts: completeness, traceability, reproducibility, documents and UI speed."""
-import filecmp
 import re
 import sys
 import tempfile
@@ -45,12 +44,18 @@ assert abs(pilot["break_even_save_rate"] - reco["break_even"]["break_even_defaul
 checks["pilot"] = {k: pilot[k] for k in ["list_size_per_wave", "arm_size_per_wave", "break_even_save_rate"]}
 
 # 2. Code and report traceability.
-assert all(digest((ROOT / p).read_bytes()) == h for p, h in manifest["code_sha256"].items()), "Source changed since training: run the pipeline again"
+def same_text(a, b):
+    """Byte-identical apart from line endings, so a checkout on any platform compares equal."""
+    return a.read_bytes().replace(b"\r\n", b"\n") == b.read_bytes().replace(b"\r\n", b"\n")
+
+
+# Older runs stored Windows-style keys; read both.
+assert all(digest((ROOT / p.replace("\\", "/")).read_bytes()) == h for p, h in manifest["code_sha256"].items()), "Source changed since training: run the pipeline again"
 report_manifest = read_json(ROOT / "reports/report-manifest.json")
 assert report_manifest["run_id"] == run.name and read_json(ROOT / "reports/facts.json")["run"]["id"] == run.name
 with tempfile.TemporaryDirectory() as tmp:
     render_documents(build_facts(run), Path(tmp))
-    drift = [out for out in DOCUMENTS.values() if not filecmp.cmp(Path(tmp) / out, ROOT / out, shallow=False)]
+    drift = [out for out in DOCUMENTS.values() if not same_text(Path(tmp) / out, ROOT / out)]
 assert not drift, f"Generated documents differ from templates (edited by hand or stale): {drift}"
 checks["documents"] = {"rendered": len(DOCUMENTS), "drift": drift}
 
@@ -67,9 +72,12 @@ checks["links"] = "no broken relative links"
 # 3. Submission files.
 deliverables = read_json(ROOT / "reports/deliverables-manifest.json")
 assert deliverables["run_id"] == run.name
-assert deliverables.get("brief_pages", 99) <= 2, deliverables
+assert deliverables["brief_pages"] <= 2, deliverables
 assert 12 <= deliverables["slides"] <= 15 and deliverables["slides_with_notes"] == deliverables["slides"] and not deliverables["deck_lint"]
-checks["deliverables"] = {k: deliverables.get(k) for k in ["brief_words", "brief_pages", "slides", "slides_with_notes", "deck_pdf_pages"]}
+checks["deliverables"] = {k: deliverables.get(k) for k in ["brief_words", "brief_pages", "slides", "slides_with_notes", "deck_pdf_pages", "pdf_status", "pdf_run_id"]}
+if deliverables.get("pdf_status") != "current":
+    # Without Word/PowerPoint the PDFs cannot be rebuilt; the committed ones are kept and reported.
+    print(f"NOTE PDFs were not rebuilt here ({deliverables.get('pdf_status')}); they come from run {deliverables.get('pdf_run_id')}")
 
 # 4. Reproducibility: the other kept run must reproduce metrics and decisions.
 others = [p for p in sorted((ROOT / "artifacts/runs").iterdir()) if p != run and (p / "simulation_manifest.json").exists()
