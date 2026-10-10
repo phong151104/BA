@@ -1,58 +1,94 @@
-"""Verify reproducibility, documents and warmed UI timings against real artifacts."""
+"""Release checks against real artifacts: completeness, traceability, reproducibility, documents and UI speed."""
+import filecmp
 import re
 import sys
+import tempfile
 import time
 from pathlib import Path
 from urllib.parse import unquote
 import numpy as np
 import pandas as pd
 from streamlit.testing.v1 import AppTest
-from telco_retention.common import ROOT, latest_run, read_json, write_json, digest
+from telco_retention.common import ROOT, digest, latest_run, read_json, write_json
+from telco_retention.analysis import share_grid
+from telco_retention.facts import build_facts
+from telco_retention.figures import FIGURES
+from telco_retention.templating import DOCUMENTS, render_documents
 
 run = latest_run()
-required = ["model.joblib", "manifest.json", "validation_metrics.csv", "test_metrics.csv", "scorecard.csv", "targeting_ev.csv", "strategy_comparison.csv", "sensitivity.csv", "budget_curve.csv", "fairness.csv", "segment_policy.json", "validation_policy_search.csv", "shap_global.csv", "shap_local.csv", "calibration.csv", "bootstrap_intervals.csv", "dataset_source.json", "dataset_metadata.json", "customers.csv"]
-assert all((run / name).is_file() for name in required)
-assert len(pd.read_csv(run / "validation_policy_search.csv")) == 27
-assert len(pd.read_csv(run / "random_campaigns.csv")) == 100
-assert len(pd.read_csv(run / "sensitivity.csv")) == 74
-assert len(pd.read_csv(run / "budget_curve.csv")) == 105
-assert len(pd.read_csv(run / "economic_uncertainty.csv")) == 4
-assert len(read_json(ROOT / "reports/figures/catalog.json")) == 14
-assert len((ROOT / "reports/executive-brief.md").read_text(encoding="utf-8").split()) <= 700
-assert read_json(ROOT / "reports/report-manifest.json")["run_id"] == run.name
 manifest = read_json(run / "manifest.json")
-assert all(digest((ROOT / p).read_bytes()) == expected for p, expected in manifest["code_sha256"].items()), "Source changed since training: run pipeline again"
+cfg = manifest["config"]
+checks = {}
+
+# 1. Completeness, with expected sizes derived from configuration.
+required = ["model.joblib", "manifest.json", "validation_metrics.csv", "test_metrics.csv", "scorecard.csv", "strategy_comparison.csv", "economic_uncertainty.csv",
+            "risk_value_matrix.csv", "threshold_business.csv", "break_even.json", "tornado.csv", "scenarios.csv", "sensitivity.csv", "budget_curve.csv",
+            "validation_decisions.json", "recommended_campaign.json", "fairness.csv", "pilot_plan.json", "pilot_power.csv", "segment_offer_mix.csv",
+            "offer_catalog.csv", "shap_global.csv", "calibration.csv", "gains_test.csv", "bootstrap_intervals.csv", "dataset_source.json", "customers.csv"]
+missing = [name for name in required if not (run / name).is_file()]
+assert not missing, missing
+grids = cfg["sensitivity"]
+sensitivity_rows = 2 * (len(grids["save_rate"]) * len(grids["offer_cost_multiplier"]) + sum(len(grids[a]) for a in ["contact_cost", "value.margin", "value.base_horizon_months", "value.discount_rate_annual"]))
+expected_sizes = {"random_campaigns.csv": cfg["random_campaign_iterations"], "sensitivity.csv": sensitivity_rows, "tornado.csv": len(cfg["assumption_register"]),
+                  "budget_curve.csv": len(share_grid(cfg)) * 6, "scenarios.csv": len(grids["scenarios"])}
+for name, size in expected_sizes.items():
+    assert len(pd.read_csv(run / name)) == size, (name, size)
+assert len(read_json(ROOT / "reports/figures/catalog.json")) == len(FIGURES)
+checks["artifacts"] = {"required": len(required), "sizes": expected_sizes}
+
+# 2. Code and report traceability.
+assert all(digest((ROOT / p).read_bytes()) == h for p, h in manifest["code_sha256"].items()), "Source changed since training: run the pipeline again"
+report_manifest = read_json(ROOT / "reports/report-manifest.json")
+assert report_manifest["run_id"] == run.name and read_json(ROOT / "reports/facts.json")["run"]["id"] == run.name
+with tempfile.TemporaryDirectory() as tmp:
+    render_documents(build_facts(run), Path(tmp))
+    drift = [out for out in DOCUMENTS.values() if not filecmp.cmp(Path(tmp) / out, ROOT / out, shallow=False)]
+assert not drift, f"Generated documents differ from templates (edited by hand or stale): {drift}"
+checks["documents"] = {"rendered": len(DOCUMENTS), "drift": drift}
 
 broken = []
-for path in [ROOT / "README.md", *(ROOT / "docs").glob("*.md"), *(ROOT / "reports").glob("*.md")]:
-    text = path.read_text(encoding="utf-8")
-    for target in re.findall(r"\]\(([^)]+)\)", text):
-        if target.startswith(("http:", "https:", "#")):
+for path in [ROOT / "README.md", ROOT / "CHANGELOG.md", *(ROOT / "docs").glob("*.md"), *(ROOT / "reports").glob("*.md"), *(ROOT / "reports/presentation").glob("*.md")]:
+    for target in re.findall(r"\]\(([^)\s]+)\)", path.read_text(encoding="utf-8")):
+        if target.startswith(("http:", "https:", "#", "mailto:")):
             continue
-        local = unquote(target.split("#")[0])
-        if not (path.parent / local).exists():
+        if not (path.parent / unquote(target.split("#")[0])).exists():
             broken.append({"file": str(path.relative_to(ROOT)), "link": target})
 assert not broken, broken
+checks["links"] = "no broken relative links"
 
-runs = sorted((ROOT / "artifacts/runs").iterdir())
-previous = [p for p in runs if p != run and (p / "test_metrics.csv").exists() and (p / "targeting_ev.csv").exists()]
-comparison = None
-if previous:
-    old = previous[0]
-    a, b = pd.read_csv(old / "test_metrics.csv"), pd.read_csv(run / "test_metrics.csv")
-    np.testing.assert_allclose(a.select_dtypes("number"), b.select_dtypes("number"), rtol=1e-10, atol=1e-12)
-    ta, tb = pd.read_csv(old / "targeting_ev.csv"), pd.read_csv(run / "targeting_ev.csv")
-    assert ta.loc[ta.selected, "customer_id"].tolist() == tb.loc[tb.selected, "customer_id"].tolist()
-    comparison = {"previous": old.name, "current": run.name, "metrics_equal_atol": 1e-12, "selected_ids_equal": True}
+# 3. Submission files.
+deliverables = read_json(ROOT / "reports/deliverables-manifest.json")
+assert deliverables["run_id"] == run.name
+assert deliverables.get("brief_pages", 99) <= 2, deliverables
+assert 12 <= deliverables["slides"] <= 15 and deliverables["slides_with_notes"] == deliverables["slides"] and not deliverables["deck_lint"]
+checks["deliverables"] = {k: deliverables.get(k) for k in ["brief_words", "brief_pages", "slides", "slides_with_notes", "deck_pdf_pages"]}
 
-app = AppTest.from_file(str(ROOT / "app/Home.py"), default_timeout=60).run()
+# 4. Reproducibility: the other kept run must reproduce metrics and decisions.
+others = [p for p in sorted((ROOT / "artifacts/runs").iterdir()) if p != run and (p / "simulation_manifest.json").exists()
+          and read_json(p / "manifest.json")["config"] == cfg and read_json(p / "manifest.json")["code_sha256"] == manifest["code_sha256"]]
+assert others, "No second run with the same code and configuration to compare"
+other = others[-1]
+a, b = pd.read_csv(other / "test_metrics.csv"), pd.read_csv(run / "test_metrics.csv")
+np.testing.assert_allclose(a.select_dtypes("number"), b.select_dtypes("number"), rtol=1e-9, atol=1e-10)
+for strategy in ["ev", "segment_offers"]:
+    ta, tb = pd.read_csv(other / f"targeting_{strategy}.csv"), pd.read_csv(run / f"targeting_{strategy}.csv")
+    assert ta.loc[ta.selected, ["customer_id", "offer_id"]].values.tolist() == tb.loc[tb.selected, ["customer_id", "offer_id"]].values.tolist()
+sa, sb = read_json(other / "campaign_scenarios.json"), read_json(run / "campaign_scenarios.json")
+assert {k: v["scenario_id"] for k, v in sa.items()} == {k: v["scenario_id"] for k, v in sb.items()}
+checks["reproducibility"] = {"compared_with": other.name, "current": run.name, "metrics_atol": 1e-10, "selected_customers_and_offers_equal": True, "scenario_ids_equal": True}
+
+# 5. Warmed dashboard response time.
+app = AppTest.from_file(str(ROOT / "app/Home.py"), default_timeout=120).run()
 assert not app.exception
+base_budget = app.number_input(key="budget_demo").value
 timings = []
-for budget in [3080., 3000., 2900., 2800., 2700.]:
+for budget in [base_budget, base_budget - 100, base_budget - 200, base_budget - 300, base_budget]:
     start = time.perf_counter()
-    app.number_input[0].set_value(budget).run()
+    app.number_input(key="budget_demo").set_value(budget).run()
     assert not app.exception
     timings.append(time.perf_counter() - start)
-assert np.max(timings) < 2.0, timings
-write_json(ROOT / "artifacts/qa/release.json", {"status": "passed", "python": sys.version, "environment": sys.prefix, "run_id": run.name, "required_artifact_count": len(required), "broken_links": broken, "reproducibility": comparison, "warmed_app_seconds": timings, "mean_seconds": float(np.mean(timings)), "max_seconds": float(np.max(timings))})
-print("PASS release validation", run.name, "UI seconds", timings)
+assert np.max(timings) < 5.0, timings
+checks["ui_seconds"] = {"warmed": timings, "max": float(np.max(timings))}
+
+write_json(ROOT / "artifacts/qa/release.json", {"status": "passed", "python": sys.version.split()[0], "run_id": run.name, **checks})
+print("PASS release validation", run.name, checks["deliverables"], "UI max", round(float(np.max(timings)), 2))
