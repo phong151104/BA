@@ -20,17 +20,17 @@ The optimiser picks at most one offer per customer to maximise total EV within t
 
 ## 2. Who to contact (campaign size)
 
-| Plan | Customers (test sample of {{ budget.n_test | num }}) | Budget | Expected net value | ROI |
+| Plan | Customers contacted (test sample of {{ budget.n_test | num }}) | Budget | Expected net value | ROI |
 |---|---:|---:|---:|---:|
-| Base budget ({{ budget.share | pct(0) }} of customers) | {{ chosen.selected_count | num }} | {{ chosen.cost | usd }} | {{ chosen.expected_net_value | usd }} | {{ chosen.roi | pct(0) }} |
-| **Recommended ({{ recommendation.recommended_share | pct(0) }}, validation rule)** | **{{ reco.selected_count | num }}** | **{{ reco.cost | usd }}** | **{{ reco.expected_net_value | usd }}** | **{{ reco.roi | pct(0) }}** |
-| All positive-EV customers | {{ curve.positive_ev_customers | num }} | {{ curve.positive_ev_cost | usd }} | see profit curve | lower marginal return |
+| Base budget (standard offer for {{ budget.share | pct(0) }} of customers) | {{ chosen.selected_count | num }} ({{ (chosen.selected_count / budget.n_test) | pct(0) }}) | {{ chosen.cost | usd }} | {{ chosen.expected_net_value | usd }} | {{ chosen.roi | pct(0) }} |
+| **Recommended (standard offer for {{ recommendation.recommended_share | pct(0) }} of customers, validation rule)** | **{{ reco.selected_count | num }} ({{ reco.contacted_share | pct(0) }})** | **{{ reco.cost | usd }}** | **{{ reco.expected_net_value | usd }}** | **{{ reco.roi | pct(0) }}** |
+| All positive-EV customers | {{ curve.positive_ev_customers | num }} ({{ curve.positive_ev_share | pct(0) }}) | {{ curve.positive_ev_cost | usd }} | see profit curve | lower marginal return |
 
 Scaled to the full base of {{ scaled.base_population | num }} customers (linear, indicative): about {{ scaled.recommended_customers | round(-1) | int | num }} offers, {{ scaled.recommended_budget | usd }} budget and {{ scaled.recommended_net | usd }} expected net value per wave.
 
-**Budget tranches.** Release budget in steps and stop when the marginal ROI of the next step falls below {{ cfg.campaign.recommendation.min_marginal_roi | pct(0) }}:
+**Budget tranches.** Release budget in steps and stop when the marginal ROI of the next step falls below {{ cfg.campaign.recommendation.min_marginal_roi | pct(0) }}. The budget share is the share of customers the standard offer ({{ budget.per_customer | usd }}) could reach; the optimiser mixes offers, so the number contacted differs:
 
-| Budget share | Customers | Cumulative cost | Cumulative expected net value | Marginal ROI of the step |
+| Budget share | Customers contacted | Cumulative cost | Cumulative expected net value | Marginal ROI of the step |
 |---:|---:|---:|---:|---:|
 {% for r in curve.test if r.strategy == strategy and r.budget_share in [0.04, 0.08, 0.12, 0.16, 0.2, 0.24, 0.28, 0.32] %}
 | {{ r.budget_share | pct(0) }} | {{ r.selected_count | num }} | {{ r.cost | usd }} | {{ r.expected_net_value | usd }} | {{ r.marginal_roi | pct(0) }} |
@@ -68,9 +68,9 @@ Every wave keeps a **random holdout** inside the target list ([pilot design](pil
 
 | Signal | Action |
 |---|---|
-| Measured save rate: lower 95% bound > {{ break_even.break_even_default_save_rate | pct }} (break-even) | Go: scale to the recommended budget |
-| Point estimate above break-even but interval includes it | Extend the pilot (another wave) |
-| Point estimate below break-even, or contacted churn > holdout churn | Stop; redesign offers and targeting (consider uplift modelling) |
+| Measured save rate: 95% interval above 0 and estimate at least {{ pilot.break_even_save_rate | pct }} (break-even of the recommended list) | Go: scale to the recommended budget |
+| Estimate at or below 0 (contacted churn >= holdout churn), or whole interval below break-even | Stop; redesign offers and targeting (consider uplift modelling) |
+| Anything else | Extend the pilot (another wave, pooled) |
 | Opt-out or complaint rate > 2x the normal campaign rate | Pause and review script and frequency |
 | Fairness review flag on the wave list | DPO and Retention owner review before launch |
 

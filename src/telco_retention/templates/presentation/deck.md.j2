@@ -1,4 +1,4 @@
-{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set unc = uncertainty %}{% set be = break_even %}
+{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set unc = uncertainty %}{% set be = break_even %}{% set rbe = pilot.break_even_save_rate %}
 # Who should get a retention offer?
 ## Profit-aware churn and retention targeting - Business Analytics capstone, Topic 7
 
@@ -69,33 +69,33 @@ Notes: Worked example: a customer paying 70 dollars a month is worth about {{ wo
 ---
 
 # Same budget, more value
-| Rule | Customers | Net value | ROI | HR/HV coverage |
-|---|---|---|---|---|
-| Highest churn risk | {{ c.risk.selected_count | num }} | {{ c.risk.expected_net_value | usd }} | {{ c.risk.roi | pct(0) }} | {{ c.risk.high_risk_high_value_coverage | pct(0) }} |
-| Expected value | {{ c.ev.selected_count | num }} | {{ c.ev.expected_net_value | usd }} | {{ c.ev.roi | pct(0) }} | {{ c.ev.high_risk_high_value_coverage | pct(0) }} |
-| EV + segment offers | {{ c.segment_offers.selected_count | num }} | {{ c.segment_offers.expected_net_value | usd }} | {{ c.segment_offers.roi | pct(0) }} | {{ c.segment_offers.high_risk_high_value_coverage | pct(0) }} |
+| Rule | Customers | Net value | ROI | Precision | HR/HV coverage |
+|---|---|---|---|---|---|
+| Highest churn risk | {{ c.risk.selected_count | num }} | {{ c.risk.expected_net_value | usd }} | {{ c.risk.roi | pct(0) }} | {{ c.risk.precision_contacted | pct(0) }} | {{ c.risk.high_risk_high_value_coverage | pct(0) }} |
+| Expected value | {{ c.ev.selected_count | num }} | {{ c.ev.expected_net_value | usd }} | {{ c.ev.roi | pct(0) }} | {{ c.ev.precision_contacted | pct(0) }} | {{ c.ev.high_risk_high_value_coverage | pct(0) }} |
+| EV + segment offers | {{ c.segment_offers.selected_count | num }} | {{ c.segment_offers.expected_net_value | usd }} | {{ c.segment_offers.roi | pct(0) }} | {{ c.segment_offers.precision_contacted | pct(0) }} | {{ c.segment_offers.high_risk_high_value_coverage | pct(0) }} |
 
 - Better targeting: {{ headline.targeting_effect | signed_usd }}; with actual outcomes {{ unc['ev minus risk'].label_based_simulated_net | signed_usd }} (95% CI {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }})
 
-Notes: Same customers, same budget, same assumptions. Risk-only has higher precision but lower value. Segment offers add {{ headline.offer_design_effect | usd }} only under assumed save rates; with actual outcomes that extra gain is not distinguishable from zero, so the pilot must test offers.
+Notes: Same customers, same budget, same assumptions. Precision is the share of contacted customers who actually churned; HR/HV coverage is the share of high-risk, high-value customers reached. Risk-only has higher precision but lower value. Segment offers add {{ headline.offer_design_effect | usd }} only under assumed save rates; with actual outcomes that extra gain is not distinguishable from zero, so the pilot must test offers.
 
 ---
 
 # How much to spend
 ![](../figures/profit_curve.png)
 
-- Recommended: {{ recommendation.recommended_share | pct(0) }} of customers (chosen on validation)
-- Test: {{ recommended.selected_count | num }} offers, {{ recommended.cost | usd }}, net {{ recommended.expected_net_value | usd }} (ROI {{ recommended.roi | pct(0) }})
+- Recommended budget: {{ budget.recommended_per_base_customer | usd(2) }} per customer in the base (chosen on validation)
+- Test: {{ recommended.selected_count | num }} offers ({{ recommended.contacted_share | pct(0) }} of customers), {{ recommended.cost | usd }}, net {{ recommended.expected_net_value | usd }} (ROI {{ recommended.roi | pct(0) }})
 - Stop adding budget when the next step earns less than {{ recommendation.hurdle_marginal_roi | pct(0) }}
 
-Notes: Each extra step of budget reaches customers with lower expected value. Beyond about {{ curve.positive_ev_share | pct(0) }} of customers nobody has positive expected value, so spending more destroys value.
+Notes: The x-axis is the budget as the share of customers the standard offer could reach; the recommended budget equals the standard offer for {{ recommendation.recommended_share | pct(0) }} of customers, about {{ scaled.recommended_budget | usd }} for the whole base. Each extra step reaches customers with lower expected value. Beyond {{ curve.positive_ev_share | pct(0) }} of customers contacted nobody has positive expected value, so spending more destroys value.
 
 ---
 
 # How robust is it?
 ![](../figures/tornado.png)
 
-- Break-even save rate {{ be.break_even_default_save_rate | pct }} (assumed {{ default_offer.save_rate | pct(0) }})
+- Break-even save rate {{ be.break_even_default_save_rate | pct }} at the base budget, {{ rbe | pct }} at the recommended budget (assumed {{ default_offer.save_rate | pct(0) }})
 - Pessimistic {{ scenarios.pessimistic.expected_net_value | usd }} (no campaign) / base {{ scenarios.base.expected_net_value | usd }} / optimistic {{ scenarios.optimistic.expected_net_value | usd }}
 - Below {{ be.minimum_viable_save_rate | pct }} save rate: run no campaign
 
@@ -127,17 +127,17 @@ Notes: We are explicit about what the analysis cannot claim. The course forbids 
 # The pilot measures what we assumed
 - One wave: {{ pilot.list_size_per_wave | num }} customers, {{ pilot.arm_size_per_wave | num }} offered, {{ pilot.arm_size_per_wave | num }} held out at random
 - Outcome: churn after {{ pilot.outcome_window_days }} days; save rate = 1 - churn(offered) / churn(holdout)
-- Detects a save rate of about {{ pilot.minimum_detectable_save_rate_one_wave | pct(0) }} or more in one wave
+- Detects a save rate of about {{ pilot.minimum_detectable_save_rate_one_wave | pct(0) }} or more in one wave; break-even is {{ rbe | pct }}
 - Offer and contact cost about {{ pilot.wave_cost | usd }}
 
-Notes: Randomising inside the target list gives the causal effect we could not estimate from the data. Each offer is its own arm. Measured save rates replace assumptions in the configuration and the whole analysis re-runs.
+Notes: The wave is the recommended list scaled to the {{ pilot.base_population | num }}-customer base ({{ pilot.contacted_share | pct(0) }} of customers). Randomising inside the target list gives the causal effect we could not estimate from the data. Each offer is its own arm. Measured save rates replace assumptions in the configuration and the whole analysis re-runs.
 
 ---
 
 # Decisions requested
-- Approve one pilot wave sized at {{ recommendation.recommended_share | pct(0) }} of the base, half held out
+- Approve one pilot wave: {{ pilot.list_size_per_wave | num }} customers, half held out, about {{ pilot.wave_cost | usd }}
 - Name owners: Retention, Call centre, Finance, Legal/DPO
-- Agree the go rule now: scale only if the save rate's lower 95% bound is above {{ be.break_even_default_save_rate | pct }}
+- Agree the rule now: go if the effect is significant and at least {{ rbe | pct }}; else stop or extend
 - Live demo: dashboard - KPIs, action list, scenarios
 
-Notes: Close with the ask. Then switch to the dashboard demo: change the save rate and budget, show the KPIs and the action list update, export the campaign file with its scenario ID.
+Notes: Close with the ask. If the true save rate is {{ default_offer.save_rate | pct(0) }}, the rule says go after one wave {{ pilot.at_assumed.p_go | pct(0) }} of the time; the significance test protects against acting on noise, the break-even test protects the budget. Then switch to the dashboard demo: change the save rate and budget, show the KPIs and the action list update, export the campaign file with its scenario ID.

@@ -1,4 +1,4 @@
-{% set p = pilot %}{% set be = break_even.break_even_default_save_rate %}
+{% set p = pilot %}{% set be = pilot.break_even_save_rate %}
 # Pilot design: measuring the real save rate
 
 The data contain no randomised campaign, so the save rate behind every expected value is an assumption ({{ default_offer.save_rate | pct(0) }} for the standard offer). The literature shows why it must be measured, not assumed: risk is not responsiveness [[ascarza2018](references.md#ascarza2018)], and proactive contact can even raise churn [[ascarza2016](references.md#ascarza2016)]. This pilot turns the recommendation into a controlled experiment [[kohavi2020](references.md#kohavi2020)].
@@ -7,7 +7,16 @@ The data contain no randomised campaign, so the save rate behind every expected 
 
 - **H1:** among customers selected by the recommended rule, receiving the offer lowers {{ p.outcome_window_days }}-day churn compared with not receiving it.
 - **Decision metric:** measured save rate q = 1 - churn(offered) / churn(holdout).
-- **Go rule:** scale to the recommended budget if the lower 95% bound of q is above the break-even save rate of **{{ be | pct }}**; extend if the interval straddles it; stop if q is below it or negative.
+- **Break-even of the pilot list:** the recommended list pays for itself if q is at least **{{ be | pct }}** (all offers' save rates scaled proportionally). The smaller base-budget list breaks even at {{ break_even.break_even_default_save_rate | pct }}.
+- **Decision rule, agreed before the pilot starts:**
+
+| Result after the wave | Decision |
+|---|---|
+| 95% interval of q entirely above 0 **and** measured q at least {{ be | pct }} | **Go:** scale to the recommended budget |
+| Measured q at or below 0, or the whole 95% interval below {{ be | pct }} | **Stop:** redesign offers and targeting |
+| Anything else | **Extend:** run one more wave and pool the data |
+
+The significance test (is there any effect?) is what the sample size below is powered for; the break-even condition (is the effect large enough to pay?) protects the budget. Section 3 shows how often this rule says go, extend or stop for different true save rates.
 
 ## 2. Design
 
@@ -16,7 +25,7 @@ The data contain no randomised campaign, so the save rate behind every expected 
 | Population | Customers on the recommended list for the wave (positive expected value, within budget and contact cap), after consent and Do-Not-Call suppression |
 | Randomisation unit | Customer; random assignment with a fixed seed, stratified by churn-risk decile and assigned offer |
 | Arms | Offered (each offer type is its own sub-arm) vs holdout ({{ p.holdout_share | pct(0) }}, not contacted) |
-| Wave size | {{ p.list_size_per_wave | num }} customers ({{ p.recommended_share | pct(0) }} of {{ p.base_population | num }}): {{ p.arm_size_per_wave | num }} offered, {{ p.arm_size_per_wave | num }} held out |
+| Wave size | {{ p.list_size_per_wave | num }} customers, the recommended list scaled to the {{ p.base_population | num }}-customer base ({{ p.contacted_share | pct(0) }} of customers): {{ p.arm_size_per_wave | num }} offered, {{ p.arm_size_per_wave | num }} held out |
 | Outcome window | {{ p.outcome_window_days }} days after first contact attempt |
 | Primary outcome | Churn (disconnection or port-out) within the window |
 | Secondary outcomes | Offer acceptance; net value per customer (realised margin - offer and contact cost); complaints, opt-outs, Do-Not-Call registrations |
@@ -26,15 +35,18 @@ The data contain no randomised campaign, so the save rate behind every expected 
 
 Two-sided two-proportion test, alpha {{ p.alpha }}, power {{ p.power | pct(0) }}, equal arms. Expected holdout churn on the list is {{ p.control_churn_expected | pct(1) }} (mean predicted probability; observed {{ p.observed_churn_test_list | pct(1) }} on the test list).
 
-| True save rate | Churn offered | Customers per arm | Total | Waves of {{ p.arm_size_per_wave | num }} per arm |
-|---:|---:|---:|---:|---:|
+| True save rate | Churn offered | Customers per arm for 80% power | Waves of {{ p.arm_size_per_wave | num }} per arm | Go after one wave | Extend | Stop |
+|---:|---:|---:|---:|---:|---:|---:|
 {% for r in pilot_power %}
-| {{ r.assumed_save_rate | pct(0) }} | {{ r.treated_churn | pct(1) }} | {{ r.customers_per_arm | num }} | {{ r.total_customers | num }} | {{ r.waves_needed }} |
+| {{ r.assumed_save_rate | pct(1) }}{{ " (break-even)" if r.is_break_even else "" }} | {{ r.treated_churn | pct(1) }} | {{ r.customers_per_arm | num }} | {{ r.waves_needed }} | {{ r.p_go | pct(0) }} | {{ r.p_extend | pct(0) }} | {{ r.p_stop | pct(0) }} |
 {% endfor %}
+
+The last three columns simulate the decision rule 20,000 times per row with binomial churn in each arm (seed {{ cfg.seed }}).
 
 - To detect a save rate equal to the break-even ({{ be | pct }}) needs about **{{ p.per_arm_break_even | num }} customers per arm**; one wave provides {{ p.arm_size_per_wave | num }}.
 - With one wave, the smallest detectable save rate is about **{{ p.minimum_detectable_save_rate_one_wave | pct }}**.
 - Detecting the assumed {{ default_offer.save_rate | pct(0) }} needs {{ p.required_per_arm_at_base | num }} per arm.
+- If the true save rate equals the assumed {{ default_offer.save_rate | pct(0) }}, the rule says go after one wave {{ p.at_assumed.p_go | pct(0) }} of the time. At break-even the chance is about even ({{ p.at_break_even.p_go | pct(0) }}); then the expected gain from scaling is close to zero either way, so a wrong go costs little.
 - Per-offer sub-arms are smaller; offer-level comparisons may need two to three waves, so the first decision is about the list rule as a whole.
 
 ## 4. Cost and value of the pilot

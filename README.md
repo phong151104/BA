@@ -15,6 +15,8 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true --browser.gatherUsageStats false
 ```
 
+On macOS or Linux, use `python3 -m venv .venv` and replace `.\.venv\Scripts\python.exe` with `.venv/bin/python` in every command (the lock file skips the Windows-only packages automatically).
+
 Open http://127.0.0.1:8501. Data, the trained model and all results are already in the repository, so the dashboard runs offline; a network connection is only needed to install packages or download the data on a fresh run.
 
 ## Reproduce everything
@@ -23,7 +25,7 @@ Open http://127.0.0.1:8501. Data, the trained model and all results are already 
 .\.venv\Scripts\python.exe -m telco_retention run-all
 ```
 
-`run-all` downloads the data (checksum-verified), prepares, trains, evaluates, simulates and then regenerates every table, figure, document, executed notebook, the executive brief (DOCX + PDF) and the slide deck (PPTX + PDF). PDF conversion uses Microsoft Word and PowerPoint; without them use `--pdf skip`. Each run is stored in `artifacts/runs/<run_id>` with its configuration, data checksum and code hashes; `artifacts/latest.json` points to the current run.
+`run-all` downloads the data (checksum-verified), prepares, trains, evaluates, simulates and then regenerates every table, figure, document, executed notebook, the executive brief (DOCX + PDF) and the slide deck (PPTX + PDF). PDF conversion uses Microsoft Word and PowerPoint; without them (for example on macOS or Linux) `run-all` skips the PDFs and still writes the DOCX and PPTX (`--pdf skip` forces this, `--pdf require` fails instead). Each run is stored in `artifacts/runs/<run_id>` with its configuration, data checksum and code hashes; `artifacts/latest.json` points to the current run.
 
 Individual steps, in order:
 

@@ -340,24 +340,52 @@ def pilot_sample_size(p_control, save_rate, alpha=0.05, power=0.80):
     return float(np.ceil(n))
 
 
-def pilot_plan(target, cfg, recommended_share):
+def pilot_decision(p_control, save_rate, arm, break_even_rate, alpha=0.05, draws=20000, seed=42):
+    """Monte Carlo probabilities of go / extend / stop after one wave with `arm` customers per arm.
+
+    q = 1 - churn(offered) / churn(holdout) with a delta-method interval. Go: interval above 0 and
+    q >= break-even. Stop: q <= 0 or interval entirely below break-even. Extend otherwise.
+    """
+    rng = np.random.default_rng(seed)
+    control = rng.binomial(arm, p_control, draws) / arm
+    offered = rng.binomial(arm, p_control * (1 - save_rate), draws) / arm
+    with np.errstate(divide="ignore", invalid="ignore"):
+        ratio = offered / control
+        q = 1 - ratio
+        se = ratio * np.sqrt((1 - offered) / (arm * offered) + (1 - control) / (arm * control))
+    z = norm.ppf(1 - alpha / 2)
+    se = np.where(np.isfinite(se), se, np.inf)
+    go = (q - z * se > 0) & (q >= break_even_rate)
+    stop = ~go & ((q <= 0) | (q + z * se < break_even_rate))
+    return {"p_go": float(go.mean()), "p_extend": float((~go & ~stop).mean()), "p_stop": float(stop.mean())}
+
+
+def pilot_plan(target, cfg, recommended_share, break_even_rate):
+    """Pilot on the recommended list scaled to the customer base; sample sizes and the go/stop rule's error rates."""
     pilot = cfg["pilot"]
     picked = target.loc[target.selected]
     p_control = float(picked.churn_probability.mean())
-    list_size = int(np.floor(recommended_share * pilot["base_population"] + 1e-9))
+    contacted_share = len(picked) / len(target)
+    list_size = int(round(contacted_share * pilot["base_population"]))
     arm = int(np.floor(list_size * pilot["holdout_share"]))
     rows = []
-    for q in pilot["save_rate_grid"]:
+    marks = {round(break_even_rate, 4)} if break_even_rate is not None else set()
+    for q in sorted(set(pilot["save_rate_grid"]) | marks):
         n = pilot_sample_size(p_control, q, pilot["alpha"], pilot["power"])
-        rows.append({"assumed_save_rate": q, "control_churn": p_control, "treated_churn": p_control * (1 - q),
+        rows.append({"assumed_save_rate": q, "is_break_even": q in marks, "control_churn": p_control, "treated_churn": p_control * (1 - q),
                      "customers_per_arm": n, "total_customers": 2 * n, "arm_size_per_wave": arm,
-                     "waves_needed": int(np.ceil(n / arm)) if arm > 0 and np.isfinite(n) else None})
+                     "waves_needed": int(np.ceil(n / arm)) if arm > 0 and np.isfinite(n) else None,
+                     **(pilot_decision(p_control, q, arm, break_even_rate, pilot["alpha"], seed=cfg["seed"]) if arm > 0 and marks else {})})
     mde = None
     if arm > 0 and pilot_sample_size(p_control, 0.999, pilot["alpha"], pilot["power"]) <= arm:
         mde = float(brentq(lambda q: pilot_sample_size(p_control, q, pilot["alpha"], pilot["power"]) - arm, 1e-4, 0.999))
     summary = {"control_churn_expected": p_control, "observed_churn_test_list": float(picked.churn.mean()) if "churn" in picked and len(picked) else None,
-               "recommended_share": recommended_share, "base_population": pilot["base_population"], "list_size_per_wave": list_size,
-               "arm_size_per_wave": arm, "minimum_detectable_save_rate_one_wave": mde, **{k: pilot[k] for k in ["alpha", "power", "holdout_share", "outcome_window_days"]}}
+               "recommended_share": recommended_share, "contacted_share": contacted_share, "base_population": pilot["base_population"],
+               "list_size_per_wave": list_size, "arm_size_per_wave": arm, "break_even_save_rate": break_even_rate,
+               "per_arm_break_even": pilot_sample_size(p_control, break_even_rate, pilot["alpha"], pilot["power"]) if marks else None,
+               "minimum_detectable_save_rate_one_wave": mde,
+               "decision_rule": "go if the 95% interval of q is above 0 and q >= break-even; stop if q <= 0 or the interval is below break-even; otherwise extend",
+               **{k: pilot[k] for k in ["alpha", "power", "holdout_share", "outcome_window_days"]}}
     return pd.DataFrame(rows), summary
 
 
@@ -421,10 +449,12 @@ def simulate(run=None):
     reco_budget = campaign_budget(len(test), cfg, recommendation["recommended_share"])
     reco_table, reco_stats = run_strategy(test, reco_budget, cfg, strategy, thresholds)
     save_csv(reco_table, run / "targeting_recommended.csv")
-    write_json(run / "recommended_campaign.json", {"strategy": strategy, "budget_share": recommendation["recommended_share"], "budget": reco_budget, **flat(reco_stats)})
+    reco_break = break_even(reco_table, cfg)
+    write_json(run / "recommended_campaign.json", {"strategy": strategy, "budget_share": recommendation["recommended_share"], "budget": reco_budget, **flat(reco_stats),
+                                                   "contacted_share": reco_stats["selected_count"] / len(test), "break_even": reco_break})
     print("Fairness and pilot design", flush=True)
     save_csv(fairness_audit(details, cfg, iterations=cfg["bootstrap_iterations"], seed=cfg["seed"]), run / "fairness.csv")
-    power, pilot = pilot_plan(reco_table, cfg, recommendation["recommended_share"])
+    power, pilot = pilot_plan(reco_table, cfg, recommendation["recommended_share"], reco_break.get("break_even_default_save_rate"))
     save_csv(power, run / "pilot_power.csv")
     write_json(run / "pilot_plan.json", pilot)
     save_csv(offer_mix(details["segment_offers"]), run / "segment_offer_mix.csv")

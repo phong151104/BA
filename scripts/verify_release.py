@@ -34,7 +34,15 @@ expected_sizes = {"random_campaigns.csv": cfg["random_campaign_iterations"], "se
 for name, size in expected_sizes.items():
     assert len(pd.read_csv(run / name)) == size, (name, size)
 assert len(read_json(ROOT / "reports/figures/catalog.json")) == len(FIGURES)
+assert sorted(p.stem for p in (ROOT / "reports/figures").glob("*.png")) == sorted(FIGURES), "reports/figures holds figures outside the registry"
 checks["artifacts"] = {"required": len(required), "sizes": expected_sizes}
+
+# Pilot is sized from the recommended list actually contacted, and tests that list's break-even.
+pilot, reco = read_json(run / "pilot_plan.json"), read_json(run / "recommended_campaign.json")
+n_test = manifest["split_counts"]["test"]
+assert pilot["list_size_per_wave"] == round(reco["selected_count"] / n_test * cfg["pilot"]["base_population"]), (pilot["list_size_per_wave"], reco["selected_count"])
+assert abs(pilot["break_even_save_rate"] - reco["break_even"]["break_even_default_save_rate"]) < 1e-12
+checks["pilot"] = {k: pilot[k] for k in ["list_size_per_wave", "arm_size_per_wave", "break_even_save_rate"]}
 
 # 2. Code and report traceability.
 assert all(digest((ROOT / p).read_bytes()) == h for p, h in manifest["code_sha256"].items()), "Source changed since training: run the pipeline again"

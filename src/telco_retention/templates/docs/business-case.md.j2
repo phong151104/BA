@@ -56,7 +56,7 @@ The analysis compares all five on the same customers and budget. On validation d
 | Precision among contacted | Share of contacted customers who churn (labels) or mean predicted probability (no labels) | Read with value: high precision on low-value customers is not the goal |
 | High-risk/high-value coverage | Share of customers above both 75th percentiles (validation) that are contacted | As close to 100% as the budget allows |
 | Model quality | PR-AUC, ROC-AUC, Brier, calibration slope/ECE on untouched test data | PR-AUC well above the {{ data.churn_rate | num(2) }} random baseline; ECE below 0.05 |
-| Pilot outcome | Measured save rate = 1 - churn(contacted) / churn(holdout) | Lower 95% bound above the break-even save rate |
+| Pilot outcome | Measured save rate = 1 - churn(contacted) / churn(holdout) | Effect significant (95% interval above 0) and measured save rate at least the recommended list's break-even ([pilot design](pilot-design.md)) |
 
 ## Scope and non-goals
 

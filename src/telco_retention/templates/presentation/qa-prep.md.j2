@@ -20,9 +20,9 @@ Partly, so we also evaluate with actual churn labels: the targeting gain over ri
 No. Model, threshold, risk/value cut-offs, offer strategy and budget recommendation were all chosen on validation; test was scored once. Reproducibility checks compare two complete runs.
 
 **7. How was the budget chosen?**
-The course fixes a budget ({{ budget.share | pct(0) }} of customers x standard offer). For the stretch goal we traced the profit curve and chose, on validation, the largest budget whose last step still returns {{ recommendation.hurdle_marginal_roi | pct(0) }}: {{ recommendation.recommended_share | pct(0) }} of customers.
+The course fixes a budget ({{ budget.share | pct(0) }} of customers x standard offer). For the stretch goal we traced the profit curve and chose, on validation, the largest budget whose last step still returns {{ recommendation.hurdle_marginal_roi | pct(0) }}: enough for the standard offer to {{ recommendation.recommended_share | pct(0) }} of customers, which buys {{ recommended.selected_count | num }} mixed offers ({{ recommended.contacted_share | pct(0) }} of customers) on test.
 
-**8. Is the 26.5% churn rate realistic?**
+**8. Is the {{ data.churn_rate | pct }} churn rate realistic?**
 No. US carriers report about 1% monthly postpaid churn in 2025. The IBM sample is fictional and describes its churn window inconsistently. Our numbers demonstrate the method; magnitudes must be re-estimated on real data.
 
 **9. Would this work in Vietnam?**

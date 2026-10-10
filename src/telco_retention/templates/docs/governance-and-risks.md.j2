@@ -21,7 +21,7 @@ R = responsible, A = accountable, C = consulted, I = informed.
 | Input drift | Population stability index (PSI) per feature vs training data | Monthly | PSI > 0.2 on any key feature | Investigate; retrain if confirmed |
 | Calibration | ECE and calibration slope on newly labelled customers | Monthly | ECE > 0.05 or slope outside 0.8-1.2 | Recalibrate; review value logic |
 | Ranking | PR-AUC vs base churn rate | Quarterly | PR-AUC falls below 2x the churn rate | Retrain and re-select model |
-| Campaign | Measured save rate by offer, realised net value | Every wave | Lower bound below break-even ({{ break_even.break_even_default_save_rate | pct }}) | Stop or redesign offers |
+| Campaign | Measured save rate by offer, realised net value | Every wave | Measured save rate at or below 0, or 95% interval below break-even ({{ pilot.break_even_save_rate | pct }} for the recommended list) | Stop or redesign offers |
 | Fairness | Selection-rate ratios with intervals | Every wave | Ratio outside {{ cfg.guardrails.selection_ratio_alert[0] }}-{{ cfg.guardrails.selection_ratio_alert[1] }} and not explained by risk | Review before launch |
 | Experience | Complaints, opt-outs, DNC registrations per 1,000 contacts | Every wave | 2x the normal rate | Pause wave; review script and frequency |
 | Reproducibility | Run manifest, code and data hashes, scenario ID on every list | Every run | Mismatch | Block release |
@@ -40,7 +40,7 @@ R = responsible, A = accountable, C = consulted, I = informed.
 
 | # | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|---|
-| R1 | True save rate below break-even ({{ break_even.break_even_default_save_rate | pct }}), so the campaign loses money | Medium | High | Randomised pilot with go/no-go rule; budget in tranches | Retention lead |
+| R1 | True save rate below break-even ({{ break_even.break_even_default_save_rate | pct }} base list, {{ pilot.break_even_save_rate | pct }} recommended list), so the campaign loses money | Medium | High | Randomised pilot with go/no-go rule; budget in tranches | Retention lead |
 | R2 | Contact raises churn for some customers (backfire) | Low-medium | High | Holdout comparison by risk decile; stop rule; soft script | Retention lead |
 | R3 | Sample data do not represent the operator's customers (churn level, prepaid market) | High | High | Retrain and recalibrate on own data; time-based validation | Analytics |
 | R4 | Value proxy wrong (margin, horizon) | Medium | Medium | Finance validation; tornado shows impact; update register | Finance |

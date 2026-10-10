@@ -1,4 +1,4 @@
-{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set unc = uncertainty %}{% set be = break_even %}
+{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set unc = uncertainty %}{% set be = break_even %}{% set rbe = pilot.break_even_save_rate %}
 # Analysis report: profit-aware churn and retention targeting
 
 Run `{{ run.id }}` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
@@ -8,8 +8,8 @@ Run `{{ run.id }}` · every number below is generated from this run's artifacts 
 - **Question:** with a limited retention budget, which customers should receive an offer when both churn risk and economic value count?
 - **Answer:** rank customers by expected net value of an offer (p(churn) x save rate x value - cost), let an optimiser pick the customer-offer combination within budget, and size the budget where the marginal return falls below {{ recommendation.hurdle_marginal_roi | pct(0) }}.
 - **Impact (test split, same {{ budget.base | usd }} budget):** {{ strategy_label | lower }} {{ chosen.expected_net_value | usd }} vs {{ c.risk.expected_net_value | usd }} for risk-only targeting (+{{ headline.delta_vs_risk | usd }}); label-based check of the targeting gain {{ unc['ev minus risk'].label_based_simulated_net | usd }} (95% interval {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }}).
-- **Budget:** {{ recommendation.recommended_share | pct(0) }} of the base (validation rule) gives {{ recommended.expected_net_value | usd }} on test from {{ recommended.cost | usd }}.
-- **Main risk:** the save rate is assumed. Break-even {{ be.break_even_default_save_rate | pct }} vs assumed {{ default_offer.save_rate | pct(0) }}; a randomised pilot measures it before scale-up.
+- **Budget:** {{ budget.recommended_per_base_customer | usd(2) }} per customer in the base (enough for the standard offer to {{ recommendation.recommended_share | pct(0) }} of customers; validation rule) buys {{ recommended.selected_count | num }} offers on test ({{ recommended.contacted_share | pct(0) }} of customers) for {{ recommended.cost | usd }} and {{ recommended.expected_net_value | usd }} expected net value.
+- **Main risk:** the save rate is assumed. Break-even {{ be.break_even_default_save_rate | pct }} for the base-budget list and {{ rbe | pct }} for the recommended list, vs assumed {{ default_offer.save_rate | pct(0) }}; a randomised pilot measures it before scale-up.
 
 ## 2. Business question and decision
 
@@ -94,7 +94,7 @@ The challenger XGBoost model is explained with SHAP; its leading features ({{ mo
 
 **One assumption at a time (tornado, list re-optimised within the same budget):**
 
-{{ tornado | md_table([("label", "Assumption", None), ("low", "Low", None), ("high", "High", None), ("net_low_retarget", "Net at low", "usd"), ("net_high_retarget", "Net at high", "usd"), ("net_low_fixed", "Frozen list at low", "usd"), ("net_high_fixed", "Frozen list at high", "usd")]) }}
+{{ tornado | md_table([("label", "Assumption", None), ("low_text", "Low", None), ("high_text", "High", None), ("net_low_retarget", "Net at low", "usd"), ("net_high_retarget", "Net at high", "usd"), ("net_low_fixed", "Frozen list at low", "usd"), ("net_high_fixed", "Frozen list at high", "usd")]) }}
 
 ![Tornado](figures/tornado.png)
 
@@ -107,23 +107,23 @@ The challenger XGBoost model is explained with SHAP; its leading features ({{ mo
 | Scenario | Assumptions | Customers | Net (re-optimised) | Net (frozen list) |
 |---|---|---:|---:|---:|
 {% for name in ['pessimistic', 'base', 'optimistic'] %}{% set s = scenarios[name] %}
-| {{ name | capitalize }} | `{{ s.overrides }}` | {{ s.selected_count | num }} | {{ s.expected_net_value | usd }} | {{ s.fixed_expected_net_value | usd }} |
+| {{ name | capitalize }} | {{ s.overrides_text }} | {{ s.selected_count | num }} | {{ s.expected_net_value | usd }} | {{ s.fixed_expected_net_value | usd }} |
 {% endfor %}
 
-**Break-even.** The recommended list breaks even at a standard-offer save rate of **{{ be.break_even_default_save_rate | pct }}** (all offers scaled proportionally) or at offer costs {{ be.offer_cost_multiplier | ratio(2) }} today's; below a save rate of {{ be.minimum_viable_save_rate | pct }}, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
+**Break-even.** The base-budget list breaks even at a standard-offer save rate of **{{ be.break_even_default_save_rate | pct }}** (all offers scaled proportionally) or at offer costs {{ be.offer_cost_multiplier | ratio(2) }} today's; the larger recommended list (section 8) breaks even at **{{ rbe | pct }}**, because its extra customers have lower expected value; below a save rate of {{ be.minimum_viable_save_rate | pct }}, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
 
 ## 8. How much to spend
 
 ![Profit curve](figures/profit_curve.png)
 
-Expected net value rises with the budget at a falling marginal return. The recommendation rule (largest budget whose last step still earns {{ recommendation.hurdle_marginal_roi | pct(0) }}) was applied on validation and chose **{{ recommendation.recommended_share | pct(0) }}** of customers (net-maximising share on validation: {{ recommendation.net_maximising_share | pct(0) }}). Applied to test:
+Expected net value rises with the budget at a falling marginal return. The recommendation rule (largest budget whose last step still earns {{ recommendation.hurdle_marginal_roi | pct(0) }}) was applied on validation and chose a budget of **{{ recommendation.recommended_share | pct(0) }}** (net-maximising budget on validation: {{ recommendation.net_maximising_share | pct(0) }}). Budgets are expressed as the share of customers the standard offer could reach ({{ budget.per_customer | usd }} each); because the optimiser mixes cheaper and dearer offers, the share actually contacted differs. Applied to test:
 
-| Budget | Customers | Cost | Expected net value | ROI | Label-based net |
+| Budget | Customers contacted | Cost | Expected net value | ROI | Label-based net |
 |---|---:|---:|---:|---:|---:|
-| Base ({{ budget.share | pct(0) }}) | {{ chosen.selected_count | num }} | {{ chosen.cost | usd }} | {{ chosen.expected_net_value | usd }} | {{ chosen.roi | pct(0) }} | {{ chosen.label_based_simulated_net | usd }} |
-| Recommended ({{ recommended.budget_share | pct(0) }}) | {{ recommended.selected_count | num }} | {{ recommended.cost | usd }} | {{ recommended.expected_net_value | usd }} | {{ recommended.roi | pct(0) }} | {{ recommended.label_based_simulated_net | usd }} |
+| Base ({{ budget.share | pct(0) }}) | {{ chosen.selected_count | num }} ({{ (chosen.selected_count / budget.n_test) | pct(0) }}) | {{ chosen.cost | usd }} | {{ chosen.expected_net_value | usd }} | {{ chosen.roi | pct(0) }} | {{ chosen.label_based_simulated_net | usd }} |
+| Recommended ({{ recommended.budget_share | pct(0) }}) | {{ recommended.selected_count | num }} ({{ recommended.contacted_share | pct(0) }}) | {{ recommended.cost | usd }} | {{ recommended.expected_net_value | usd }} | {{ recommended.roi | pct(0) }} | {{ recommended.label_based_simulated_net | usd }} |
 
-Beyond about {{ curve.positive_ev_share | pct(0) }} of customers ({{ curve.positive_ev_customers | num }} on test, {{ curve.positive_ev_cost | usd }}) no customer has positive EV and extra budget should stay unspent. Scaled to the {{ scaled.base_population | num }}-customer base, the recommended wave is about {{ scaled.recommended_budget | usd }} for {{ scaled.recommended_net | usd }} expected net value (linear scaling, indicative only).
+Beyond {{ curve.positive_ev_customers | num }} contacts on test ({{ curve.positive_ev_share | pct(0) }} of customers, {{ curve.positive_ev_cost | usd }}) no customer has positive EV and extra budget should stay unspent. Scaled to the {{ scaled.base_population | num }}-customer base, the recommended wave is about {{ scaled.recommended_customers | num }} customers and {{ scaled.recommended_budget | usd }} for {{ scaled.recommended_net | usd }} expected net value (linear scaling, indicative only).
 
 ## 9. Fairness and customer experience
 
@@ -148,8 +148,8 @@ Gender and seniority are not model inputs. Full table: [fairness.csv](tables/fai
 
 ## 11. Recommendations and next steps
 
-1. Adopt expected-value targeting ({{ strategy_label | lower }}) for the next wave, sized at {{ recommendation.recommended_share | pct(0) }} of the base.
-2. Run it as a randomised pilot: {{ pilot.list_size_per_wave | num }} customers, half held out, {{ pilot.outcome_window_days }}-day outcome ([pilot design](../docs/pilot-design.md)); go only if the measured save rate's lower bound exceeds {{ be.break_even_default_save_rate | pct }}.
+1. Adopt expected-value targeting ({{ strategy_label | lower }}) for the next wave, with the recommended budget ({{ budget.recommended_per_base_customer | usd(2) }} per customer in the base).
+2. Run it as a randomised pilot: {{ pilot.list_size_per_wave | num }} customers, half held out, {{ pilot.outcome_window_days }}-day outcome ([pilot design](../docs/pilot-design.md)); go if the offer effect is significant and the measured save rate is at least the list's break-even of {{ rbe | pct }} (probability of go {{ pilot.at_assumed.p_go | pct(0) }} if the true save rate is {{ default_offer.save_rate | pct(0) }}).
 3. Replace assumed save rates, margin and costs with measured values; re-run the pipeline.
 4. Retrain on own data with time-based validation; after several waves, move to uplift targeting.
 5. Operate under the controls in [governance and risks](../docs/governance-and-risks.md) and the [retention playbook](../docs/retention-playbook.md).

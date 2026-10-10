@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from scipy.stats import norm
-from telco_retention.analysis import (apply_overrides, campaign_budget, compare, economic_uncertainty, fairness_audit, pilot_sample_size, profit_curve,
+from telco_retention.analysis import (apply_overrides, campaign_budget, compare, economic_uncertainty, fairness_audit, pilot_decision, pilot_plan, pilot_sample_size, profit_curve,
                                       recommend_budget, select_strategy, sensitivity, share_grid, tornado, break_even, risk_value_matrix)
 from telco_retention.business import campaign, default_offer, offer_options, value_customers
 from telco_retention.common import config
@@ -120,6 +120,26 @@ def test_pilot_sample_size_matches_formula():
     assert pilot_sample_size(p1, q) == expected
     assert pilot_sample_size(p1, .4) < pilot_sample_size(p1, .2) < pilot_sample_size(p1, .1)
     assert pilot_sample_size(p1, 0) == np.inf
+
+
+
+def test_pilot_rule_error_rates_follow_the_true_save_rate():
+    outcomes = [pilot_decision(.6, q, 800, .14, draws=5000, seed=1) for q in [0, .1, .14, .2, .3]]
+    for o in outcomes:
+        assert o["p_go"] + o["p_extend"] + o["p_stop"] == pytest.approx(1)
+    go = [o["p_go"] for o in outcomes]
+    assert go == sorted(go) and go[0] < .01 and go[-1] > .99
+    assert outcomes[0]["p_stop"] > .5 and abs(outcomes[2]["p_go"] - .5) < .1
+
+
+def test_pilot_is_sized_from_customers_contacted_not_budget_share():
+    cfg = cfg_small()
+    target = sample(200).assign(selected=lambda d: d.index < 44)
+    power, plan = pilot_plan(target, cfg, recommended_share=.24, break_even_rate=.14)
+    assert plan["list_size_per_wave"] == round(44 / 200 * cfg["pilot"]["base_population"])
+    assert plan["arm_size_per_wave"] == int(plan["list_size_per_wave"] * cfg["pilot"]["holdout_share"])
+    assert power.is_break_even.sum() == 1 and power.loc[power.is_break_even, "assumed_save_rate"].item() == .14
+    assert plan["per_arm_break_even"] == pilot_sample_size(plan["control_churn_expected"], .14)
 
 
 def test_break_even_save_rate_zeroes_frozen_list():

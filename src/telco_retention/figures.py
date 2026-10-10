@@ -48,6 +48,9 @@ def figures(run):
     strategy = decisions["strategy_selection"]["strategy"]
     dest = ROOT / "reports/figures"
     dest.mkdir(parents=True, exist_ok=True)
+    for stale in dest.glob("*.png"):
+        if stale.stem not in FIGURES:
+            stale.unlink()
     catalog = []
 
     def finish(fig, name, title, caption, population="test split (1,409 customers, never used for selection)"):

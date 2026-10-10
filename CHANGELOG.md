@@ -22,6 +22,14 @@
 - Tests extended (calibration statistics, eligibility and cap solver checks, analysis functions, templates, exports, language).
 - Release checks derive expected counts from configuration, compare two complete runs, and check documents, notebooks, PDF page count and deck notes; old runs pruned.
 
+**Requirements review fixes**
+- Pilot sized from the customers the recommended budget actually contacts (it was sized from the budget share), and judged against the recommended list's own break-even save rate.
+- Pilot decision rule (go / extend / stop) aligned with the power calculation; its probabilities of each decision are simulated and reported.
+- Budget wording clarified everywhere: budget per customer in the base and share contacted, not "share of customers".
+- Readable scenario and tornado assumptions in the analysis report; precision column in the deck's comparison slide; ECE interval note.
+- Obsolete figures from pruned runs removed; figure generation and the release check now reject files outside the figure registry.
+- README run instructions for macOS and Linux.
+
 ## 1.0.0
 
 Initial pipeline, dashboard, notebooks and reports.
