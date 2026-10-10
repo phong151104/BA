@@ -1,0 +1,13 @@
+{
+  "control_churn_expected": 0.5981078929635952,
+  "observed_churn_test_list": 0.567741935483871,
+  "recommended_share": 0.24,
+  "base_population": 7043,
+  "list_size_per_wave": 1690,
+  "arm_size_per_wave": 845,
+  "minimum_detectable_save_rate_one_wave": 0.11293335716477239,
+  "alpha": 0.05,
+  "power": 0.8,
+  "holdout_share": 0.5,
+  "outcome_window_days": 90
+}

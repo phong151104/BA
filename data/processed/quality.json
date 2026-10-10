@@ -57,6 +57,6 @@
     "0": 5174,
     "1": 1869
   },
-  "joins": "Không nối nguồn khách hàng bên ngoài",
-  "filters": "Chỉ loại bản ghi trùng hoàn toàn trong dữ liệu huấn luyện"
+  "joins": "None: single source file, no external customer data joined",
+  "filters": "Exact duplicate rows removed from the full file before splitting; no other rows filtered"
 }

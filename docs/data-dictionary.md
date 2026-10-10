@@ -1,59 +1,65 @@
-# Từ điển dữ liệu
+<!-- Generated from src/telco_retention/templates/docs/data-dictionary.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+# Data dictionary
 
-| Trường           | Ý nghĩa                                            | Kiểu/đơn vị   | Miền/missing                                                                       | Vai trò   |
-|:-----------------|:---------------------------------------------------|:--------------|:-----------------------------------------------------------------------------------|:----------|
-| customerID       | Mã định danh khách hàng; khóa, không làm feature   | chuỗi/nhóm    | duy nhất, không rỗng                                                               | khóa      |
-| gender           | Giới tính ghi nhận; chỉ dùng audit                 | chuỗi/nhóm    | Male; Female                                                                       | audit     |
-| SeniorCitizen    | Cờ khách hàng cao tuổi; chỉ dùng audit             | chuỗi/nhóm    | 0; 1                                                                               | audit     |
-| Partner          | Có bạn đời                                         | chuỗi/nhóm    | Yes; No                                                                            | feature   |
-| Dependents       | Có người phụ thuộc                                 | chuỗi/nhóm    | Yes; No                                                                            | feature   |
-| tenure           | Số tháng đã gắn bó                                 | số/tháng      | không âm; missing → median train                                                   | feature   |
-| PhoneService     | Đăng ký dịch vụ điện thoại                         | chuỗi/nhóm    | Yes; No                                                                            | feature   |
-| MultipleLines    | Nhiều đường dây điện thoại                         | chuỗi/nhóm    | Yes; No; No phone service                                                          | feature   |
-| InternetService  | Loại dịch vụ Internet                              | chuỗi/nhóm    | DSL; Fiber optic; No                                                               | feature   |
-| OnlineSecurity   | Bảo mật trực tuyến                                 | chuỗi/nhóm    | Yes; No; No internet service                                                       | feature   |
-| OnlineBackup     | Sao lưu trực tuyến                                 | chuỗi/nhóm    | Yes; No; No internet service                                                       | feature   |
-| DeviceProtection | Bảo vệ thiết bị                                    | chuỗi/nhóm    | Yes; No; No internet service                                                       | feature   |
-| TechSupport      | Hỗ trợ kỹ thuật                                    | chuỗi/nhóm    | Yes; No; No internet service                                                       | feature   |
-| StreamingTV      | Xem TV trực tuyến                                  | chuỗi/nhóm    | Yes; No; No internet service                                                       | feature   |
-| StreamingMovies  | Xem phim trực tuyến                                | chuỗi/nhóm    | Yes; No; No internet service                                                       | feature   |
-| Contract         | Thời hạn hợp đồng                                  | chuỗi/nhóm    | Month-to-month; One year; Two year                                                 | feature   |
-| PaperlessBilling | Hóa đơn điện tử                                    | chuỗi/nhóm    | Yes; No                                                                            | feature   |
-| PaymentMethod    | Phương thức thanh toán                             | chuỗi/nhóm    | Electronic check; Mailed check; Bank transfer (automatic); Credit card (automatic) | feature   |
-| MonthlyCharges   | Phí hàng tháng                                     | số/ĐVTT       | không âm; missing → median train                                                   | feature   |
-| TotalCharges     | Tổng phí lịch sử; không cộng vào giá trị tương lai | số/ĐVTT       | không âm; missing → median train                                                   | feature   |
-| Churn            | Nhãn rời bỏ trong dữ liệu mẫu; không làm feature   | chuỗi/nhóm    | Yes; No                                                                            | target    |
+## Source fields
 
-## Trường phát sinh
+| Field | Meaning | Allowed values / type | Role |
+|---|---|---|---|
+| `customerID` | Customer identifier; key only, never a feature | unique, non-empty text | key |
+| `gender` | Recorded gender; audit only, not a model input | Male; Female | audit only |
+| `SeniorCitizen` | Senior-citizen flag; audit only, not a model input | 0; 1 | audit only |
+| `Partner` | Has a partner | Yes; No | feature |
+| `Dependents` | Has dependents | Yes; No | feature |
+| `tenure` | Months with the company at the snapshot | non-negative number | feature |
+| `PhoneService` | Has phone service | Yes; No | feature |
+| `MultipleLines` | Has multiple phone lines | Yes; No; No phone service | feature |
+| `InternetService` | Internet service type | DSL; Fiber optic; No | feature |
+| `OnlineSecurity` | Online security add-on | Yes; No; No internet service | feature |
+| `OnlineBackup` | Online backup add-on | Yes; No; No internet service | feature |
+| `DeviceProtection` | Device protection add-on | Yes; No; No internet service | feature |
+| `TechSupport` | Technical support add-on | Yes; No; No internet service | feature |
+| `StreamingTV` | Streaming TV add-on | Yes; No; No internet service | feature |
+| `StreamingMovies` | Streaming movies add-on | Yes; No; No internet service | feature |
+| `Contract` | Contract term | Month-to-month; One year; Two year | feature |
+| `PaperlessBilling` | Paperless billing | Yes; No | feature |
+| `PaymentMethod` | Payment method | Electronic check; Mailed check; Bank transfer (automatic); Credit card (automatic) | feature |
+| `MonthlyCharges` | Current monthly charge (USD) | non-negative number | feature |
+| `TotalCharges` | Total billed to date (USD); history only, not added to future value | non-negative number | feature |
+| `Churn` | Left within the observation window; target label, never a feature | Yes; No | target |
 
-| Trường                                 | Kiểu/đơn vị           | Ý nghĩa                                                                                                                                                                                                             |
-|:---------------------------------------|:----------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| churn                                  | int 0/1               | Nhãn ánh xạ từ Churn; không làm feature                                                                                                                                                                             |
-| split                                  | train/validation/test | Vai trò dòng trong kiểm định                                                                                                                                                                                        |
-| tenure_band / tenure_segment           | new/developing/loyal  | ≤12; 13–24; >24 tháng. Feature và phân khúc                                                                                                                                                                         |
-| addon_count                            | int 0–6               | Tổng dịch vụ thêm có giá trị Yes                                                                                                                                                                                    |
-| monthly_contract                       | 0/1                   | Hợp đồng Month-to-month                                                                                                                                                                                             |
-| autopay                                | 0/1                   | Thanh toán automatic                                                                                                                                                                                                |
-| customer_id                            | string                | Bí danh customerID trong bảng kết quả                                                                                                                                                                               |
-| churn_probability                      | float [0,1]           | Xác suất calibrated                                                                                                                                                                                                 |
-| risk_band                              | low/medium/high       | ≤0.25; (0.25,0.5]; >0.5; chỉ mô tả, khác ngưỡng high/high                                                                                                                                                           |
-| prediction_origin                      | string                | in_sample_do_not_evaluate / selection_holdout / untouched_test; CSV: uploaded_matches_train_do_not_evaluate / uploaded_matches_validation / uploaded_matches_test / uploaded_not_in_reference / uploaded_unverified |
-| reference_split                        | string, CSV scoring   | Split của ID trùng dữ liệu mô hình, hoặc not_in_reference. So khớp ID không xác minh nội dung/thời điểm; không đủ kết luận độc lập                                                                                  |
-| model_version                          | string                | Run ID gắn artifact mô hình                                                                                                                                                                                         |
-| remaining_months                       | tháng                 | min(cap, horizon × hệ số tenure)                                                                                                                                                                                    |
-| customer_value                         | ĐVTT                  | MonthlyCharges × margin × remaining_months                                                                                                                                                                          |
-| offer_id                               | string                | light/standard/intensive                                                                                                                                                                                            |
-| assumed_save_rate                      | [0,1]                 | Giả định giữ lại một người vốn sẽ churn                                                                                                                                                                             |
-| offer_cost / contact_cost / total_cost | ĐVTT                  | Chi phí cố định mỗi người được chọn; total là tổng hai thành phần                                                                                                                                                   |
-| expected_saved_probability             | [0,1]                 | churn_probability × assumed_save_rate                                                                                                                                                                               |
-| expected_retained_value                | ĐVTT                  | expected_saved_probability × customer_value                                                                                                                                                                         |
-| expected_net_value                     | ĐVTT                  | expected_retained_value − total_cost                                                                                                                                                                                |
-| selected                               | bool                  | Quyết định chọn; chỉ tổng hợp KPI cho selected=True                                                                                                                                                                 |
-| selection_reason                       | string                | Lý do lựa chọn/không chọn                                                                                                                                                                                           |
-| scenario_id                            | string                | Hash cấu hình, ngân sách và tập khách hàng                                                                                                                                                                          |
-| decision_detail                        | string                | Công thức EV với p, q, V, chi phí và save rate hòa vốn của từng khách hàng; không là giải thích nhân quả                                                                                                            |
-| break_even_save_rate                   | tỷ lệ hoặc NA         | cost/(p × V); NA khi p × V = 0; >1 nghĩa không hòa vốn được                                                                                                                                                         |
-| break_even_total_cost                  | ĐVTT                  | p × q × V                                                                                                                                                                                                           |
-| customer_index                         | int nội bộ            | Vị trí khách hàng để ràng buộc tối đa một ưu đãi                                                                                                                                                                    |
+## Derived fields
 
-Chuỗi rỗng TotalCharges → missing; tenure=0 → điền 0. Các số thiếu khác dùng median train, cả khi tính giá trị kinh doanh. Các trường phân loại bắt buộc không nhận missing. MultipleLines phải là No phone service khi và chỉ khi PhoneService=No; sáu dịch vụ Internet phải là No internet service khi và chỉ khi InternetService=No. Mâu thuẫn làm cả lần nhập bị từ chối. Tiền dùng ĐVTT, không quy đổi VND.
+| Field | Type / unit | Definition |
+|---|---|---|
+| `churn` | 0/1 | `Churn` mapped Yes=1, No=0; label only |
+| `split` | train / validation / test | Role of the row in validation design |
+| `tenure_band`, `tenure_segment` | new / developing / loyal | tenure <= 12, 13-24, > 24 months; model feature and business segment |
+| `addon_count` | integer 0-6 | Number of add-on services equal to "Yes" |
+| `monthly_contract` | 0/1 | Contract is month-to-month |
+| `autopay` | 0/1 | Payment method is automatic |
+| `churn_probability` | probability | Calibrated model output |
+| `risk_band` | low / medium / high | <= 0.25, 0.25-0.5, > 0.5; descriptive only |
+| `prediction_origin` | text | in_sample_do_not_evaluate (train), selection_holdout (validation), untouched_test (test), or upload status |
+| `remaining_months` | months | min(cap 24, base horizon 12 x tenure factor) |
+| `discounted_months` | months | Present value of `remaining_months` at 10% a year |
+| `customer_value` | USD | MonthlyCharges x margin 30% x discounted_months (12-month truncated value proxy, not a validated CLV) |
+| `offer_id` | text | Offer chosen (or best potential offer if not contacted); see the [offer catalog](assumption-register.md#offer-catalog) |
+| `assumed_save_rate` | share | Assumed probability that the offer keeps a would-be churner |
+| `offer_cost`, `contact_cost`, `total_cost` | USD | Cost per contacted customer; total = offer + contact |
+| `expected_saved_probability` | probability | churn_probability x assumed_save_rate |
+| `expected_retained_value` | USD | expected_saved_probability x customer_value |
+| `expected_net_value` | USD | expected_retained_value - total_cost |
+| `break_even_save_rate` | share | total_cost / (churn_probability x customer_value); save rate at which the offer pays for itself |
+| `break_even_probability` | probability | total_cost / (save rate x customer_value); churn probability above which the offer pays |
+| `selected` | bool | Customer is on the contact list |
+| `selection_reason`, `decision_detail` | text | Why the customer is in or out, with the EV formula filled in |
+| `scenario_id` | text | Hash of value settings, offers, budget, strategy, contact cap and customer list |
+| `quadrant` | text | Risk x value segment using validation 75th-percentile cut-offs |
+
+## Rules applied to every input file
+
+- Blank `TotalCharges` with tenure 0 becomes 0; other numeric gaps are filled with training medians.
+- Categorical fields must match the allowed values exactly; missing categories are rejected.
+- `MultipleLines` is "No phone service" if and only if `PhoneService` is "No"; the six internet add-ons are "No internet service" if and only if `InternetService` is "No".
+- A contradiction rejects the whole upload; nothing is partially imported.
+- Money is in USD of the sample company (assumed; the source does not state a currency).

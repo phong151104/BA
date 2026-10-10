@@ -1,0 +1,16 @@
+{
+  "strategy": "segment_offers",
+  "selected_count": 152,
+  "save_rate_multiplier": 0.5911324988044198,
+  "break_even_default_save_rate": 0.11822649976088395,
+  "offer_cost_multiplier": 1.8835877088631303,
+  "break_even_default_offer_cost": 37.671754177262606,
+  "minimum_viable_save_rate": 0.08910844091995469,
+  "break_even_probability_quantiles": {
+    "p10": 0.2943546409333618,
+    "p25": 0.36409404816988133,
+    "p50": 0.5432991995188771,
+    "p75": 1.0859460700643673,
+    "p90": 1.832907746055055
+  }
+}

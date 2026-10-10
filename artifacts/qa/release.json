@@ -1,23 +1,44 @@
 {
   "status": "passed",
-  "python": "3.13.5 | packaged by Anaconda, Inc. | (main, Jun 12 2025, 16:37:03) [MSC v.1929 64 bit (AMD64)]",
-  "environment": "D:\\BA\\.venv-check",
-  "run_id": "20261003T183647103688Z-88be4b93",
-  "required_artifact_count": 19,
-  "broken_links": [],
-  "reproducibility": {
-    "previous": "20261003T113637229316Z-88be4b93",
-    "current": "20261003T183647103688Z-88be4b93",
-    "metrics_equal_atol": 1e-12,
-    "selected_ids_equal": true
+  "python": "3.13.9",
+  "run_id": "20261010T124415068764Z-88be4b93",
+  "artifacts": {
+    "required": 27,
+    "sizes": {
+      "random_campaigns.csv": 100,
+      "sensitivity.csv": 114,
+      "tornado.csv": 6,
+      "budget_curve.csv": 186,
+      "scenarios.csv": 3
+    }
   },
-  "warmed_app_seconds": [
-    0.13958129999991797,
-    0.19950910000079602,
-    0.21361269999943033,
-    0.2203488000013749,
-    0.21884099999988393
-  ],
-  "mean_seconds": 0.19837858000028064,
-  "max_seconds": 0.2203488000013749
+  "documents": {
+    "rendered": 15,
+    "drift": []
+  },
+  "links": "no broken relative links",
+  "deliverables": {
+    "brief_words": 717,
+    "brief_pages": 2,
+    "slides": 13,
+    "slides_with_notes": 13,
+    "deck_pdf_pages": 13
+  },
+  "reproducibility": {
+    "compared_with": "20261010T124155118613Z-88be4b93",
+    "current": "20261010T124415068764Z-88be4b93",
+    "metrics_atol": 1e-10,
+    "selected_customers_and_offers_equal": true,
+    "scenario_ids_equal": true
+  },
+  "ui_seconds": {
+    "warmed": [
+      0.1175950000033481,
+      0.5302404999965802,
+      0.49500670000270475,
+      0.4992021000070963,
+      0.1255372999876272
+    ],
+    "max": 0.5302404999965802
+  }
 }

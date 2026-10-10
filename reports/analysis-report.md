@@ -1,258 +1,208 @@
-# Hồ sơ phân tích Telecom Churn & Retention Targeting
+<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+# Analysis report: profit-aware churn and retention targeting
 
-Run `20261003T183647103688Z-88be4b93` · nguồn `Kaggle blastchar/telco-customer-churn` · scenario chuẩn `765d0287b0f6`.
+Run `20261010T124415068764Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
 
-Tài liệu này là nguồn nội dung cho báo cáo và slide. Tất cả số liệu bên dưới được sinh từ pipeline đã chạy; không phải số mẫu. Tiền là ĐVTT. Save rate, chi phí, margin và horizon là giả định.
+## 1. Summary
 
-## Mục lục
+- **Question:** with a limited retention budget, which customers should receive an offer when both churn risk and economic value count?
+- **Answer:** rank customers by expected net value of an offer (p(churn) x save rate x value - cost), let an optimiser pick the customer-offer combination within budget, and size the budget where the marginal return falls below 10%.
+- **Impact (test split, same $3,500 budget):** expected value + segment offers $2,420 vs $1,098 for risk-only targeting (+$1,322); label-based check of the targeting gain $1,308 (95% interval $509 to $2,153).
+- **Budget:** 24% of the base (validation rule) gives $3,692 on test from $8,450.
+- **Main risk:** the save rate is assumed. Break-even 11.8% vs assumed 20%; a randomised pilot measures it before scale-up.
 
-1. [Bối cảnh](#1-bối-cảnh-và-quyết-định)
-2. [Dữ liệu](#2-dữ-liệu-và-chất-lượng)
-3. [EDA](#3-khám-phá-dữ-liệu)
-4. [Kiểm định](#4-thiết-kế-kiểm-định)
-5. [Mô hình](#5-kết-quả-mô-hình)
-6. [Giải thích](#6-giải-thích-đặc-trưng)
-7. [Giá trị](#7-giá-trị-khách-hàng-và-ưu-đãi)
-8. [Targeting](#8-so-sánh-chiến-lược)
-9. [Độ nhạy](#9-độ-nhạy-và-ngân-sách)
-10. [Phân khúc và công bằng](#10-chính-sách-phân-khúc-và-công-bằng)
-11. [Khuyến nghị](#11-khuyến-nghị-quản-lý)
-12. [Giới hạn](#12-giới-hạn)
-13. [Demo](#13-kịch-bản-demo)
-14. [Dàn ý slide](#14-dàn-ý-slide-và-danh-mục-bằng-chứng)
+## 2. Business question and decision
 
-## 1. Bối cảnh và quyết định
+The decision owner (Head of Customer Retention) chooses, for each campaign wave, the contact list, the offer per customer and the budget. Today's rule contacts the highest-risk customers. The [business case](../docs/business-case.md) lists stakeholders, options and KPI definitions; the course requirements are mapped to evidence in [requirements traceability](../docs/requirements-traceability.md).
 
-Doanh nghiệp viễn thông có ngân sách giữ chân hữu hạn. Quyết định là chọn ai và ưu đãi nào để tạo giá trị giữ chân ròng kỳ vọng tốt nhất. Dự đoán churn là đầu vào, không phải đích cuối. Người sử dụng chính là quản lý chiến dịch và người phân tích hỗ trợ ra quyết định.
+## 3. Data and readiness
 
-Thành công được đánh giá ở ba mức: phân biệt và hiệu chỉnh xác suất; chất lượng danh sách targeting; giá trị kinh tế dưới giả định minh bạch. Không đặt KPI mô hình tùy ý để buộc kết quả đạt một con số mong muốn.
+IBM Telco Customer Churn sample: 7,043 customers, 21 columns, 26.5% churners, fictional US company ([source log](../docs/source-log.md), [data dictionary](../docs/data-dictionary.md), [cleaning log](../docs/cleaning-log.md)). Cleaning removed 0 duplicates and set 11 blank `TotalCharges` of new customers to 0. Stratified split train/validation/test = 4,225 / 1,409 / 1,409; all choices are made on validation and test is used once. The [data readiness review](../docs/data-readiness-review.md) concludes the data are fit to design the method but not to size a real campaign (fictional, single snapshot, no offer-response data).
 
-## 2. Dữ liệu và chất lượng
+## 4. Who churns, and who is worth saving
 
-Nguồn thực tế: [Kaggle blastchar/telco-customer-churn](https://www.kaggle.com/datasets/blastchar/telco-customer-churn). Có 7,043 dòng, 21 cột. Checksum `88be4b93fbe0cc83421af1c503794c97c342eca914c1576db7c276e61d61358a`. [Source log](../docs/source-log.md), [data dictionary](../docs/data-dictionary.md), [cleaning log](../docs/cleaning-log.md).
+![Churn by segment](figures/eda_drivers.png)
 
-Có 11 TotalCharges trống; 11 trường hợp tenure=0 được điền 0. Loại 0 dòng trùng hoàn toàn. Không nối nguồn khách hàng ngoài; không loại outlier hợp lệ. Ưu đãi là dữ liệu tổng hợp có nguồn gốc riêng và các giá trị công khai.
+On train, churn is highest for **Month-to-month** (43% vs 3% for Two year); **new** (48% vs 14% for loyal); **Fiber optic** (42% vs 7% for No); **Electronic check** (46% vs 15% for Credit card (automatic)). Customers without TechSupport or OnlineSecurity also churn more. These are associations in observational data, not causes.
 
-## 3. Khám phá dữ liệu
+Risk and value only partly overlap. Using validation cut-offs (75th percentiles: risk 0.457, value $345), the test customers fall into four segments:
 
-EDA thiết kế trên tập train; không sử dụng test để tạo features hoặc sửa giả định.
+| Segment | Customers | Observed churn | Mean value | Share of value at risk | Contacted: risk-only | Contacted: recommended |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| High risk / High value | 51 | 52.9% | $402 | 11.9% | 2 | 51 |
+| High risk / Low value | 293 | 60.4% | $213 | 43.9% | 138 | 83 |
+| Low risk / High value | 297 | 20.2% | $414 | 23.5% | 0 | 18 |
+| Low risk / Low value | 768 | 14.3% | $168 | 20.7% | 0 | 0 |
 
-| attribute      | group          |    n |   churn_rate |   mean_monthly_charges |   mean_tenure |
-|:---------------|:---------------|-----:|-------------:|-----------------------:|--------------:|
-| Contract       | Month-to-month | 2304 |        0.431 |                 66.767 |        18.046 |
-| Contract       | One year       |  896 |        0.110 |                 65.028 |        41.955 |
-| Contract       | Two year       | 1025 |        0.029 |                 60.569 |        56.489 |
-| tenure_segment | new            | 1318 |        0.477 |                 56.492 |         4.810 |
-| tenure_segment | developing     |  615 |        0.278 |                 60.427 |        18.250 |
-| tenure_segment | loyal          | 2292 |        0.140 |                 70.925 |        52.141 |
+The high-risk/low-value segment holds the most value at risk in total (44%) but each customer is worth little; risk-only targeting spends almost all its budget there. The recommended rule reaches all 51 high-risk/high-value customers and adds valuable customers at moderate risk.
 
-![Churn theo hợp đồng](figures/eda_contract.png)
+![Risk x value](figures/risk_value.png)
 
-Biểu đồ đối chiếu churn giữa các loại hợp đồng. Nhóm có tỷ lệ cao chỉ cho thấy liên hệ trong mẫu; không chứng minh đổi hợp đồng sẽ làm giảm churn. Cần xem cả số lượng nhóm để tránh đánh giá một nhóm nhỏ như nhóm lớn.
+## 5. Churn model
 
-Trên train, nhóm `Month-to-month` có churn 43.1% (n=2,304), so với 2.9% ở `Two year` (n=1,025); chênh 40.1 điểm phần trăm. Đây là liên hệ quan sát, không chứng minh nguyên nhân hay hiệu quả của can thiệp. Hàm ý: dùng hợp đồng để kiểm tra phân bố rủi ro, sau đó xét EV và ngân sách; không tự động gửi ưu đãi cho toàn bộ nhóm churn cao.
+**Candidates:** logistic regression (baseline), random forest (tree-based, required), XGBoost gradient boosting (stretch), each tuned by 5-fold cross-validation on average precision and calibrated with a sigmoid on out-of-fold predictions; a prior-only baseline anchors the metrics.
 
-![Churn theo tenure](figures/eda_tenure.png)
+**Selection (validation, rule fixed in advance):** AP within 0.01 of best calibrated candidate; Brier within 0.002 of best; prefer simpler -> **calibrated Logistic Regression**.
 
-Tenure giúp xem rủi ro thay đổi theo giai đoạn quan hệ khách hàng, đồng thời tham gia proxy giá trị qua các hệ số giả định. Đây là hai vai trò khác nhau; hệ số giá trị không được suy ra như một kết luận nhân quả từ biểu đồ churn.
+**Test performance:**
 
-Trên train, nhóm `new` có churn 47.7% (n=1,318), so với 14.0% ở `loyal` (n=2,292); chênh 33.7 điểm phần trăm. Đây là liên hệ quan sát, không chứng minh nguyên nhân hay hiệu quả của can thiệp. Hàm ý: tách rủi ro giai đoạn đầu khỏi giả định về giá trị còn lại; kiểm tra kịch bản mọi hệ số tenure bằng 1 trước khi đề xuất chính sách phân khúc.
+| Model | PR-AUC | ROC-AUC | Brier | ECE | Calibration slope | Recall @ threshold |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| dummy_raw | 0.265 | 0.500 | 0.195 | 0.022 | n/a | 0.0% |
+| logistic_raw | 0.619 | 0.831 | 0.142 | 0.020 | 0.93 | 70.9% |
+| logistic_calibrated | 0.619 | 0.831 | 0.142 | 0.020 | 0.93 | 70.9% |
+| random_forest_raw | 0.629 | 0.831 | 0.141 | 0.017 | 0.99 | 68.7% |
+| random_forest_calibrated | 0.629 | 0.831 | 0.143 | 0.035 | 0.92 | 65.2% |
+| xgboost_raw | 0.633 | 0.831 | 0.141 | 0.019 | 0.92 | 70.6% |
+| xgboost_calibrated | 0.633 | 0.831 | 0.143 | 0.048 | 0.94 | 61.5% |
 
-![Thanh toán](figures/eda_payment.png)
+The deployed model's PR-AUC is 0.619 (95% interval 0.568-0.669) against a random baseline of 0.265; ROC-AUC 0.831. The three model families rank almost equally well, so the simpler, interpretable and well-calibrated logistic model is deployed.
 
-Khác biệt theo cách thanh toán có thể liên quan đặc điểm khách hàng và dịch vụ. Không kết luận phương thức thanh toán tự nó gây churn. Xem thêm [bảng EDA đầy đủ](tables/eda_segments.csv), [thống kê](tables/eda_descriptive.csv), [tương quan](tables/correlations.csv).
+![Discrimination](figures/discrimination.png)
 
-Trên train, nhóm `Electronic check` có churn 45.6% (n=1,410), so với 15.0% ở `Credit card (automatic)` (n=915); chênh 30.6 điểm phần trăm. Đây là liên hệ quan sát, không chứng minh nguyên nhân hay hiệu quả của can thiệp. Hàm ý: kiểm tra sai số và calibration theo nhóm; không kết luận thay cách thanh toán sẽ giữ chân khách hàng.
-
-## 4. Thiết kế kiểm định
-
-Kích thước: {'train': 4225, 'validation': 1409, 'test': 1409}. Seed 42; stratify Churn; fit median/scaler/encoder trong train fold. Calibration sigmoid dùng dự đoán OOF qua 5 fold. Validation chọn mô hình, ngưỡng và chính sách; test dùng đánh giá cuối. Không refit lại mô hình bằng toàn dataset sau test.
-
-Loại customerID và Churn khỏi features. gender/SeniorCitizen phục vụ audit. Thêm tenure band, số dịch vụ, cờ hợp đồng tháng và autopay. [Model card](../docs/model-card.md) liệt kê toàn bộ features và giới hạn. Điểm train trong scorecard được gắn `in_sample_do_not_evaluate`.
-
-## 5. Kết quả mô hình
-
-### Validation và lựa chọn
-
-| model         | variant    |   average_precision |   roc_auc |   brier |   log_loss |   precision |   recall |    f1 |
-|:--------------|:-----------|--------------------:|----------:|--------:|-----------:|------------:|---------:|------:|
-| dummy         | raw        |               0.265 |     0.500 |   0.195 |      0.579 |       0.000 |    0.000 | 0.000 |
-| logistic      | raw        |               0.669 |     0.859 |   0.131 |      0.403 |       0.692 |    0.553 | 0.615 |
-| logistic      | calibrated |               0.669 |     0.859 |   0.131 |      0.403 |       0.692 |    0.553 | 0.615 |
-| random_forest | raw        |               0.668 |     0.857 |   0.132 |      0.406 |       0.699 |    0.497 | 0.581 |
-| random_forest | calibrated |               0.668 |     0.857 |   0.132 |      0.411 |       0.679 |    0.508 | 0.581 |
-| xgboost       | raw        |               0.673 |     0.857 |   0.131 |      0.404 |       0.692 |    0.529 | 0.600 |
-| xgboost       | calibrated |               0.673 |     0.857 |   0.131 |      0.411 |       0.696 |    0.527 | 0.600 |
-
-Chọn `logistic` calibrated theo quy tắc AP trong 0.01 của tốt nhất, Brier trong 0.002 của tốt nhất trong nhóm và ưu tiên đơn giản. Không chọn lại khi mô hình khác có test AP cao hơn.
-
-### Test
-
-| model                    |   average_precision |   roc_auc |   brier |   log_loss |   precision |   recall |    f1 |
-|:-------------------------|--------------------:|----------:|--------:|-----------:|------------:|---------:|------:|
-| dummy_raw                |               0.265 |     0.500 |   0.195 |      0.579 |       0.000 |    0.000 | 0.000 |
-| logistic_raw             |               0.619 |     0.831 |   0.142 |      0.432 |       0.545 |    0.709 | 0.616 |
-| logistic_calibrated      |               0.619 |     0.831 |   0.142 |      0.432 |       0.544 |    0.709 | 0.616 |
-| random_forest_raw        |               0.629 |     0.831 |   0.141 |      0.433 |       0.552 |    0.687 | 0.612 |
-| random_forest_calibrated |               0.629 |     0.831 |   0.143 |      0.439 |       0.587 |    0.652 | 0.618 |
-| xgboost_raw              |               0.633 |     0.831 |   0.141 |      0.432 |       0.545 |    0.706 | 0.615 |
-| xgboost_calibrated       |               0.633 |     0.831 |   0.143 |      0.440 |       0.576 |    0.615 | 0.595 |
-
-AP ở đây là Average Precision của scikit-learn, không phải tích phân hình thang đường PR. Ngưỡng phân loại 0.35 chọn theo F1 validation của mô hình bàn giao; được dùng chung để so sánh các metric thresholded. Precision/recall/F1 không mô tả tối ưu kinh doanh.
-
-| metric            |   lower_95 |   upper_95 |
-|:------------------|-----------:|-----------:|
-| average_precision |      0.568 |      0.669 |
-| roc_auc           |      0.808 |      0.852 |
-| brier             |      0.131 |      0.153 |
-| log_loss          |      0.402 |      0.461 |
-| precision         |      0.499 |      0.589 |
-| recall            |      0.663 |      0.751 |
-| f1                |      0.574 |      0.654 |
-
-Khoảng bootstrap 95% từ 1,000 lần lấy mẫu test phản ánh bất định lấy mẫu của metric, không bao gồm mọi sai lệch nguồn dữ liệu hay chứng minh tác động ưu đãi.
+**Calibration.** Expected value multiplies a probability by money, so calibration matters as much as ranking. The deployed model's ECE is 0.020, slope 0.93 (target 1) and intercept -0.022 (target 0). Sigmoid calibration made little difference to logistic regression and worsened the tree models' ECE on test; this is reported as found.
 
 ![Calibration](figures/calibration.png)
 
-Calibration cần xem cả Brier/log loss và biểu đồ. Trong lần chạy này, một số mô hình calibrated không cải thiện so với raw; kết quả được giữ nguyên. Việc yêu cầu calibration không đồng nghĩa đảm bảo nó luôn làm mô hình tốt hơn.
+**Threshold analysis.** The F1-optimal threshold on validation is 0.35. A threshold, however, ignores value and cost. On test:
 
-![PR](figures/pr_curve.png)
+| Rule | Customers | Cost | Expected net value | Precision | Recall |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Probability >= 0.35 (F1 threshold) | 487 | $12,175 | $1,405 | 54.4% | 70.9% |
+| Expected value > 0 (no budget limit) | 329 | $8,225 | $2,916 | 56.8% | 50.0% |
+| Expected value, ranked within the fixed budget | 140 | $3,500 | $2,130 | 62.1% | n/a |
 
-PR cho thấy đánh đổi precision–recall khi đổi ngưỡng. [ROC](figures/roc_curve.png), [confusion matrix](tables/confusion_matrix.csv), [threshold analysis](tables/threshold_analysis.csv) và [sai số phân khúc](tables/segment_errors.csv) cung cấp chẩn đoán bổ sung.
+Contacting everyone above the F1 threshold costs more and earns less than contacting everyone with positive expected value. The churn probability a customer needs before an offer pays off (break-even probability) ranges from 29% for the most valuable decile to above 100% (never worth it) for the least valuable, which is why one global threshold cannot be right.
 
-## 6. Giải thích đặc trưng
+![Gains](figures/gains.png)
 
-![SHAP](figures/shap_global.png)
+**Error analysis.** Recall and calibration by contract, internet service, payment method, gender and seniority are in [segment errors](tables/segment_errors.csv). The riskiest decile churns at 70% (lift 2.65x); the top three deciles capture 64% of churners.
 
-Đây là TreeSHAP của XGBoost gốc trên 200 khách hàng validation, đơn vị log-odds. Mô hình bàn giao có thể khác XGBoost. Mean absolute SHAP đo độ lớn đóng góp, không cho biết chiều tác động trung bình. Bảng local chứa giá trị có dấu và base value để giải thích từng người.
+![Model drivers](figures/model_drivers.png)
 
-Nguồn bổ sung: [hệ số Logistic](tables/logistic_coefficients.csv), [permutation RF](tables/permutation_random_forest.csv), [permutation XGBoost](tables/permutation_xgboost.csv), [SHAP local](tables/shap_local.csv). Các kết quả không là giải thích nhân quả và không phân rã xác suất sau calibration.
+The challenger XGBoost model is explained with SHAP; its leading features (monthly_contract, tenure, MonthlyCharges, OnlineSecurity_No) agree with the logistic coefficients.
 
-## 7. Giá trị khách hàng và ưu đãi
+![SHAP challenger](figures/shap_challenger.png)
 
-`V = MonthlyCharges × margin × min(horizon_cap, base_horizon × tenure_factor)`.
+## 6. Decision logic and results at the fixed budget
 
-Ưu đãi tiêu chuẩn: chi phí 20 + liên hệ 2 ĐVTT; save rate 20.0%. Biên đóng góp 30.0%; horizon cơ sở 12 tháng; hệ số new/developing/loyal 0.75/1/1.25; cap 24 tháng. Đây là cấu hình thực tế của lần chạy, không phải hằng số trong báo cáo. Mọi giá trị đều có thể chỉnh; kịch bản hệ số tenure bằng 1 được kiểm tra riêng. TotalCharges là thông tin lịch sử, không được cộng như lợi ích tương lai.
+**Value proxy:** monthly charges x margin 30% x discounted months, with a base horizon of 12 months scaled by tenure (0.75 / 1.0 / 1.25) and a 10% annual discount rate. It is a 12-month truncated value, not a lifetime value.
 
-| offer_id   |   offer_cost |   contact_cost |   save_rate |
-|:-----------|-------------:|---------------:|------------:|
-| light      |       10.000 |          2.000 |       0.100 |
-| standard   |       20.000 |          2.000 |       0.200 |
-| intensive  |       40.000 |          2.000 |       0.300 |
+**Expected value of an offer:** p(churn) x save rate x value - (offer cost + contact cost); offer cost is charged to every contacted customer (unconditional credit), which is conservative.
 
-`EV = p × q × V − offer_cost − contact_cost`. q là save rate giả định có điều kiện khách hàng vốn sẽ churn; không phải xác suất phản hồi được học từ dữ liệu. Chi phí được tính trên mọi người được chọn. EV có thể âm; chiến lược EV được phép không dùng hết ngân sách.
+**Selection:** a mixed-integer knapsack (scipy/HiGHS) maximises total expected value subject to the budget, one offer per customer, offer eligibility and a 30% contact cap; customers with non-positive EV are never contacted. With one offer and equal costs, sorting by EV is provably optimal and is used directly.
 
-## 8. So sánh chiến lược
+**Offers:** a synthetic catalog of four offers with eligibility rules ([assumption register](../docs/assumption-register.md#offer-catalog)). On validation, segment offers beat the single standard offer by 12%, above the 5% rule, so the recommended rule is **expected value + segment offers**.
 
-Ngân sách chuẩn 3,080 ĐVTT. Mỗi chiến lược dùng cùng tập test. Single-offer so sánh cùng mức chi phí; multi-offer trình bày riêng. Random là trung bình 100 lần chọn ngẫu nhiên với seed cố định.
+**Results on test, same budget ($3,500):**
 
-| strategy         |   selected_count |     cost |   expected_saved |   expected_net_value |     roi |   precision_contacted |   high_risk_high_value_coverage |   label_based_simulated_net |
-|:-----------------|-----------------:|---------:|-----------------:|---------------------:|--------:|----------------------:|--------------------------------:|----------------------------:|
-| none             |            0.000 |    0.000 |            0.000 |                0.000 | nan     |               nan     |                           0.000 |                       0.000 |
-| risk             |          140.000 | 3080.000 |           20.750 |             1709.332 |   0.555 |                 0.700 |                           0.039 |                    1370.284 |
-| risk_positive_ev |          140.000 | 3080.000 |           20.706 |             1792.562 |   0.582 |                 0.679 |                           0.039 |                    1347.307 |
-| value            |          140.000 | 3080.000 |            5.820 |             -312.629 |  -0.102 |                 0.286 |                           0.294 |                     743.155 |
-| ev               |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
-| multi_offer      |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
-| random_mean      |          140.000 | 3080.000 |            7.505 |            -1146.105 |  -0.372 |                 0.262 |                           0.102 |                   -1171.184 |
-| segment_policy   |          140.000 | 3080.000 |           17.330 |             2859.215 |   0.928 |                 0.607 |                           0.980 |                    2708.611 |
+| Rule | Customers | Cost | Expected net value | ROI | Precision | HR/HV coverage | Label-based net |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| No campaign | 0 | $0 | $0 | n/a | n/a | 0.0% | $0 |
+| Highest churn risk | 140 | $3,500 | $1,098 | 31.4% | 70.0% | 3.9% | $775 |
+| Highest risk, positive EV only | 140 | $3,500 | $1,256 | 35.9% | 68.6% | 5.9% | $864 |
+| Highest customer value | 140 | $3,500 | -$901 | -25.8% | 28.6% | 29.4% | $90 |
+| Expected value (single offer) | 140 | $3,500 | $2,130 | 60.9% | 62.1% | 96.1% | $2,083 |
+| Expected value + segment offers | 152 | $3,499 | $2,420 | 69.2% | 59.9% | 100.0% | $2,056 |
+| Random contact (mean of runs) | 140 | $3,500 | -$1,664 | -47.5% | 26.2% | 10.2% | -$1,688 |
 
-![So sánh targeting](figures/strategy_comparison.png)
+![Strategy comparison](figures/strategy_comparison.png)
 
-EV tạo net kỳ vọng 2,859.22 so với risk-only 1,709.33; chênh 1,149.88 ĐVTT trong kịch bản này. Precision targeting đo mức tập trung churn, không trực tiếp đo giá trị kinh tế. Risk-only có thể precision cao hơn nhưng bỏ qua giá trị khách hàng.
+- **Targeting effect:** expected value vs risk-only with the same offer: +$1,032 expected; label-based (actual churn, assumed save rate) +$1,308, paired bootstrap 95% interval $509 to $2,153.
+- **Offer-design effect:** segment offers vs single offer: +$290 expected, label-based -$27 (-$372 to $316). Because this gain comes from assumed offer-specific save rates, it is not evidence that the offers work; the pilot tests each offer as its own arm.
+- **Precision vs value:** risk-only has higher precision (70% vs 60%) but lower value, because it contacts high-risk customers whose remaining value cannot repay an offer. Coverage of high-risk/high-value customers is 100% vs 4%.
+- **Random contact and value-only targeting lose money** (-$1,664 and -$901): offers to customers who would have stayed are pure cost.
 
-Đối chứng risk_positive_ev chỉ giữ ứng viên EV >0 rồi xếp theo xác suất churn, cùng ưu đãi/ngân sách. Net kỳ vọng 1,792.56; EV chênh 1,066.65 ĐVTT. Báo cáo cả đối chứng này để phân biệt lợi ích của loại EV âm với lợi ích của xếp hạng theo giá trị.
+![Who each rule contacts](figures/quadrant_selection.png)
 
-`label_based_simulated_net` thay p bằng nhãn test, vẫn dùng q giả định. Đây là mô phỏng hồi cứu, không phải lợi nhuận quan sát được. Nhãn test không tham gia chọn khách hàng.
+## 7. How robust is the answer?
 
-![Risk value](figures/risk_value.png)
+**One assumption at a time (tornado, list re-optimised within the same budget):**
 
-Ngưỡng high-risk/high-value dùng percentile 75 trên validation và khóa cho test. Không nhầm nhóm này với risk_band low/medium/high phục vụ hiển thị. [Danh sách chọn](tables/targeting_ev.csv) có chi phí, EV, lý do, model_version và scenario_id.
+| Assumption | Low | High | Net at low | Net at high | Frozen list at low | Frozen list at high |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| Save rate of the standard offer | 0.1 | 0.3 | $326 | $6,050 | -$588 | $5,428 |
+| Value horizon (months) | 6.0 | 18.0 | $51 | $5,163 | -$465 | $5,163 |
+| Offer cost (multiplier on catalog cost) | 0.5 | 1.5 | $5,724 | $1,015 | $3,790 | $1,051 |
+| Contribution margin | 0.2 | 0.4 | $465 | $4,393 | $447 | $4,393 |
+| Contact cost per customer (USD) | 1.0 | 10.0 | $3,617 | $1,615 | $3,028 | $1,660 |
+| Annual discount rate | 0.05 | 0.15 | $2,578 | $2,275 | $2,578 | $2,274 |
 
-## 9. Độ nhạy và ngân sách
+![Tornado](figures/tornado.png)
 
-![Fixed](figures/sensitivity_fixed.png)
+**Save rate x offer cost.** Over the grid, the re-optimised plan ranges from $0 to $15,298; a frozen list ranges from -$4,831 to $9,806. Re-optimising never loses money because it stops contacting customers whose EV turns negative; a frozen list can.
 
-Fixed giữ danh sách của kịch bản chuẩn, cho phép thấy quyết định ban đầu nhạy thế nào khi giả định sai. Net dao động -2,995.20–13,168.04 ĐVTT. Khi chi phí tăng, danh sách có thể vượt ngân sách; cột budget_feasible thể hiện điều này.
+![Sensitivity grid](figures/sensitivity_heatmap.png)
 
-![Retarget](figures/sensitivity_retarget.png)
+**Combined scenarios:**
 
-Retarget chọn lại danh sách dưới ngân sách cho mỗi giả định; net dao động 0.00–21,167.31 ĐVTT. Đây là khoảng kịch bản, không phải khoảng tin cậy. Cột turnover dùng chênh lệch đối xứng chia hợp hai danh sách, bằng 0 khi danh sách không đổi.
+| Scenario | Assumptions | Customers | Net (re-optimised) | Net (frozen list) |
+|---|---|---:|---:|---:|
+| Pessimistic | `{"save_rate": 0.1, "offer_cost_multiplier": 1.25, "contact_cost": 8.0, "value.margin": 0.25, "value.base_horizon_months": 9}` | 0 | $0 | -$2,797 |
+| Base | `{}` | 152 | $2,420 | $2,420 |
+| Optimistic | `{"save_rate": 0.3, "offer_cost_multiplier": 0.75, "contact_cost": 2.0, "value.margin": 0.4, "value.base_horizon_months": 15}` | 313 | $18,525 | $12,338 |
 
-![Budget](figures/budget_curve.png)
+**Break-even.** The recommended list breaks even at a standard-offer save rate of **11.8%** (all offers scaled proportionally) or at offer costs 1.88x today's; below a save rate of 8.9%, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
 
-Trong lưới 21 điểm, EV đạt net lớn nhất lần đầu tại ngân sách 11,836 ĐVTT, giá trị 4,701.59. Không gọi đây là cực trị liên tục. Khi không còn EV dương, thêm ngân sách không bắt buộc tăng chi tiêu. Điểm hòa vốn cấp khách hàng nằm trong bảng targeting: q*=cost/(p×V), c*=p×q×V; q*>1 không khả thi, mẫu số 0 trả NA.
+## 8. How much to spend
 
-Xem [sensitivity đầy đủ](tables/sensitivity.csv) cho margin 20/30/40%, horizon 6/12/18 tháng và hệ số tenure đồng nhất; [budget curve](tables/budget_curve.csv) có chi phí thực và số người chọn.
+![Profit curve](figures/profit_curve.png)
 
-Dashboard tính độ nhạy theo chính sách đang chọn (một ưu đãi, nhiều ưu đãi hoặc tenure đã khóa). Fixed giữ nguyên cả cặp khách hàng–ưu đãi. Với nhiều ưu đãi, trục save rate là mốc tiêu chuẩn; các ưu đãi khác thay đổi cùng số điểm phần trăm, chặn [0,1]. Phí ưu đãi cùng nhân hệ số, phí liên hệ giữ nguyên. Bảng báo cáo tĩnh này dùng một ưu đãi tiêu chuẩn. Cột assignment_turnover đo thay đổi cặp khách hàng–ưu đãi, còn turnover chỉ đo thay đổi ID; reference_scenario_id truy về chiến dịch gốc, solver_status/gap công khai chất lượng nghiệm.
+Expected net value rises with the budget at a falling marginal return. The recommendation rule (largest budget whose last step still earns 10%) was applied on validation and chose **24%** of customers (net-maximising share on validation: 32%). Applied to test:
 
-### Bất định lấy mẫu của mô phỏng kinh tế
+| Budget | Customers | Cost | Expected net value | ROI | Label-based net |
+|---|---:|---:|---:|---:|---:|
+| Base (10%) | 152 | $3,499 | $2,420 | 69% | $2,056 |
+| Recommended (24%) | 310 | $8,450 | $3,692 | 44% | $3,286 |
 
-| strategy                  |   label_based_simulated_net |   lower_95 |   upper_95 |   iterations |
-|:--------------------------|----------------------------:|-----------:|-----------:|-------------:|
-| ev                        |                    2708.611 |   1807.217 |   3792.675 |         1000 |
-| risk                      |                    1370.284 |    802.993 |   1932.335 |         1000 |
-| risk_positive_ev          |                    1347.307 |    785.543 |   1910.894 |         1000 |
-| ev_minus_risk_positive_ev |                    1361.304 |    492.646 |   2308.765 |         1000 |
+Beyond about 27% of customers (383 on test, $11,378) no customer has positive EV and extra budget should stay unspent. Scaled to the 7,043-customer base, the recommended wave is about $42,238 for $18,454 expected net value (linear scaling, indicative only).
 
-[Bảng bootstrap kinh tế](tables/economic_uncertainty.csv) dùng cùng chỉ số khách hàng được lấy mẫu cho mọi chiến lược, giữ nguyên danh sách/ưu đãi và giả định. Dòng ev_minus_risk_positive_ev là chênh lệch ghép cặp, không lấy hai khoảng độc lập trừ nhau. Đây là biến thiên lấy mẫu của tổng giá trị mô phỏng dùng nhãn churn trên một quần thể cùng kích thước. Không tối ưu lại sau lấy mẫu; ngân sách của mẫu lặp không phải ràng buộc của một chiến dịch mới. Khoảng này không bao gồm sai số save rate, ước lượng lại mô hình hay hiệu quả nhân quả, và không phải khoảng tin cậy lợi nhuận thật. Đọc cùng khoảng kịch bản fixed/retarget, không thay thế chúng.
+## 9. Fairness and customer experience
 
-## 10. Chính sách phân khúc và công bằng
+![Fairness](figures/fairness.png)
 
-27 chính sách gán ưu đãi theo tenure được so sánh trên validation; lựa chọn khóa là `{'new': 'standard', 'developing': 'standard', 'loyal': 'standard'}`. Nếu cả ba nhóm cùng ưu đãi hoặc multi-offer không tăng net, đó là kết quả hợp lệ; không sửa giả định để tạo câu chuyện tốt hơn.
+- **Seniors** are contacted 3.66x as often as non-seniors under the recommended rule (risk-only: 2.40x). Adjusted for risk decile the ratio falls to 1.74x: most of the gap comes from higher churn risk, the rest from higher monthly charges (value). Being selected means receiving a discount and a call, so the gap is both a benefit and a burden; it is flagged for review rather than corrected automatically.
+- **Gender:** ratio 1.14x (interval 0.83-1.55), within normal variation.
+- **Loyalty:** one- and two-year contract customers are not contacted because their churn risk is low; long-tenure customers get fewer offers than new ones. A loyalty reward is in the catalog and the playbook recommends a non-targeted loyalty benefit to avoid a "loyalty penalty" perception.
+- **Contact burden:** the cap (30% of customers), one retention contact per 30 days, and the legal call window (08:00-17:00, one advertising call per 24 hours) limit intrusiveness.
 
-| attribute      | group      |    n | small_sample   |   selection_rate |   recall |   brier |   calibration_gap |
-|:---------------|:-----------|-----:|:---------------|-----------------:|---------:|--------:|------------------:|
-| gender         | Female     |  714 | False          |            0.111 |    0.715 |   0.155 |            -0.011 |
-| gender         | Male       |  695 | False          |            0.088 |    0.701 |   0.129 |             0.018 |
-| SeniorCitizen  | 0          | 1170 | False          |            0.070 |    0.676 |   0.129 |             0.009 |
-| SeniorCitizen  | 1          |  239 | False          |            0.243 |    0.794 |   0.206 |            -0.025 |
-| tenure_segment | developing |  204 | False          |            0.123 |    0.768 |   0.161 |             0.023 |
-| tenure_segment | loyal      |  774 | False          |            0.089 |    0.466 |   0.104 |            -0.007 |
-| tenure_segment | new        |  431 | False          |            0.107 |    0.835 |   0.201 |             0.011 |
+Gender and seniority are not model inputs. Full table: [fairness.csv](tables/fairness.csv).
 
-![Phân bổ](figures/fairness_selection.png)
+## 10. Limitations and external validity
 
-Các nhóm có thể khác nhau về chọn ưu đãi, recall và calibration. Chênh lệch không tự chứng minh phân biệt đối xử, nhưng loại bỏ demographic khỏi features cũng không bảo đảm công bằng. Chính sách ưu tiên giá trị có thể ít phục vụ khách hàng giá trị thấp. Doanh nghiệp cần cân nhắc cam kết dịch vụ, trải nghiệm nhất quán và quyền từ chối liên hệ.
+1. **No causal uplift.** The data contain no randomised campaign; all save rates are assumptions. High-risk customers may be the least responsive and contact can backfire (Ascarza 2018; Ascarza et al. 2016). The pilot addresses this.
+2. **Teaching sample.** Fictional US company; 26.5% churn label vs about 1% real monthly postpaid churn at US carriers in 2025; IBM describes the churn window inconsistently (month vs quarter). Results demonstrate the method; magnitudes do not transfer.
+3. **Vietnam context.** About 90% of Vietnamese mobile subscriptions are prepaid; churn is observed as inactivity or porting, and contract-based features do not exist. The model must be rebuilt on operator data.
+4. **Snapshot and random split.** No time-based validation; drift after deployment is unknown.
+5. **Value proxy.** No cost-to-serve, no re-churn after a save, no network effects; margin and horizon are assumptions.
+6. **Label-based checks** reuse the assumed save rate; they validate *who* is targeted, not *whether offers work*.
 
-## 11. Khuyến nghị quản lý
+## 11. Recommendations and next steps
 
-Ưu tiên xem EV dưới ngân sách cùng với độ nhạy, thay vì chỉ chọn khách hàng churn cao. Với cấu hình chuẩn, danh sách 140 người là phương án tham khảo có thể xuất và kiểm tra. Không coi save rate 20.0% là điều đã biết; cần xác thực trước khi dự báo lợi ích cho chiến dịch thật. Khi tham số thay đổi, kiểm tra cả fixed và retarget để hiểu rủi ro của quyết định cũ và phương án điều chỉnh.
+1. Adopt expected-value targeting (expected value + segment offers) for the next wave, sized at 24% of the base.
+2. Run it as a randomised pilot: 1,690 customers, half held out, 90-day outcome ([pilot design](../docs/pilot-design.md)); go only if the measured save rate's lower bound exceeds 11.8%.
+3. Replace assumed save rates, margin and costs with measured values; re-run the pipeline.
+4. Retrain on own data with time-based validation; after several waves, move to uplift targeting.
+5. Operate under the controls in [governance and risks](../docs/governance-and-risks.md) and the [retention playbook](../docs/retention-playbook.md).
 
-Không ép tiêu hết ngân sách. So sánh ngân sách tăng thêm với giá trị tăng thêm. Nếu không có EV dương, kết quả phù hợp là không triển khai theo các giả định hiện tại. [Executive brief](executive-brief.md) và [playbook](../docs/retention-playbook.md) phục vụ người ra quyết định.
+## 12. Reproducibility
 
-## 12. Giới hạn
+`python -m telco_retention run-all` downloads (checksum-verified), prepares, trains, evaluates, simulates and regenerates every table, figure, document, notebook, the brief (DOCX/PDF) and the deck. The run manifest stores the configuration, dependency versions and code hashes; the dashboard shows the same scenario ID as this report for the default assumptions. Verification evidence: [verification](../docs/verification.md).
 
-Dữ liệu mô phỏng học thuật; không có phân bổ ưu đãi ngẫu nhiên nên không thực hiện hoặc tuyên bố causal uplift. Random split không kiểm định khả năng dự báo tương lai. Thời điểm quan sát một số đặc trưng có thể không tương ứng thời điểm lập chiến dịch thực. Proxy giá trị và save rate cần kiểm chứng; chưa mô hình hóa tác dụng phụ, hành vi lặp lại hay chi phí vận hành toàn chiến dịch. Khoảng bootstrap không bao gồm mọi bất định mô hình/kinh doanh. CSV mới cần tuân schema và điều kiện sử dụng mô hình.
+## Appendix: figures
 
-## 13. Kịch bản demo
-
-1. Mở dashboard; giới thiệu câu hỏi kinh doanh và 5 KPI.
-2. Giải thích dữ liệu demo là test giữ riêng và mọi giá trị tiền là mô phỏng.
-3. Mở Lập chiến dịch; so EV với risk-only trên cùng ngân sách.
-4. Giảm save rate tiêu chuẩn từ 20.0% còn 10.0%; đọc thay đổi danh sách và net.
-5. Đổi chi phí hoặc ngân sách; chỉ ra trường hợp không dùng hết ngân sách.
-6. Mở Kịch bản; tính fixed/retarget và xem profit curve.
-7. Xem quality/calibration và SHAP, nêu giới hạn giải thích.
-8. Nhập CSV mẫu không nhãn; chuyển nguồn, chấm điểm và xuất ZIP.
-9. Kết thúc bằng khuyến nghị cần xác thực giả định trên dữ liệu thực tế.
-
-## 14. Dàn ý slide và danh mục bằng chứng
-
-| Slide | Thông điệp | Bằng chứng |
-| --- | --- | --- |
-| 1 | Quyết định giữ chân dưới ngân sách | Câu hỏi kinh doanh |
-| 2 | Nguồn và chất lượng dữ liệu | Source/cleaning log |
-| 3 | Nhóm rủi ro khác nhau | EDA contract/tenure |
-| 4 | Thiết kế kiểm định đáng tin | Split, CV, calibration |
-| 5 | So sánh mô hình, chọn mô hình | Validation/test metrics |
-| 6 | Cách diễn giải đặc trưng | SHAP, coefficients |
-| 7 | Từ xác suất sang giá trị | Công thức V và EV, bảng giả định |
-| 8 | EV so với quy tắc đơn giản | Strategy comparison |
-| 9 | Thay đổi khi giả định thay đổi | Sensitivity fixed/retarget |
-| 10 | Ngân sách và phân khúc | Budget curve, policy search |
-| 11 | Công bằng và giới hạn | Fairness, model card |
-| 12 | Đề xuất và demo sản phẩm | Dashboard, targeting, playbook |
-
-Mỗi hình PNG có nhãn tập dữ liệu và run. [Catalog hình](figures/catalog.json) chứa metadata. Toàn bộ bảng gốc ở `reports/tables/`; các scenario đầy đủ ở run artifacts. Khi viết slide, giữ phân biệt kỳ vọng, mô phỏng dùng nhãn và kết quả thực tế. Không bỏ dòng giả định khỏi biểu đồ tiền.
+| Figure | Population | Caption |
+|---|---|---|
+| [Observed churn rate by segment](figures/eda_drivers.png) | train split (4,225 customers) | Descriptive association only; it does not show that changing a segment would change churn. |
+| [Calibration (reliability) curve](figures/calibration.png) | test split (1,409 customers, never used for selection) | Ten equal-size bins of predicted probability. ECE = expected calibration error. |
+| [Discrimination of the deployed model](figures/discrimination.png) | test split (1,409 customers, never used for selection) | AP (average precision) is the area under the precision-recall curve; it is the primary metric because churners are 27% of customers. |
+| [Cumulative gains](figures/gains.png) | test split (1,409 customers, never used for selection) | Ranking quality only. Whom to contact is decided by expected value, not by risk alone. |
+| [Risk x value map](figures/risk_value.png) | test split (1,409 customers, never used for selection) | Dashed lines: 75th percentiles of risk and value, fitted on validation and frozen. Value = margin x discounted remaining months. |
+| [Who each rule contacts](figures/quadrant_selection.png) | test split (1,409 customers, never used for selection) | Value at risk = sum of churn probability x customer value in the quadrant. |
+| [Strategy comparison at the fixed budget](figures/strategy_comparison.png) | test split (1,409 customers, never used for selection) | Expected value under the stated save-rate and cost assumptions; not realised profit. |
+| [Profit curve and marginal ROI](figures/profit_curve.png) | test split (1,409 customers, never used for selection) | Recommendation chosen on validation (largest budget whose last step still clears the hurdle) and shown here on test. |
+| [One-way sensitivity (tornado)](figures/tornado.png) | test split (1,409 customers, never used for selection) | Each bar changes one assumption to the low/high end of its register range and re-selects customers within the same budget. |
+| [Save rate x offer cost sensitivity](figures/sensitivity_heatmap.png) | test | Frozen vs re-optimised list. |
+| [Allocation audit by protected attribute](figures/fairness.png) | test split (1,409 customers, never used for selection) | Gender and SeniorCitizen are not model inputs; they are used only for this audit. |
+| [Deployed model drivers](figures/model_drivers.png) | train split | Logistic regression before calibration; associations, not causes. Orange raises predicted risk, blue lowers it. |
+| [Challenger model SHAP](figures/shap_challenger.png) | validation sample | TreeSHAP on 200 validation customers; explains the raw XGBoost challenger, not the deployed calibrated logistic model. |

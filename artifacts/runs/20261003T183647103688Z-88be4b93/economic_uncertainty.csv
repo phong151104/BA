@@ -1,5 +1,0 @@
-﻿strategy,label_based_simulated_net,lower_95,upper_95,iterations,seed,population,scenario_id,method
-ev,2708.611,1807.2165250000003,3792.675425,1000,42,test,765d0287b0f6,paired_customer_bootstrap_frozen_policy_assumed_save_rate
-risk,1370.284,802.993225,1932.334625,1000,42,test,0c4f7b8db8b1,paired_customer_bootstrap_frozen_policy_assumed_save_rate
-risk_positive_ev,1347.3070000000002,785.5431500000001,1910.893925,1000,42,test,777587bedd0e,paired_customer_bootstrap_frozen_policy_assumed_save_rate
-ev_minus_risk_positive_ev,1361.3039999999999,492.6459249999999,2308.764875,1000,42,test,765d0287b0f6 vs 777587bedd0e,paired_customer_bootstrap_frozen_policy_assumed_save_rate

@@ -1,39 +1,25 @@
-# Nhật ký làm sạch
+<!-- Generated from src/telco_retention/templates/docs/cleaning-log.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+# Cleaning log
 
-| Chỉ tiêu                     |   Giá trị |
-|:-----------------------------|----------:|
-| rows_before                  |      7043 |
-| rows_after                   |      7043 |
-| duplicates_removed           |         0 |
-| total_charges_missing_before |        11 |
-| total_charges_filled_zero    |        11 |
-| unique_ids                   |      7043 |
+| Step | Decision | Rows affected |
+|---|---|---|
+| Whitespace | Trim leading/trailing spaces in every text field | all |
+| Duplicates | Drop exact duplicate rows from the full file before splitting | 0 |
+| `TotalCharges` blanks | Blank strings become missing; customers with tenure 0 get 0 (they have not been billed yet) | 11 of 11 |
+| Other numeric gaps | Median imputation fitted on train inside the model pipeline; the same train medians fill gaps before valuing customers | 0 in the source |
+| `SeniorCitizen` | Normalised to the strings "0"/"1" | all |
+| Label | `Churn` Yes/No mapped to `churn` 1/0; not used as a feature | all |
+| Service consistency | "No phone service" / "No internet service" kept as their own categories and checked against the parent service | 0 violations |
+| Outliers | Valid extreme values kept; nothing trimmed | 0 |
+| Split | Stratified 60/20/20 train/validation/test, seed 42; IDs saved in `data/processed/splits.csv` | 4,225 / 1,409 / 1,409 |
 
-Trim khoảng trắng; Churn Yes/No ánh xạ 1/0. TotalCharges trống đổi thành missing; trường hợp tenure=0 điền 0. Các số thiếu khác được median-impute trong pipeline fit trên train; giá trị kinh doanh dùng cùng median train lưu trong manifest. Giữ No internet service/No phone service. Không cắt bỏ outlier hợp lệ.
+## Quality summary
 
-| Trường           |   Missing sau làm sạch |
-|:-----------------|-----------------------:|
-| customerID       |                      0 |
-| gender           |                      0 |
-| SeniorCitizen    |                      0 |
-| Partner          |                      0 |
-| Dependents       |                      0 |
-| tenure           |                      0 |
-| PhoneService     |                      0 |
-| MultipleLines    |                      0 |
-| InternetService  |                      0 |
-| OnlineSecurity   |                      0 |
-| OnlineBackup     |                      0 |
-| DeviceProtection |                      0 |
-| TechSupport      |                      0 |
-| StreamingTV      |                      0 |
-| StreamingMovies  |                      0 |
-| Contract         |                      0 |
-| PaperlessBilling |                      0 |
-| PaymentMethod    |                      0 |
-| MonthlyCharges   |                      0 |
-| TotalCharges     |                      0 |
-| Churn            |                      0 |
-| churn            |                      0 |
+| Metric | Value |
+|---|---|
+| Rows before / after | 7,043 / 7,043 |
+| Unique IDs | 7,043 |
+| Missing values after cleaning | 0 |
+| Churn counts (0 / 1) | 5,174 / 1,869 |
 
-Phân bố nhãn: {'0': 5174, '1': 1869}. Chia stratified seed 42, kích thước {'train': 4225, 'validation': 1409, 'test': 1409}. Các ID split lưu tại `data/processed/splits.csv`. Không nối nguồn khách hàng khác.
+Validation rules live in `src/telco_retention/data.py` (`validate`). The same rules reject invalid uploaded CSV files in the dashboard, listing the row, column and reason.

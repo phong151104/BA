@@ -1,5 +1,10 @@
-﻿strategy,label_based_simulated_net,lower_95,upper_95,iterations,seed,population,scenario_id,method
-ev,2708.611,1807.2165250000003,3792.675425,1000,42,test,765d0287b0f6,paired_customer_bootstrap_frozen_policy_assumed_save_rate
-risk,1370.284,802.993225,1932.334625,1000,42,test,0c4f7b8db8b1,paired_customer_bootstrap_frozen_policy_assumed_save_rate
-risk_positive_ev,1347.3070000000002,785.5431500000001,1910.893925,1000,42,test,777587bedd0e,paired_customer_bootstrap_frozen_policy_assumed_save_rate
-ev_minus_risk_positive_ev,1361.3039999999999,492.6459249999999,2308.764875,1000,42,test,765d0287b0f6 vs 777587bedd0e,paired_customer_bootstrap_frozen_policy_assumed_save_rate
+﻿strategy,label_based_simulated_net,lower_95,upper_95,iterations,seed,population,method
+none,0.0,0.0,0.0,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+risk,774.709324853475,254.65300804147418,1285.1203573568187,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+risk_positive_ev,864.221345882848,336.507940936262,1414.161832295898,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+value,89.90086498662379,-785.6822729651225,1070.7420437627275,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+ev,2083.0254683573435,1262.0366850088992,3067.356853325398,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+segment_offers,2055.7523430254682,1140.292338280201,3111.103841575795,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+ev minus risk,1308.3161435038685,509.20218726196606,2152.5749988434804,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+ev minus risk_positive_ev,1218.8041224744952,435.2282420252436,2037.8386692911556,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels
+segment_offers minus ev,-27.27312533187525,-371.95122496560475,316.0921754072462,1000,42,test,paired customer bootstrap of frozen lists; assumed save rate; historical labels

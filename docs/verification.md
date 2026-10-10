@@ -1,70 +1,49 @@
-# Hồ sơ nghiệm thu
+# Verification record
 
-Nghiệm thu bản cải tiến ngày **04/10/2026** (Asia/Bangkok), trên Windows, Python **3.13.5**. Run nghiệm thu: `20261003T183647103688Z-88be4b93` (ID theo UTC). Pipeline được chạy lại trong `.venv-check`, môi trường riêng đã được cài từ `requirements.lock.txt` ở đợt nghiệm thu 03/10; đợt này tái sử dụng môi trường đó, không tạo venv mới. [Đối chiếu các điểm review](review-improvements.md).
+Final release checks on 2026-10-10, Windows 11, Python 3.13.9, environment installed from `requirements.lock.txt`. Machine-readable evidence is in `artifacts/qa/`.
 
-## Kết quả
+## Runs
 
-| Hạng mục | Bằng chứng | Kết quả |
-| --- | --- | --- |
-| Dependency lock | Cài venv mới và `pip check` | Thành công, không dependency hỏng |
-| Pipeline đầu cuối | `python -m telco_retention run-all` trong venv mới | Hoàn tất từ raw đến báo cáo |
-| Kiểm thử dữ liệu/mô hình/kinh doanh/giao diện/báo cáo | [pytest XML](../artifacts/qa/pytest.xml) | 71 kiểm thử qua |
-| Notebook tuần tự | [notebooks.json](../artifacts/qa/notebooks.json) | Cả 4 notebook qua |
-| Tái lập mô hình | [release.json](../artifacts/qa/release.json) | Các test metrics khớp lần chạy đầu ở tolerance số học; ID targeting giống nhau |
-| Kiểm tra hình và báo cáo | [manifest báo cáo](../reports/report-manifest.json) | 14 hình, executive brief 535 từ; kiểm tra liên kết local không hỏng |
-| Trình duyệt thực | [browser.json](../artifacts/qa/browser.json) | Chrome headless local; dashboard, thay ngân sách, sensitivity, upload hợp lệ/sai và tải ZIP đều qua |
-| Scoring dòng lệnh | [example_scores.csv](../artifacts/qa/example_scores.csv) | CSV không nhãn được chấm điểm thành công |
-| Hiệu năng thao tác thông thường | AppTest sau warm-up, 5 lần đổi ngân sách | Mỗi rerun dưới 2 giây; số đo chính xác của lần kiểm tra cuối trong release.json |
+| Run | Role |
+|---|---|
+| `20261010T124155118613Z-88be4b93` | Run A: first complete `run-all` with the final code and configuration |
+| `20261010T124415068764Z-88be4b93` | Run B: second complete `run-all`, current (`artifacts/latest.json`); all reports use it |
 
-Số đo hiệu năng là AppTest cục bộ, không phải độ trễ mạng trình duyệt hoặc thời gian chạy toàn bộ sensitivity/MILP. MILP có giới hạn 30 giây mỗi bài toán và công khai trạng thái nghiệm.
+Earlier development runs were pruned with `python -m telco_retention prune --keep 2`; they remain in git history.
 
-## Các trường hợp được kiểm tra
+## Results
 
-- Missing TotalCharges, ID trùng/rỗng, miền phân loại sai, số âm/vô hạn và CSV vượt giới hạn.
-- Không dùng ID/target/demographic audit làm features; median chỉ học từ train; các split không trùng ID.
-- Lưu/nạp model bảo toàn dự đoán; nhãn Churn không thay đổi scoring/targeting.
-- Tổng TreeSHAP và base value khôi phục xác suất XGBoost gốc trong sai số số học.
-- EV tính tay, ngân sách 0/thiếu, save rate 0, margin 0, EV âm, ưu đãi miễn phí, tie-break.
-- MILP đối chiếu duyệt toàn bộ bài toán nhỏ; nghiệm timeout không hợp lệ chuyển heuristic; không vượt ngân sách, không chọn hai ưu đãi cho một người.
-- Fixed và retarget được phân biệt; CSV xuất khớp KPI.
-- Tất cả trang Streamlit, đổi ngân sách/save rate, CSV không nhãn, lọc bảng không đổi KPI, phân khúc rỗng và artifact chưa hoàn tất.
-- Kiểm tra Chrome: biểu đồ thực sự render, ngân sách 0 làm KPI chọn về 0, khôi phục ngân sách, tải ZIP và kiểm tra nội dung, upload CSV hợp lệ/sai.
-- Giữ ngân sách/save rate/hệ số tenure/bộ lọc/chính sách qua các trang không có widget chiến dịch; giữ ưu đãi phụ sau khi ẩn/hiện. Chrome kiểm tra riêng ngân sách 1.000 và KPI 45 người sau khi quay lại trang.
-- Giao diện và nội dung báo cáo đọc cấu hình run đã thay đổi (không ghi cứng margin, chi phí, save rate hay tên mô hình); phân biệt ngân sách với chi tiêu.
-- Dịch vụ điện thoại/Internet mâu thuẫn bị từ chối; CSV trùng ID train/validation/test được gắn nguồn đúng, không tự gọi là unseen.
-- Sensitivity nhiều ưu đãi và tenure policy trùng chiến dịch đang chọn; fixed giữ cặp khách hàng–ưu đãi; solver/turnover được công khai.
-- Đối chứng risk_positive_ev và bootstrap kinh tế ghép cặp có kiểm thử tính đúng, tái lập và trường hợp hai chiến lược giống nhau.
+| Check | Command | Result |
+|---|---|---|
+| Dependencies | `pip check` | No broken requirements |
+| Automated tests | `pytest -q --junitxml artifacts/qa/pytest.xml` | **97 passed**, 0 failed, 0 errors (77 s) |
+| Notebooks | `scripts/verify_notebooks.py` | 4/4 committed notebooks executed for run B with no errors; re-executed copies in `artifacts/qa/notebooks/` ([notebooks.json](../artifacts/qa/notebooks.json)) |
+| Release | `scripts/verify_release.py` | Passed ([release.json](../artifacts/qa/release.json)): 27 required artifacts, sizes derived from configuration, code hashes unchanged since training, 15 documents identical to a fresh render of the templates, no broken relative links |
+| Reproducibility | part of `verify_release.py` | Run A vs run B: test metrics equal (absolute tolerance 1e-10), identical selected customers and offers for both expected-value strategies, identical scenario IDs |
+| Submission files | `python -m telco_retention export --pdf require` | Executive brief 717 words, **2 pages** as PDF (Word); deck **13 slides, all with speaker notes**, deck lint clean, PDF 13 pages ([deliverables manifest](../reports/deliverables-manifest.json)) |
+| Dashboard (headless) | part of `verify_release.py` | Warmed recalculation after a budget change: max 0.53 s |
+| Dashboard (browser) | `scripts/browser_qa.py` with Chrome | Passed 8 checks ([browser.json](../artifacts/qa/browser.json)): five KPIs and the report's scenario ID on Overview; budget 0 and restore; ZIP export with list, assumptions and scenario ID; model page with separate challenger SHAP; custom budget survives navigation; scenario analysis computed; CSV upload scored with ID-overlap notice; contradictory and invalid CSVs rejected |
+| Visual review | screenshots and rendered PDF pages | Brief, deck slides and the four dashboard pages inspected; issues found and fixed during review: money rendered as LaTeX in Streamlit markdown, money columns without thousands separators, profit-curve colours not following the strategy colours, truncated KPI labels |
 
-Trong kiểm tra đồng thời với pipeline mới, đã phát hiện trang chất lượng mô hình có thể đọc fairness.csv trước khi simulate hoàn tất. Đã sửa để dashboard kiểm tra dấu hoàn tất simulation và hiển thị hướng dẫn khi thiếu artifact; có kiểm thử regression tương ứng.
+Screenshots: [overview](../artifacts/qa/dashboard-overview.png), [campaign builder](../artifacts/qa/dashboard-campaign.png), [scenarios](../artifacts/qa/dashboard-scenarios.png), [model & data](../artifacts/qa/dashboard-model.png), [upload](../artifacts/qa/dashboard-upload.png).
 
-Ở đợt cải tiến, AppTest chưa phát hiện hết khác biệt giữa giá trị Python và ô nhập khi trình duyệt dựng lại widget. Kiểm tra Chrome bắt được ô ngân sách hiển thị 0 sau khi quay lại dù phía Python giữ 1.000. Đã chuyển sang cơ chế `persist_state="session"` của Streamlit 1.65 (đã khóa trong dependencies), rồi chạy lại cả AppTest và Chrome thành công.
+## What the tests cover
 
-## Ảnh giao diện
+- **Data:** schema and domain validation, service consistency, duplicates, upload limits and encodings, split integrity and proportions, ordered tenure segments.
+- **Model:** artifact round trip, label not used for scoring, training-only medians, selection rule, upload origin flags, SHAP additivity, calibration statistics on synthetic calibrated and over-confident data, gains and precision@k.
+- **Decision engine:** hand-calculated EV and discounted value, budget edge cases, offers found by ID, optimiser equal to brute force with eligibility rules and the contact cap, solver fallbacks, fixed vs re-optimised lists, scenario IDs stable across int/float spellings.
+- **Analysis:** explicit budget rule, scenario overrides, sensitivity reference case and size, tornado directions, profit curve monotonicity and budget recommendation rule, strategy selection rule, paired bootstrap, fairness ratios, pilot sample size against the closed-form formula, break-even save rate, risk x value partition.
+- **Reporting and export:** every template renders, the brief stays under 800 words and decision-first, documents follow changed facts, missing facts fail loudly, notebook generation, DOCX structure, deck notes on every slide.
+- **Dashboard:** default view equals the report (KPIs, scenario ID, gap to risk-only), budget and save-rate changes, assumption strip on every page, unlabelled upload, segment-offer mode, missing-artifact messages, controls persisting across pages, defaults read from the model bundle, scenario analysis and stale-result warning.
+- **Language:** no Vietnamese text in deliverables (original titles of Vietnamese sources in the reference list excepted).
 
-- [Tổng quan](../artifacts/qa/dashboard-home.png)
-- [Lập chiến dịch](../artifacts/qa/dashboard-campaign.png)
-- [Chất lượng mô hình](../artifacts/qa/dashboard-model.png)
-- [Độ nhạy](../artifacts/qa/dashboard-sensitivity.png)
-- [Nhập CSV](../artifacts/qa/dashboard-upload.png)
+## Headline results verified (run B, test split)
 
-Browser tích hợp không có kết nối khả dụng trong phiên. Kiểm tra trình duyệt được thực hiện bằng Chrome local headless qua script `scripts/browser_qa.py`; không truy cập profile hoặc session trình duyệt cá nhân.
+| Item | Value |
+|---|---|
+| Deployed model | Calibrated logistic regression; ROC-AUC 0.831, PR-AUC 0.619, ECE 0.020 |
+| Same $3,500 budget | Risk-only $1,098; expected value (standard offer) $2,130; expected value + segment offers (recommended on validation) $2,420 |
+| Recommended budget | 24% of customers (validation rule): $8,450 for $3,692 expected net value on test |
+| Break-even save rate | 11.8% (assumed 20%) |
 
-## Đối chiếu đầu ra đề bài
-
-| Nhóm đầu ra | Vị trí |
-| --- | --- |
-| Code, notebook, README tái lập | src/, notebooks/, README.md, requirements.lock.txt |
-| Data dictionary và nhật ký | docs/data-dictionary.md, source-log.md, cleaning-log.md |
-| Executive brief | reports/executive-brief.md |
-| Dashboard 5 KPI và hành động | app/Home.py |
-| Model/analysis card | docs/model-card.md |
-| Scorecard và targeting | reports/tables/scorecard.csv, targeting_ev.csv |
-| Playbook | docs/retention-playbook.md |
-| Bonus boosting/giải thích | XGBoost, SHAP và permutation artifacts |
-| Bonus profit/budget | reports/tables/budget_curve.csv và hình tương ứng |
-| Bonus phân khúc/công bằng | validation_policy_search.csv, segment_policy.json, fairness.csv |
-| Hồ sơ cho người viết báo cáo/slide | reports/analysis-report.md và catalog hình/bảng |
-
-## Giới hạn bàn giao
-
-Word/PDF/PowerPoint không được tạo theo lựa chọn của người dùng; người biên tập dùng Markdown và kiểm tra executive brief tối đa hai trang khi dàn trang. Không triển khai cloud, CRM hoặc gửi ưu đãi. Toàn bộ lợi ích giữ chân là mô phỏng, không phải lợi nhuận thực đo.
+All figures are expected values under the documented assumptions; see the [assumption register](assumption-register.md) and the [analysis report](../reports/analysis-report.md).

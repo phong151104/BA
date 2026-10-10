@@ -1,114 +1,93 @@
 [
   {
-    "file": "eda_contract.png",
-    "title": "Churn theo Contract",
-    "population": "train",
-    "caption": "Phân tích mô tả; không chứng minh quan hệ nhân quả.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
-  },
-  {
-    "file": "eda_tenure.png",
-    "title": "Churn theo tenure_segment",
-    "population": "train",
-    "caption": "Phân tích mô tả; không chứng minh quan hệ nhân quả.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
-  },
-  {
-    "file": "eda_payment.png",
-    "title": "Churn theo PaymentMethod",
-    "population": "train",
-    "caption": "Phân tích mô tả; không chứng minh quan hệ nhân quả.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
+    "file": "eda_drivers.png",
+    "title": "Observed churn rate by segment",
+    "caption": "Descriptive association only; it does not show that changing a segment would change churn.",
+    "population": "train split (4,225 customers)",
+    "run_id": "20261010T124415068764Z-88be4b93"
   },
   {
     "file": "calibration.png",
-    "title": "Hiệu chỉnh xác suất",
-    "population": "test",
-    "caption": "10 bins quantile; mô hình chọn trên validation.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
+    "title": "Calibration (reliability) curve",
+    "caption": "Ten equal-size bins of predicted probability. ECE = expected calibration error.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
   },
   {
-    "file": "pr_curve.png",
-    "title": "Precision–Recall · mô hình được chọn",
-    "population": "test",
-    "caption": "Đánh giá holdout; không dùng test để chọn mô hình.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
+    "file": "discrimination.png",
+    "title": "Discrimination of the deployed model",
+    "caption": "AP (average precision) is the area under the precision-recall curve; it is the primary metric because churners are 27% of customers.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
   },
   {
-    "file": "roc_curve.png",
-    "title": "ROC · mô hình được chọn",
-    "population": "test",
-    "caption": "Đánh giá holdout; không dùng test để chọn mô hình.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
-  },
-  {
-    "file": "strategy_comparison.png",
-    "title": "So sánh chiến lược giữ chân",
-    "population": "test",
-    "caption": "Cùng ngân sách; save rate/chi phí là giả định; không phải lợi nhuận thực thu.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "baseline"
-  },
-  {
-    "file": "budget_curve.png",
-    "title": "Ngân sách và giá trị giữ chân",
-    "population": "test",
-    "caption": "21 mức ngân sách; ưu đãi/giá trị theo cấu hình chuẩn.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "budget sweep"
-  },
-  {
-    "file": "sensitivity_fixed.png",
-    "title": "Độ nhạy · fixed",
-    "population": "test",
-    "caption": "Fixed giữ danh sách, có thể vượt ngân sách; retarget chọn lại trong ngân sách.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "cost/save sweep"
-  },
-  {
-    "file": "sensitivity_retarget.png",
-    "title": "Độ nhạy · retarget",
-    "population": "test",
-    "caption": "Fixed giữ danh sách, có thể vượt ngân sách; retarget chọn lại trong ngân sách.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "cost/save sweep"
-  },
-  {
-    "file": "shap_global.png",
-    "title": "Giải thích XGBoost gốc",
-    "population": "validation",
-    "caption": "Mẫu 200 khách hàng; không phân rã xác suất calibrated, không nhân quả.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
+    "file": "gains.png",
+    "title": "Cumulative gains",
+    "caption": "Ranking quality only. Whom to contact is decided by expected value, not by risk alone.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
   },
   {
     "file": "risk_value.png",
-    "title": "Rủi ro và giá trị khách hàng",
-    "population": "test",
-    "caption": "Margin 30.0%, horizon cơ sở 12 tháng, cap 24; ngưỡng high/high khóa trên validation.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "baseline"
+    "title": "Risk x value map",
+    "caption": "Dashed lines: 75th percentiles of risk and value, fitted on validation and frozen. Value = margin x discounted remaining months.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
   },
   {
-    "file": "probability_distribution.png",
-    "title": "Phân bố xác suất churn",
-    "population": "test",
-    "caption": "Mô hình được chọn trước khi đánh giá test.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "not applicable"
+    "file": "quadrant_selection.png",
+    "title": "Who each rule contacts",
+    "caption": "Value at risk = sum of churn probability x customer value in the quadrant.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
   },
   {
-    "file": "fairness_selection.png",
-    "title": "Kiểm tra phân bổ theo gender",
+    "file": "strategy_comparison.png",
+    "title": "Strategy comparison at the fixed budget",
+    "caption": "Expected value under the stated save-rate and cost assumptions; not realised profit.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
+  },
+  {
+    "file": "profit_curve.png",
+    "title": "Profit curve and marginal ROI",
+    "caption": "Recommendation chosen on validation (largest budget whose last step still clears the hurdle) and shown here on test.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
+  },
+  {
+    "file": "tornado.png",
+    "title": "One-way sensitivity (tornado)",
+    "caption": "Each bar changes one assumption to the low/high end of its register range and re-selects customers within the same budget.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
+  },
+  {
+    "file": "sensitivity_heatmap.png",
+    "title": "Save rate x offer cost sensitivity",
+    "caption": "Frozen vs re-optimised list.",
     "population": "test",
-    "caption": "Mô tả chênh lệch; không kết luận chính sách công bằng chỉ từ biểu đồ này.",
-    "run_id": "20261003T183647103688Z-88be4b93",
-    "scenario": "baseline"
+    "run_id": "20261010T124415068764Z-88be4b93"
+  },
+  {
+    "file": "fairness.png",
+    "title": "Allocation audit by protected attribute",
+    "caption": "Gender and SeniorCitizen are not model inputs; they are used only for this audit.",
+    "population": "test split (1,409 customers, never used for selection)",
+    "run_id": "20261010T124415068764Z-88be4b93"
+  },
+  {
+    "file": "model_drivers.png",
+    "title": "Deployed model drivers",
+    "caption": "Logistic regression before calibration; associations, not causes. Orange raises predicted risk, blue lowers it.",
+    "population": "train split",
+    "run_id": "20261010T124415068764Z-88be4b93"
+  },
+  {
+    "file": "shap_challenger.png",
+    "title": "Challenger model SHAP",
+    "caption": "TreeSHAP on 200 validation customers; explains the raw XGBoost challenger, not the deployed calibrated logistic model.",
+    "population": "validation sample",
+    "run_id": "20261010T124415068764Z-88be4b93"
   }
 ]

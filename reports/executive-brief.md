@@ -1,25 +1,49 @@
-# Executive brief — Giữ chân khách hàng theo giá trị
+<!-- Generated from src/telco_retention/templates/reports/executive-brief.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+# Executive brief: profit-aware retention targeting
 
-## Quyết định cần hỗ trợ
+**To:** Head of Customer Retention | **From:** Retention analytics team | **Decision requested:** approve a 90-day retention pilot
 
-Doanh nghiệp cần lựa chọn khách hàng nhận ưu đãi trong một ngân sách cố định. Dự án kết hợp xác suất rời bỏ với giá trị đóng góp còn lại để tạo danh sách ưu tiên, thay vì chỉ xếp theo mức rủi ro. Phạm vi là mô phỏng học thuật trên dữ liệu IBM Telco tải từ Kaggle; không triển khai liên hệ thực tế.
+## Recommendation
 
-## Dữ liệu và độ tin cậy
+Stop allocating the retention budget to "the customers most likely to leave". Allocate it to the customers for whom **churn risk x customer value x the offer's save rate** most exceeds the cost of the offer, and give each customer an offer their segment qualifies for. Start with a **randomised pilot**: one wave of 1,690 customers (24% of the 7,043-customer base), with half held out as a control group. Scale up only if the measured save rate clears the **11.8% break-even**.
 
-Bộ dữ liệu có 7,043 khách hàng. Dữ liệu được làm sạch và chia train, validation, test theo tỷ lệ 60/20/20. Mô hình Logistic Regression hiệu chỉnh sigmoid được chọn trên validation theo quy tắc đã định trước. Trên test, ROC-AUC đạt 0.831, Average Precision đạt 0.619 và Brier score đạt 0.142. Chỉ số phản ánh chất lượng phân loại lịch sử, chưa xác nhận khả năng dự báo trong tương lai.
+## Why: the same budget returns more
 
-## Kết quả kinh doanh mô phỏng
+Results for 1,409 held-out customers with a fixed $3,500 budget (enough to offer 10% of them the standard offer):
 
-Kịch bản chuẩn có ngân sách 3,080 ĐVTT, chi thực trong mô phỏng 3,080 ĐVTT. Ưu đãi tiêu chuẩn: chi phí 20 + liên hệ 2 ĐVTT; save rate 20.0%. Biên đóng góp 30.0%; horizon cơ sở 12 tháng; hệ số new/developing/loyal 0.75/1/1.25; cap 24 tháng. Chiến lược EV chọn 140 khách hàng và tạo net kỳ vọng 2,859 ĐVTT, so với 1,709 ĐVTT của risk-only và 1,793 ĐVTT của risk-only sau lọc EV dương. Chênh lệch với đối chứng đã lọc là 1,067 ĐVTT.
+| Option | Customers contacted | Expected net value | ROI | Precision among contacted | High-risk/high-value coverage |
+|---|---:|---:|---:|---:|---:|
+| Do nothing | 0 | $0 | n/a | n/a | 0.0% |
+| Call highest churn risk | 140 | $1,098 | 31% | 70.0% | 3.9% |
+| Expected value, standard offer | 140 | $2,130 | 61% | 62.1% | 96.1% |
+| **Expected value + segment offers** | **152** | **$2,420** | **69%** | **59.9%** | **100.0%** |
 
-Precision của nhóm EV là 60.7%, thấp hơn hoặc khác chiến lược chỉ ưu tiên rủi ro nhưng cần đọc cùng giá trị kinh tế. Xác suất churn cao không đồng nghĩa mọi khách hàng đều đáng nhận ưu đãi như nhau. Tối ưu nhiều ưu đãi và chính sách tenure cũng được kiểm tra; báo cáo giữ nguyên kết quả khi chúng không cải thiện so với một ưu đãi chung.
+- **Better targeting earns $1,032 more (94%) for the same spend.** Using what these customers actually did, the gain is $1,308 (95% interval $509 to $2,153).
+- **Why:** risk-only targeting spends the budget on high-risk customers whose remaining value is too small to repay an offer. It reaches only 4% of the high-risk, high-value customers, against 100% for the recommended rule. It has higher precision but less value.
+- **Segment offers add $290** under the assumed save rates. Checked against actual outcomes the gain is not distinguishable from zero (-$27), so the pilot must test the offers, not just the list.
 
-## Khuyến nghị quản lý
+## How much to spend
 
-Sử dụng danh sách EV làm phương án tham khảo, kiểm tra khả năng liên hệ và chất lượng dữ liệu trước khi áp dụng. Chỉnh save rate, chi phí và giá trị còn lại theo bối cảnh cụ thể. Không ép tiêu hết ngân sách nếu các khách hàng còn lại có EV không dương. Dashboard cho phép kiểm tra kịch bản và xuất danh sách kèm giả định để người khác rà soát.
+Each extra budget step returns less (figure). We keep only the steps that still earn at least a 10% marginal return; this was decided on validation data. That rule recommends a budget of **24% of the base**. On the test customers this means 310 offers for $8,450, an expected net value of $3,692 (ROI 44%). Above about 27% of the base, no remaining customer has positive expected value, so further budget should not be spent.
 
-## Độ nhạy và giới hạn
+![Profit curve](figures/profit_curve.png)
 
-Trong lưới chi phí và save rate, net retarget thay đổi từ 0 đến 21,167 ĐVTT. Đây là khoảng kịch bản, không phải khoảng tin cậy của lợi nhuận. Save rate không được ước lượng từ chiến dịch ngẫu nhiên; giá trị khách hàng là proxy. Vì vậy không thể tuyên bố tác động nhân quả hay lợi nhuận thực thu. Dữ liệu mẫu và phép chia ngẫu nhiên còn hạn chế khả năng khái quát. Cần xem xét chênh lệch phân bổ ưu đãi giữa các nhóm và xác thực bằng dữ liệu thực tế.
+## How sure are we?
 
-Run `20261003T183647103688Z-88be4b93`; scenario `765d0287b0f6`. Nguồn số liệu: analysis-report.md và các bảng kèm theo. Người biên tập kiểm tra giới hạn hai trang sau khi dàn trang.
+- **The model ranks customers well:** ROC-AUC 0.83, PR-AUC 0.62 (random contact: 0.27). Probabilities are off by 2.0% on average. It predicts who leaves, not who an offer would keep.
+- **Break-even:** the plan stays profitable while the true save rate is above **11.8%**; we assume 20%. Below 8.9% nobody is worth contacting.
+- **Scenarios:** expected net value is $0 pessimistic (no campaign is run), $2,420 base and $18,525 optimistic. A list frozen under the pessimistic case would lose $2,797.
+- **Biggest uncertainties:** save rate of the standard offer and value horizon (months).
+
+## Risks and guardrails
+
+- **No causal evidence yet.** Save rates are documented assumptions. Contacting customers can even raise churn, so the pilot keeps a random control group.
+- **Sample data.** The IBM sample describes a fictional US company with 26.5% churn; real US carriers lose about 1% of postpaid customers per month. The results show that the method works, not how big the prize is. Retrain on our own data before rollout.
+- **Fairness and experience.** Senior customers are contacted 3.7x as often as others, because they are higher-risk and pay more; age and gender are not model inputs. Loyal, low-risk customers rarely get offers, so watch for "loyalty penalty" complaints.
+- **Compliance (Vietnam).** Prior consent and a Do-Not-Call check are required. Advertising calls are limited to one per 24 hours, between 08:00 and 17:00 (Decree 91/2020). A data-protection impact assessment is required under the Personal Data Protection Law 2025.
+
+## Decisions requested
+
+1. Approve one pilot wave: 845 customers contacted and 845 held out. Offer and contact budget about $23,033.
+2. Name owners: Retention (offers and script), Call centre (capacity), Finance (margin and offer cost), Legal/DPO (consent and DPIA).
+3. Agree the go/no-go rule now. Scale to 24% of the base only if, after 90 days, the lower 95% bound of the measured save rate is above 11.8%.
