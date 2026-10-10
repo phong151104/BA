@@ -14,14 +14,23 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.impute import SimpleImputer
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import average_precision_score, roc_auc_score, brier_score_loss, log_loss, precision_score, recall_score, f1_score, confusion_matrix, precision_recall_curve, roc_curve
-from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
+from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold, cross_val_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.inspection import permutation_importance
 from scipy.optimize import brentq
 from xgboost import XGBClassifier
 from .common import ROOT, config, digest, latest_run, now, read_json, save_csv, write_json
-from .data import features, NUMERIC, prepare
+from .data import features, prepare, tenure_segment, BINARY, DOMAINS, NUMERIC, OPTIONAL, REFERENCE_LEVELS, SCHEMA, SEGMENTS, SERVICES
+
+# Candidate feature sets: (continuous, categorical); every set also uses the BINARY flags.
+FEATURE_SETS = {
+    "all inputs": (NUMERIC, ["InternetService", "Contract", "PaymentMethod"]),
+    "without TotalCharges": (["tenure", "MonthlyCharges"], ["InternetService", "Contract", "PaymentMethod"]),
+    "without TotalCharges, with tenure band": (["tenure", "MonthlyCharges"], ["InternetService", "Contract", "PaymentMethod", "tenure_band"]),
+    "all inputs with tenure band": (NUMERIC, ["InternetService", "Contract", "PaymentMethod", "tenure_band"]),
+}
+FEATURE_RULE = "Full-rank sets only; cross-validated AP within one standard error of the best; then the fewest encoded columns"
 
 
 def calibration_stats(y, p, n_bins=10):
@@ -69,13 +78,51 @@ def precision_at_k(y, p, shares=(0.05, 0.10, 0.20, 0.30)):
     return pd.DataFrame(rows)
 
 
-def preprocessing(X):
-    nums = X.select_dtypes(include="number").columns.tolist()
-    cats = [c for c in X if c not in nums]
+def preprocessing(continuous, categorical):
+    """Scale continuous inputs, pass 0/1 flags through, and code categoricals against their reference level."""
+    levels = {**DOMAINS, "tenure_band": SEGMENTS}
     return ColumnTransformer([
-        ("num", Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), nums),
-        ("cat", Pipeline([("impute", SimpleImputer(strategy="most_frequent")), ("encode", OneHotEncoder(handle_unknown="ignore", sparse_output=False))]), cats),
-    ], verbose_feature_names_out=False)
+        ("num", Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), list(continuous)),
+        ("flag", "passthrough", BINARY),
+        ("cat", OneHotEncoder(categories=[levels[c] for c in categorical], drop=[REFERENCE_LEVELS[c] for c in categorical], sparse_output=False), list(categorical)),
+    ], remainder="drop", verbose_feature_names_out=False)
+
+
+def _previous_design(df):
+    """The first feature design (raw columns, four derived columns, every level one-hot coded); kept only as a reference row."""
+    out = df[[c for c in SCHEMA if c not in OPTIONAL | {"customerID"}]].copy()
+    out["tenure_band"] = tenure_segment(out.tenure).astype(object)
+    out["addon_count"] = out[SERVICES].eq("Yes").sum(axis=1)
+    out["monthly_contract"] = out.Contract.eq("Month-to-month").astype(int)
+    out["autopay"] = out.PaymentMethod.str.contains("automatic", regex=False).astype(int)
+    nums = out.select_dtypes(include="number").columns.tolist()
+    prep = ColumnTransformer([("num", Pipeline([("impute", SimpleImputer(strategy="median")), ("scale", StandardScaler())]), nums),
+                              ("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), [c for c in out if c not in nums])])
+    return out, prep
+
+
+def feature_ablation(train_df, y, folds, seed):
+    """Cross-validated logistic regression on train for each candidate feature set; returns the table and the chosen set."""
+    candidates = {name: (features(train_df), preprocessing(*spec)) for name, spec in FEATURE_SETS.items()}
+    candidates["previous design (reference)"] = _previous_design(train_df)
+    rows = []
+    for name, (X, prep) in candidates.items():
+        best = None
+        for C in [0.01, 0.1, 1, 10]:
+            scores = cross_val_score(Pipeline([("prep", prep), ("model", LogisticRegression(C=C, max_iter=3000, random_state=seed))]), X, y, cv=folds, scoring="average_precision")
+            if best is None or scores.mean() > best[1]:
+                best = (C, scores.mean(), scores.std(ddof=1) / np.sqrt(len(scores)))
+        encoded = prep.fit_transform(X)
+        rank = int(np.linalg.matrix_rank(encoded))
+        rows.append({"feature_set": name, "best_C": best[0], "cv_average_precision": best[1], "cv_standard_error": best[2],
+                     "encoded_columns": encoded.shape[1], "matrix_rank": rank, "full_rank": rank == encoded.shape[1]})
+    table = pd.DataFrame(rows)
+    top = table.loc[table.cv_average_precision.idxmax()]
+    table["within_one_se"] = table.cv_average_precision >= top.cv_average_precision - top.cv_standard_error
+    table["eligible"] = table.within_one_se & table.full_rank & table.feature_set.isin(FEATURE_SETS)
+    chosen = table.loc[table.eligible].sort_values("encoded_columns", kind="mergesort").iloc[0].feature_set
+    table["selected"] = table.feature_set.eq(chosen)
+    return table, chosen
 
 
 def choose_model(rows):
@@ -90,9 +137,8 @@ def train():
     cfg = config()
     df = prepare()
     seed = cfg["seed"]
-    X = features(df.loc[df.split.eq("train")])
-    y = df.loc[df.split.eq("train"), "churn"]
-    Xv, yv = features(df.loc[df.split.eq("validation")]), df.loc[df.split.eq("validation"), "churn"]
+    train_df, val_df = df.loc[df.split.eq("train")], df.loc[df.split.eq("validation")]
+    y, yv = train_df.churn, val_df.churn
     source = read_json(ROOT / "data/raw/source.json")
     run_id = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ") + "-" + source["sha256"][:8]
     run = ROOT / "artifacts/runs" / run_id
@@ -102,19 +148,25 @@ def train():
     write_json(run / "data_quality.json", read_json(ROOT / "data/processed/quality.json"))
     write_json(run / "dataset_metadata.json", read_json(ROOT / "data/raw/source-metadata.json"))
     folds = StratifiedKFold(cfg["cv_folds"], shuffle=True, random_state=seed)
+    print("Feature design: cross-validated ablation on train", flush=True)
+    ablation, feature_set = feature_ablation(train_df, y, folds, seed)
+    save_csv(ablation, run / "feature_ablation.csv")
+    continuous, categorical = FEATURE_SETS[feature_set]
+    columns = [*continuous, *BINARY, *categorical]
+    X, Xv = features(train_df)[columns], features(val_df)[columns]
     specs = {
         "logistic": (LogisticRegression(max_iter=2000, random_state=seed), {"model__C": [0.01, 0.1, 1, 10], "model__class_weight": [None, "balanced"]}),
         "random_forest": (RandomForestClassifier(random_state=seed, n_jobs=2), {"model__n_estimators": [150, 300], "model__max_depth": [5, 10, None], "model__min_samples_leaf": [2, 5, 15], "model__class_weight": [None, "balanced"]}),
         "xgboost": (XGBClassifier(random_state=seed, n_jobs=2, eval_metric="logloss", tree_method="hist"), {"model__n_estimators": [100, 200, 300], "model__max_depth": [2, 3, 5], "model__learning_rate": [0.03, 0.08], "model__subsample": [0.8, 1.0], "model__colsample_bytree": [0.8, 1.0], "model__reg_lambda": [1, 5, 10]}),
     }
-    models, rows, best_params = {}, [], {}
-    dummy = Pipeline([("prep", preprocessing(X)), ("model", DummyClassifier(strategy="prior"))]).fit(X, y)
+    models, best_params, val_probs = {}, {}, {}
+    dummy = Pipeline([("prep", preprocessing(continuous, categorical)), ("model", DummyClassifier(strategy="prior"))]).fit(X, y)
     models["dummy_raw"] = dummy
-    rows.append({"model": "dummy", "variant": "raw", **metrics(yv, dummy.predict_proba(Xv)[:, 1])})
+    val_probs["dummy", "raw"] = dummy.predict_proba(Xv)[:, 1]
     for name, (estimator, params) in specs.items():
         print(f"Training {name}: CV search", flush=True)
         start = time.perf_counter()
-        pipe = Pipeline([("prep", preprocessing(X)), ("model", estimator)])
+        pipe = Pipeline([("prep", preprocessing(continuous, categorical)), ("model", estimator)])
         search = RandomizedSearchCV(pipe, params, n_iter=min(8 if name == "logistic" else cfg["search_iterations"], int(np.prod([len(v) for v in params.values()]))), scoring="average_precision", cv=folds, n_jobs=2, random_state=seed, refit=True, error_score="raise")
         search.fit(X, y)
         raw = search.best_estimator_
@@ -122,16 +174,20 @@ def train():
         calibrated.fit(X, y)
         for variant, model in [("raw", raw), ("calibrated", calibrated)]:
             models[f"{name}_{variant}"] = model
-            rows.append({"model": name, "variant": variant, **metrics(yv, model.predict_proba(Xv)[:, 1])})
+            val_probs[name, variant] = model.predict_proba(Xv)[:, 1]
         best_params[name] = {"params": search.best_params_, "cv_average_precision": search.best_score_, "seconds": time.perf_counter() - start}
         save_csv(pd.DataFrame(search.cv_results_), run / f"cv_{name}.csv")
         print(f"Completed {name} ({time.perf_counter() - start:.1f}s)", flush=True)
-    validation = pd.DataFrame(rows)
-    winner = choose_model(validation)
+    # Selection uses threshold-free metrics; the table is then reported at the chosen threshold for every candidate.
+    winner = choose_model(pd.DataFrame([{"model": m, "variant": v, **metrics(yv, p)} for (m, v), p in val_probs.items()]))
     model = models[f"{winner}_calibrated"]
     thresholds = pd.DataFrame([{"threshold": float(t), **metrics(yv, model.predict_proba(Xv)[:, 1], t)} for t in np.arange(0.05, 1, 0.05)])
     best_threshold = float(thresholds.sort_values(["f1", "threshold"], ascending=[False, True]).iloc[0].threshold)
-    metadata = {"run_id": run_id, "selected_model": winner, "threshold": best_threshold, "seed": seed, "created_at": now(), "source_sha256": source["sha256"], "config": cfg, "selection_rule": "AP within 0.01 of best calibrated candidate; Brier within 0.002 of best; prefer simpler", "split_counts": df.split.value_counts().to_dict(), "feature_columns": list(X.columns), "numeric_medians": df.loc[df.split.eq("train"), NUMERIC].median().to_dict(), "best_parameters": best_params, "python": platform.python_version(), "dependencies": {d.metadata["Name"]: d.version for d in importlib.metadata.distributions()}, "code_sha256": {p.relative_to(ROOT).as_posix(): digest(p.read_bytes()) for p in (ROOT / "src").rglob("*.py")}}
+    validation = pd.DataFrame([{"model": m, "variant": v, "threshold": best_threshold, **metrics(yv, p, best_threshold)} for (m, v), p in val_probs.items()])
+    encoded = preprocessing(continuous, categorical).fit(X).get_feature_names_out()
+    metadata = {"run_id": run_id, "selected_model": winner, "threshold": best_threshold, "seed": seed, "created_at": now(), "source_sha256": source["sha256"], "config": cfg, "selection_rule": "AP within 0.01 of best calibrated candidate; Brier within 0.002 of best; prefer simpler", "split_counts": df.split.value_counts().to_dict(),
+                "feature_set": feature_set, "feature_rule": FEATURE_RULE, "feature_columns": columns, "continuous_features": list(continuous), "binary_features": BINARY, "categorical_features": list(categorical),
+                "reference_levels": {c: REFERENCE_LEVELS[c] for c in categorical}, "encoded_features": list(encoded), "numeric_medians": df.loc[df.split.eq("train"), NUMERIC].median().to_dict(), "best_parameters": best_params, "python": platform.python_version(), "dependencies": {d.metadata["Name"]: d.version for d in importlib.metadata.distributions()}, "code_sha256": {p.relative_to(ROOT).as_posix(): digest(p.read_bytes()) for p in (ROOT / "src").rglob("*.py")}}
     joblib.dump({"model": model, "metadata": metadata, "reference_splits": df.set_index("customerID").split.to_dict()}, run / "model.joblib")
     joblib.dump(models, run / "candidates.joblib")
     save_csv(validation, run / "validation_metrics.csv")
@@ -145,7 +201,7 @@ def train():
 def score_frame(df, bundle=None, origin="uploaded_unverified"):
     bundle = bundle or joblib.load(latest_run() / "model.joblib")
     out = df.copy()
-    out["churn_probability"] = bundle["model"].predict_proba(features(df))[:, 1]
+    out["churn_probability"] = bundle["model"].predict_proba(features(df)[bundle["metadata"]["feature_columns"]])[:, 1]
     for col, median in bundle["metadata"]["numeric_medians"].items():
         out[col] = out[col].fillna(median)
     out["customer_id"] = out.customerID
@@ -175,13 +231,14 @@ def evaluate(run=None):
     bundle = joblib.load(run / "model.joblib")
     models = joblib.load(run / "candidates.joblib")
     test = df.loc[df.split.eq("test")]
-    X, y = features(test), test.churn.to_numpy()
+    columns = bundle["metadata"]["feature_columns"]
+    X, y = features(test)[columns], test.churn.to_numpy()
     threshold = bundle["metadata"]["threshold"]
     rows, probabilities = [], {}
     for name, model in models.items():
         p = model.predict_proba(X)[:, 1]
         probabilities[name] = p
-        rows.append({"model": name, **metrics(y, p, threshold)})
+        rows.append({"model": name, "threshold": threshold, **metrics(y, p, threshold)})
     save_csv(pd.DataFrame(rows), run / "test_metrics.csv")
     scores = score_frame(df, bundle)
     save_csv(scores, run / "scorecard.csv")
@@ -212,14 +269,14 @@ def evaluate(run=None):
         for group, part in scores.loc[scores.split.eq("test")].groupby(col):
             diagnostic.append({"attribute": col, "group": group, "n": len(part), "small_sample": len(part) < 50, **metrics(part.churn, part.churn_probability, threshold)})
     save_csv(pd.DataFrame(diagnostic), run / "segment_errors.csv")
-    explain(run, models, df, cfg["seed"])
+    explain(run, models, df, columns, cfg["seed"])
     return run
 
 
-def explain(run, models, df, seed=42):
+def explain(run, models, df, columns, seed=42):
     # Explain validation only, and explicitly explain the raw classifiers.
     val = df.loc[df.split.eq("validation")]
-    X, y = features(val), val.churn
+    X, y = features(val)[columns], val.churn
     lr = models["logistic_raw"]
     save_csv(pd.DataFrame({"feature": lr.named_steps["prep"].get_feature_names_out(), "coefficient": lr.named_steps["model"].coef_[0]}).sort_values("coefficient"), run / "logistic_coefficients.csv")
     for name in ["random_forest", "xgboost"]:

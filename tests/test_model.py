@@ -33,8 +33,36 @@ def test_numeric_medians_only_train():
         assert value == df.loc[df.split.eq("train"), col].median()
     fitted = bundle["model"].calibrated_classifiers_[0].estimator
     imputer = fitted.named_steps["prep"].named_transformers_["num"].named_steps["impute"]
-    numeric = features(df.loc[df.split.eq("train")]).select_dtypes(include="number")
-    np.testing.assert_allclose(imputer.statistics_, numeric.median().values)
+    continuous = bundle["metadata"]["continuous_features"]
+    np.testing.assert_allclose(imputer.statistics_, df.loc[df.split.eq("train"), continuous].median().values)
+
+
+def test_deployed_design_is_full_rank_and_reference_coded():
+    bundle = joblib.load(latest_run() / "model.joblib")
+    meta = bundle["metadata"]
+    prep = bundle["model"].calibrated_classifiers_[0].estimator.named_steps["prep"]
+    df = pd.read_csv(ROOT / "data/processed/customers.csv")
+    encoded = prep.transform(features(df.loc[df.split.eq("train")])[meta["feature_columns"]])
+    assert np.linalg.matrix_rank(encoded) == encoded.shape[1] == len(meta["encoded_features"])
+    assert all(f"{col}_{ref}" not in meta["encoded_features"] for col, ref in meta["reference_levels"].items())
+
+
+def test_feature_ablation_follows_its_rule():
+    run = latest_run()
+    table = pd.read_csv(run / "feature_ablation.csv")
+    chosen = table.loc[table.selected]
+    assert len(chosen) == 1 and chosen.eligible.iloc[0] and chosen.full_rank.iloc[0]
+    assert chosen.encoded_columns.iloc[0] == table.loc[table.eligible, "encoded_columns"].min()
+    assert chosen.feature_set.iloc[0] == read_json(run / "manifest.json")["feature_set"]
+    # The first design one-hot coded every level next to derived copies, so its columns were linearly dependent.
+    assert not table.loc[table.feature_set.str.startswith("previous"), "full_rank"].iloc[0]
+
+
+def test_candidates_reported_at_the_chosen_threshold():
+    run = latest_run()
+    threshold = read_json(run / "manifest.json")["threshold"]
+    for name in ["validation_metrics.csv", "test_metrics.csv"]:
+        assert (pd.read_csv(run / name).threshold == threshold).all()
 
 
 def test_uploaded_missing_numeric_uses_training_median():

@@ -36,10 +36,9 @@
 |---|---|---|
 | `churn` | 0/1 | `Churn` mapped Yes=1, No=0; label only |
 | `split` | train / validation / test | Role of the row in validation design |
-| `tenure_band`, `tenure_segment` | new / developing / loyal | tenure <= 12, 13-24, > 24 months; model feature and business segment |
-| `addon_count` | integer 0-6 | Number of add-on services equal to "Yes" |
-| `monthly_contract` | 0/1 | Contract is month-to-month |
-| `autopay` | 0/1 | Payment method is automatic |
+| Service and account flags | 0/1 | {{ model.feature_design.binary | join(", ") }}: 1 if the field is "Yes". "No phone service" and "No internet service" count as 0, so that information is carried only by `PhoneService` and `InternetService` |
+| Reference coding | 0/1 columns | {% for col, ref in model.feature_design.reference_levels.items() %}`{{ col }}` against "{{ ref }}"{{ "; " if not loop.last }}{% endfor %} (the lowest-churn level), so each coefficient compares a level with that reference |
+| `tenure_band`, `tenure_segment` | new / developing / loyal | tenure <= 12, 13-24, > 24 months; business segment{{ " and model feature" if "tenure_band" in model.features else " (tested as a model feature, not selected)" }} |
 | `churn_probability` | probability | Calibrated model output |
 | `risk_band` | low / medium / high | <= 0.25, 0.25-0.5, > 0.5; descriptive only |
 | `prediction_origin` | text | in_sample_do_not_evaluate (train), selection_holdout (validation), untouched_test (test), or upload status |

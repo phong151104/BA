@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 import pytest
 from telco_retention.common import ROOT, latest_run, read_json
-from telco_retention.data import validate, parse_upload, features, tenure_segment, DataValidationError
+from telco_retention.data import validate, parse_upload, features, tenure_segment, DataValidationError, BINARY, CATEGORICAL
 
 
 @pytest.fixture
@@ -34,7 +34,9 @@ def test_feature_exclusions(sample):
     frame, _ = validate(sample)
     X = features(frame)
     assert not {"customerID", "Churn", "churn", "gender", "SeniorCitizen", "split"} & set(X)
-    assert {"tenure_band", "addon_count", "monthly_contract", "autopay"} <= set(X)
+    # Derived duplicates of other inputs were removed in the feature review.
+    assert not {"addon_count", "monthly_contract", "autopay"} & set(X)
+    assert X[BINARY].isin([0, 1]).all().all() and set(CATEGORICAL) <= set(X)
 
 
 @pytest.mark.parametrize("column,value", [("tenure", -1), ("tenure", .5), ("MonthlyCharges", "oops"), ("MonthlyCharges", np.inf), ("Contract", "unknown"), ("customerID", "")])

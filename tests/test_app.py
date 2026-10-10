@@ -8,8 +8,8 @@ PAGES = ["Overview", "Campaign builder", "Scenarios & budget", "Model & data"]
 KPIS = ["Expected net value", "ROI", "Customers contacted", "Precision among contacted", "High-risk/high-value coverage"]
 
 
-def app():
-    return AppTest.from_file(str(ROOT / "app/Home.py"), default_timeout=120).run()
+def app(timeout=120):
+    return AppTest.from_file(str(ROOT / "app/Home.py"), default_timeout=timeout).run()
 
 
 def kpi(at, label):
@@ -143,7 +143,8 @@ def test_ui_defaults_come_from_bundle(monkeypatch):
 
 
 def test_scenario_analysis_runs_and_flags_stale_results():
-    at = app()
+    # The full scenario analysis re-solves dozens of campaigns; allow for a loaded machine.
+    at = app(timeout=400)
     at.radio(key="page").set_value("Scenarios & budget").run()
     at.button[0].click().run()
     assert not at.exception

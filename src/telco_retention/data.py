@@ -26,6 +26,13 @@ SEGMENTS = ["new", "developing", "loyal"]
 TENURE_BINS = [12, 24]  # <=12 months new, 13-24 developing, >24 loyal
 SCHEMA = ["customerID", "gender", "SeniorCitizen", "Partner", "Dependents", "tenure", "PhoneService", "MultipleLines", "InternetService", "OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies", "Contract", "PaperlessBilling", "PaymentMethod", "MonthlyCharges", "TotalCharges", "Churn"]
 OPTIONAL = {"gender", "SeniorCitizen", "Churn"}
+SERVICES = ["OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies"]
+# Model inputs. Flags are 1 when the customer has the service or attribute; "No phone/internet service" counts as 0,
+# so that information lives only in PhoneService and InternetService.
+BINARY = ["Partner", "Dependents", "PhoneService", "PaperlessBilling", "MultipleLines", *SERVICES]
+CATEGORICAL = ["InternetService", "Contract", "PaymentMethod", "tenure_band"]
+# Each categorical is coded against its lowest-churn level, so odds ratios read "compared with ...".
+REFERENCE_LEVELS = {"InternetService": "No", "Contract": "Two year", "PaymentMethod": "Credit card (automatic)", "tenure_band": "loyal"}
 
 
 class DataValidationError(ValueError):
@@ -179,10 +186,9 @@ def tenure_segment(tenure):
 
 
 def features(df):
-    out = df[[c for c in SCHEMA if c not in OPTIONAL | {"customerID"}]].copy()
-    out["tenure_band"] = tenure_segment(out.tenure).astype(object)
-    services = ["OnlineSecurity", "OnlineBackup", "DeviceProtection", "TechSupport", "StreamingTV", "StreamingMovies"]
-    out["addon_count"] = out[services].eq("Yes").sum(axis=1)
-    out["monthly_contract"] = out.Contract.eq("Month-to-month").astype(int)
-    out["autopay"] = out.PaymentMethod.str.contains("automatic", regex=False).astype(int)
+    """All candidate model inputs; the trained pipeline keeps only its chosen feature set. Never the label, gender or age."""
+    out = df[[*NUMERIC, "InternetService", "Contract", "PaymentMethod"]].copy()
+    for col in BINARY:
+        out[col] = df[col].eq("Yes").astype(int)
+    out["tenure_band"] = tenure_segment(df.tenure).astype(object)
     return out

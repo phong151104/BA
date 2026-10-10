@@ -26,11 +26,19 @@ Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.m
 - **Data:** IBM Telco Customer Churn sample, fictional US company, single snapshot ([source log](source-log.md)).
 - **Split:** stratified random 60/20/20, seed {{ cfg.seed }} - train {{ data.splits.train | num }}, validation {{ data.splits.validation | num }}, test {{ data.splits.test | num }}.
 
-## 4. Features
+## 4. Features and feature design
+{% set fd = model.feature_design %}{% set prev = fd.ablation | selectattr('feature_set', 'equalto', 'previous design (reference)') | first %}
 
-{{ model.features | join(", ") }}.
+- **Continuous (median-imputed, scaled):** {{ fd.continuous | join(", ") }}.
+- **0/1 flags (1 = has it):** {{ fd.binary | join(", ") }}.
+- **Categories, coded against their lowest-churn level:** {% for col, ref in fd.reference_levels.items() %}{{ col }} (reference: {{ ref }}){{ ", " if not loop.last }}{% endfor %}.
+- **Excluded:** `customerID` and `Churn`; `gender` and `SeniorCitizen` are used only in the fairness audit. All transformations are fitted inside training folds.
 
-`customerID` and `Churn` are excluded. `gender` and `SeniorCitizen` are excluded from the model and used only in the fairness audit. Numeric fields are median-imputed and scaled; categorical fields are one-hot encoded; all transformations are fitted inside training folds.
+**Feature review (week 2).** The first design one-hot coded every level of every field next to derived copies (month-to-month flag, automatic-payment flag, add-on count). Its {{ prev.encoded_columns }} columns had rank {{ prev.matrix_rank }}, so the logistic coefficients could not be read one by one. Candidate sets were compared with 5-fold cross-validated logistic regression on train only. Rule fixed in advance: {{ fd.rule }}.
+
+{{ fd.ablation | md_table([("feature_set", "Feature set", None), ("cv_average_precision", "CV PR-AUC", "num3"), ("cv_standard_error", "SE", "num3"), ("encoded_columns", "Columns", "num"), ("matrix_rank", "Rank", "num"), ("eligible", "Eligible", None), ("selected", "Chosen", None)]) }}
+
+Chosen: **{{ fd.chosen }}**. Every candidate ranks churners about equally well, so the simplest full-rank design wins; it also makes each coefficient an odds ratio against a stated reference.
 
 ## 5. Validation design
 
