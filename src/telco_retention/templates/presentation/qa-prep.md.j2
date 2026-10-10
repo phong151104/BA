@@ -1,38 +1,44 @@
-{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set be = break_even %}{% set unc = uncertainty %}
+{% set c = comparison %}{% set chosen = comparison[strategy] %}{% set be = break_even %}{% set unc = uncertainty %}{% set mc = monte_carlo.by %}{% set senior = fairness_by[strategy ~ '|SeniorCitizen|1'] %}{% set lr = model.test | selectattr('model', 'equalto', 'logistic_calibrated') | first %}{% set xgb = model.test | selectattr('model', 'equalto', 'xgboost_calibrated') | first %}
 # Questions to expect, and short answers
 
 **1. Is this causal? Do your offers actually reduce churn?**
-No causal claim is made. The data have no randomised campaign, so save rates are documented assumptions (standard offer {{ default_offer.save_rate | pct(0) }}). We show how the decision changes with them and propose a randomised pilot that measures them. Break-even is {{ be.break_even_default_save_rate | pct }}.
+No causal claim is made. The data have no randomised campaign, so save rates are documented assumptions (standard offer {{ default_offer.save_rate | pct(0) }}). We show how the decision changes with them and propose a randomised pilot that measures them. The base-budget list breaks even at a save rate of {{ be.break_even_default_save_rate | pct }}, the larger recommended list at {{ recommended.break_even.break_even_default_save_rate | pct }}.
 
 **2. Why logistic regression and not XGBoost?**
-The rule was fixed before looking at test: best average precision within 0.01 and Brier within 0.002, then prefer the simpler model. The three families rank almost equally (PR-AUC {{ (model.test | selectattr('model', 'equalto', 'logistic_calibrated') | first).average_precision | num(3) }} logistic vs {{ (model.test | selectattr('model', 'equalto', 'xgboost_calibrated') | first).average_precision | num(3) }} XGBoost on test), and logistic regression is better calibrated (ECE {{ model.selected_test.ece | num(3) }}) and easier to explain.
+The rule was fixed before looking at test: best average precision within 0.01 and Brier within 0.002, then prefer the simpler model. The three families rank almost equally (PR-AUC {{ lr.average_precision | num(3) }} logistic vs {{ xgb.average_precision | num(3) }} XGBoost on test), and in money they are within {{ model.profit_check_spread_validation | usd }} of each other on validation. Logistic regression can be read as odds ratios and turned into a points card.
 
 **3. Where does the 20% save rate come from?**
-Profit-based churn studies use 30% as a convention (Verbeke et al. 2012; Verbraken et al. 2013); Neslin et al. (2006) state that no published acceptance-rate data exist and test 10-50%. Field experiments show risky customers can be unresponsive (Ascarza 2018). We take a conservative 20% and test 10-30% (tornado) and 5-40% (grid).
+Profit-based churn studies use 30% as a convention (Verbeke et al. 2012; Verbraken et al. 2013); Neslin et al. (2006) state that no published acceptance-rate data exist and test 10-50%. Field experiments show risky customers can be unresponsive (Ascarza 2018). We take 20% as a judgement below the convention, not as a safe figure: only {{ reasons.addressable_share | pct(0) }} of churners in the sample left for price or a competitor's offer, so 20% means keeping {{ (default_offer.save_rate / reasons.addressable_share) | pct(0) }} of those an offer can reach. We test 10-30% (tornado) and 5-40% (grid), and the pilot measures it.
 
 **4. Precision is lower than risk-only. Isn't that worse?**
-Precision measures how many contacted customers would churn, not how much value is saved. Risk-only has {{ c.risk.precision_contacted | pct(0) }} precision but earns {{ c.risk.expected_net_value | usd }}; the recommended rule has {{ chosen.precision_contacted | pct(0) }} precision and earns {{ chosen.expected_net_value | usd }}, because it skips risky customers whose value cannot repay the offer.
+Precision measures how many contacted customers would churn, not how much value is saved. Risk-only has {{ c.risk.precision_contacted | pct(0) }} precision and an expected {{ c.risk.expected_net_value | usd }}; the recommended rule has {{ chosen.precision_contacted | pct(0) }} precision and an expected {{ chosen.expected_net_value | usd }}, because it skips risky customers whose value cannot repay the offer.
 
 **5. Isn't the comparison circular - you evaluate expected value with the model that ranks by it?**
-Partly, so we also evaluate with actual churn labels: the targeting gain over risk-only is {{ unc['ev minus risk'].label_based_simulated_net | usd }} (paired bootstrap 95% interval {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }}). The label check still uses the assumed save rate, which is why the pilot matters.
+Partly, so we also value the lists with actual churn: the recommended rule's gain over risk-only is {{ headline.gain_label.label_based_simulated_net | usd }} (paired bootstrap 95% interval {{ headline.gain_label.lower_95 | usd }} to {{ headline.gain_label.upper_95 | usd }}). High-risk/high-value coverage favours expected value almost by construction, so we read it next to the money, not alone. The label check still uses the assumed save rate, which is why the pilot matters.
 
 **6. Did you tune anything on the test set?**
-No. Model, threshold, risk/value cut-offs, offer strategy and budget recommendation were all chosen on validation; test was scored once. Reproducibility checks compare two complete runs.
+No. Features were chosen by cross-validation on train; model, threshold, risk/value cut-offs, offer strategy and budget recommendation on validation; test was scored once. Validation PR-AUC was {{ model.validation_test_gap.validation_ap | num(3) }} and test {{ model.validation_test_gap.test_ap | num(3) }}; we quote test. Reproducibility checks compare two complete runs.
 
 **7. How was the budget chosen?**
-The course fixes a budget ({{ budget.share | pct(0) }} of customers x standard offer). For the stretch goal we traced the profit curve and chose, on validation, the largest budget whose last step still returns {{ recommendation.hurdle_marginal_roi | pct(0) }}: enough for the standard offer to {{ recommendation.recommended_share | pct(0) }} of customers, which buys {{ recommended.selected_count | num }} mixed offers ({{ recommended.contacted_share | pct(0) }} of customers) on test.
+The brief asks for a fixed budget; we set it at the cost of the standard offer for {{ budget.share | pct(0) }} of customers ({{ budget.base | usd }} for the test sample). For the stretch goal we traced the profit curve and chose, on validation, the largest budget whose last step still returns {{ recommendation.hurdle_marginal_roi | pct(0) }}: about {{ scaled.recommended_budget | usd }} for the whole base, which buys {{ recommended.selected_count | num }} offers ({{ recommended.contacted_share | pct(0) }} of customers) on test. The hurdle is a management minimum for marketing spend, on top of the discounting already inside customer value.
 
-**8. Is the {{ data.churn_rate | pct }} churn rate realistic?**
-No. US carriers report about 1% monthly postpaid churn in 2025. The IBM sample is fictional and describes its churn window inconsistently. Our numbers demonstrate the method; magnitudes must be re-estimated on real data.
+**8. What if all the assumptions are wrong at once?**
+We drew all of them together {{ monte_carlo.draws | num }} times. The recommended list loses money in {{ mc.recommended.prob_loss | pct(0) }} of draws and the base-budget list in {{ mc.base.prob_loss | pct(0) }}; expected-value targeting beats risk-only in {{ mc.base_vs_risk.prob_gain | pct(0) }}. Who to target is robust; how much an offer saves is not.
 
-**9. Would this work in Vietnam?**
-Not as-is: the market is about 90% prepaid, churn shows as inactivity or porting, and contract features do not exist. The method transfers; the model and assumptions must be rebuilt on operator data, under the PDP Law 2025 and Decree 91/2020 contact rules.
+**9. Is the {{ data.churn_rate | pct }} churn rate realistic?**
+No. US carriers report about 1% monthly postpaid churn in 2025. At {{ stress.targets[0] | pct(0) }} average churn only {{ stress.by['sample|' ~ ('%g' % stress.targets[0])].positive_ev_share | pct(0) }} of customers would be worth the standard offer, so offers and contact must get cheaper; magnitudes must be re-estimated on real data.
 
-**10. Is targeting fair to seniors?**
-Seniors are contacted {{ fairness_by[strategy ~ '|SeniorCitizen|1'].ratio_to_reference | ratio(1) }} as often as others, mostly because they are higher risk and partly because they pay more. Age is not a model input. Offers are a benefit and a contact burden, so we flag the gap for review each wave and cap contact frequency.
+**10. Would this work in Vietnam?**
+The method transfers; the model does not. About 90% of mobile customers are prepaid, so churn shows as inactivity or porting, bills are far smaller and contact rules are strict. With Vietnamese prices and SMS contact, {{ stress.by['vietnam|' ~ ('%g' % stress.targets[0])].positive_ev_share | pct(0) }} of customers stay worth an offer at {{ stress.targets[0] | pct(0) }} churn. See the deployment note.
 
-**11. Why not use uplift modelling?**
-It needs randomised treatment data, which this dataset does not have; the brief forbids claiming uplift. The pilot creates such data; after several waves uplift targeting becomes possible.
+**11. Is targeting fair to seniors?**
+Seniors are contacted {{ senior.ratio_to_reference | ratio(1) }} as often as others, {{ senior.risk_adjusted_ratio | ratio(1) }} after adjusting for risk, so higher risk explains only part of the gap; higher bills explain more. Age is not a model input, the model is least well calibrated for seniors, and the pilot reports them separately; Legal/DPO reviews each wave.
 
-**12. What happens if assumptions change?**
-Change them in the dashboard or in `configs/default.yaml`; the plan re-optimises, the scenario ID changes, and `run-all` regenerates every report.
+**12. Why not use uplift modelling?**
+It needs randomised treatment data, which this dataset does not have, so claiming uplift would be unsupported. The pilot creates such data; after several waves uplift targeting becomes possible.
+
+**13. Why did you join a second dataset?**
+IBM's extended version of the same 7,043 customers records why churners left. Every customer ID and seven shared fields match exactly. Reasons are known only after customers leave, so they never enter the model; they tell us what an offer can and cannot fix.
+
+**14. What happens if assumptions change?**
+Change them on the dashboard's Assumptions page or in `configs/default.yaml`; the plan re-optimises, the chance of a loss updates, and `run-all` regenerates every report.

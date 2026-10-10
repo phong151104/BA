@@ -20,6 +20,7 @@ DOCUMENTS = {
     "docs/assumption-register.md.j2": "docs/assumption-register.md",
     "docs/model-card.md.j2": "docs/model-card.md",
     "docs/churn-scorecard.md.j2": "docs/churn-scorecard.md",
+    "docs/deployment-vietnam.md.j2": "docs/deployment-vietnam.md",
     "docs/retention-playbook.md.j2": "docs/retention-playbook.md",
     "docs/pilot-design.md.j2": "docs/pilot-design.md",
     "docs/governance-and-risks.md.j2": "docs/governance-and-risks.md",

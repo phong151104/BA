@@ -67,3 +67,16 @@ display(profile)
 ```
 
 **So what.** A rule that only follows churn risk would concentrate on new, low-value customers. The decision needs both dimensions, which is what the expected-value rule in notebook 3 does.
+
+## Why customers leave (IBM extended sample)
+
+IBM's extended version of the same customers records a reason for every churner. The join is accepted only because every customer ID and seven shared fields match; reasons are recorded after customers left, so they are kept in a separate file and never become model inputs.
+
+```python
+print(read_json(run / "extended_join.json"))
+display(pd.read_csv(run / "churn_reasons.csv").query("population == 'all churners'").sort_values("churners", ascending=False).head(10))
+display(pd.read_csv(run / "churn_reasons_by_segment.csv").round(3))
+display(Image(filename=str(ROOT / "reports/figures/churn_reasons.png")))
+```
+
+**So what.** Only {{ reasons.addressable_share | pct(0) }} of churners left for price or a competitor's offer, the reasons a discount or contract offer can address; {{ reasons.service_share | pct(0) }} left over staff attitude or dissatisfaction. The mix barely differs by segment (largest gap {{ (reasons.max_segment_gap * 100) | num(0) }} points), so in this sample the reasons bound what offers can achieve rather than telling us which offer to give whom.

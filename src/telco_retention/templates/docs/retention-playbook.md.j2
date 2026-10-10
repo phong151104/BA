@@ -26,7 +26,7 @@ The optimiser picks at most one offer per customer to maximise total EV within t
 | **Recommended (standard offer for {{ recommendation.recommended_share | pct(0) }} of customers, validation rule)** | **{{ reco.selected_count | num }} ({{ reco.contacted_share | pct(0) }})** | **{{ reco.cost | usd }}** | **{{ reco.expected_net_value | usd }}** | **{{ reco.roi | pct(0) }}** |
 | All positive-EV customers | {{ curve.positive_ev_customers | num }} ({{ curve.positive_ev_share | pct(0) }}) | {{ curve.positive_ev_cost | usd }} | see profit curve | lower marginal return |
 
-Scaled to the full base of {{ scaled.base_population | num }} customers (linear, indicative): about {{ scaled.recommended_customers | round(-1) | int | num }} offers, {{ scaled.recommended_budget | usd }} budget and {{ scaled.recommended_net | usd }} expected net value per wave.
+Scaled to the full base of {{ scaled.base_population | num }} customers (linear, indicative): a full wave is about {{ scaled.recommended_customers | round(-1) | int | num }} offers, {{ scaled.recommended_budget | usd }} budget and {{ scaled.recommended_net | usd }} expected net value. The pilot uses a list of the same size but makes offers to only half of it ({{ pilot.arm_size_per_wave | num }} customers); the other half is the control group.
 
 **Budget tranches.** Release budget in steps and stop when the marginal ROI of the next step falls below {{ cfg.campaign.recommendation.min_marginal_roi | pct(0) }}. The budget share is the share of customers the standard offer ({{ budget.per_customer | usd }}) could reach; the optimiser mixes offers, so the number contacted differs:
 
@@ -38,30 +38,32 @@ Scaled to the full base of {{ scaled.base_population | num }} customers (linear,
 
 ## 3. What to offer
 
-| Offer | Cost + contact | Assumed save rate | Eligible | Contacted in the base wave |
-|---|---:|---:|---|---:|
-{% for o in offers %}
-| {{ o.label }} | {{ (o.offer_cost + o.contact_cost) | usd }} | {{ o.save_rate | pct(0) }} | {{ o.eligibility }} | {{ offer_mix | selectattr('offer_id', 'equalto', o.offer_id) | map(attribute='customers') | sum }} |
+{% set reco_mix = recommended_offer_mix %}{% set scale_arm = pilot.arm_size_per_wave / recommended.selected_count if recommended.selected_count else 0 %}
+| Offer | Cost + contact | Assumed save rate | Eligible | Recommended wave (test) | Pilot wave, offered half (about) | Base-budget wave (test) |
+|---|---:|---:|---|---:|---:|---:|
+{% for o in offers %}{% set n = reco_mix | selectattr('offer_id', 'equalto', o.offer_id) | map(attribute='customers') | sum %}
+| {{ o.label }} | {{ (o.offer_cost + o.contact_cost) | usd }} | {{ o.save_rate | pct(0) }} | {{ o.eligibility }} | {{ n | num }} | {{ (n * scale_arm) | round | int | num }} | {{ offer_mix | selectattr('offer_id', 'equalto', o.offer_id) | map(attribute='customers') | sum }} |
 {% endfor %}
 
-Offer mix of the base wave by segment:
+The pilot column scales the recommended wave to the pilot's offered half; each offer is its own sub-arm, and the first decision is about the list rule as a whole ([pilot design](pilot-design.md)).
 
-{{ offer_mix | md_table([("tenure_segment", "Tenure segment", None), ("Contract", "Contract", None), ("offer_id", "Offer", None), ("customers", "Customers", "num")]) }}
+## 4. How and when to contact
 
-## 4. How and when to contact (Vietnam deployment rules)
+The rules below are those a Vietnamese operator would apply; the [deployment note](deployment-vietnam.md) explains the legal and price context. A US operator would apply the equivalent national rules.
 
 1. **Consent and suppression first.** Contact only customers with recorded, purpose-specific consent for marketing; scrub every list against the national Do-Not-Call register and internal opt-outs before each wave ([Decree 91/2020](references.md#decree91), [PDP Law 2025](references.md#pdpl2025)).
 2. **Channel:** one outbound call by a trained retention agent, followed by an SMS confirming the offer with a clear opt-out. Calls only **08:00-17:00**, SMS only 08:00-20:00 (stricter than the 07:00-22:00 legal window because aggregators block evening promotions).
 3. **Frequency:** at most **one advertising call per customer per 24 hours** by law; internal rule: one retention contact per customer per 30 days, and no new offer within 90 days of a previous one.
-4. **Script:** acknowledge the relationship, present one offer (the assigned one), no pressure, record acceptance, refusal or "do not contact".
-5. **Brand name** on every SMS; stop immediately on refusal; keep consent and refusal logs for at least one year.
+4. **Script:** acknowledge the relationship, ask what would make the customer stay, present one offer (the assigned one), no pressure, record acceptance, refusal or "do not contact".
+5. **Log the reason and route service problems.** In the sample only {{ reasons.addressable_share | pct(0) }} of churners left for price or a competitor's offer; {{ reasons.service_share | pct(0) }} left over staff attitude or dissatisfaction with the network, product or support ([analysis report](../reports/analysis-report.md#why-customers-leave)). Agents record the customer's reason with a fixed code list and pass service complaints to the responsible team instead of answering them with a discount.
+6. **Brand name** on every SMS; stop immediately on refusal; keep consent and refusal logs for at least one year.
 
 ## 5. Measurement
 
 Every wave keeps a **random holdout** inside the target list ([pilot design](pilot-design.md)):
 - {{ pilot.holdout_share | pct(0) }} of eligible customers in the pilot wave are not contacted;
 - primary outcome: churn within {{ pilot.outcome_window_days }} days, contacted vs holdout;
-- measured save rate = 1 - churn(contacted) / churn(holdout), per offer;
+- measured save rate = 1 - churn(offered) / churn(holdout), for the list and per offer;
 - update `configs/default.yaml` with the measured save rates and re-run the plan.
 
 ## 6. Stop / go rules
@@ -70,22 +72,25 @@ Every wave keeps a **random holdout** inside the target list ([pilot design](pil
 |---|---|
 | Measured save rate: 95% interval above 0 and estimate at least {{ pilot.break_even_save_rate | pct }} (break-even of the recommended list) | Go: scale to the recommended budget |
 | Estimate at or below 0 (contacted churn >= holdout churn), or whole interval below break-even | Stop; redesign offers and targeting (consider uplift modelling) |
-| Anything else | Extend the pilot (another wave, pooled) |
+| Anything else | Extend the pilot (another wave, pooled), at most {{ cfg.project.max_extend_waves }} times; then stop |
+| Stop decided | Keep the base budget on the expected-value list with the cheapest offer that the pilot did not rule out, or return it to Finance; fix the service reasons customers give for leaving |
 | Opt-out or complaint rate > 2x the normal campaign rate | Pause and review script and frequency |
 | Fairness review flag on the wave list | DPO and Retention owner review before launch |
 
 ## 7. Customer-experience and fairness guardrails
 
 - Protected attributes (gender, age) are never used to choose customers or offers; their selection rates are audited every wave.
-- Senior customers are currently contacted {{ fairness_by[strategy ~ '|SeniorCitizen|1'].ratio_to_reference | ratio(1) }} as often as others, driven by higher risk and value; agents follow accessible-communication guidance and no high-pressure tactics.
-- Low-risk loyal customers rarely qualify for retention offers; pair the campaign with a non-targeted loyalty benefit to avoid a perceived "loyalty penalty".
+{% set senior = fairness_by[strategy ~ '|SeniorCitizen|1'] %}
+- Senior customers are contacted {{ senior.ratio_to_reference | ratio(1) }} as often as others ({{ fairness_by['risk|SeniorCitizen|1'].ratio_to_reference | ratio(1) }} under risk-only targeting) and {{ senior.risk_adjusted_ratio | ratio(1) }} after adjusting for churn risk, so higher risk explains only part of the gap; the rest comes from higher bills. Agents follow accessible-communication guidance and use no high-pressure tactics, and the pilot reports seniors separately.
+{% set loyalty_used = recommended_offer_mix | selectattr('offer_id', 'equalto', 'loyalty_reward') | list | length > 0 %}
+- Low-risk loyal customers rarely qualify for retention offers{{ "" if loyalty_used else ", and the loyalty reward in the catalog is not chosen by the optimiser under current assumptions" }}. To avoid a perceived "loyalty penalty", pair the campaign with a non-targeted loyalty benefit funded outside the retention budget.
 - Customers who decline are suppressed from retention offers for 90 days.
 
 ## 8. Operating checklist per wave
 
-1. Score the current customer base with the deployed model (dashboard: *Model & data -> Score new customers*, or `python -m telco_retention score`).
-2. Confirm assumptions with Finance (margin, offer cost) and Operations (contact cost, capacity).
-3. Build the list in *Campaign builder*, review *Scenarios & budget*, export the campaign ZIP (list + assumptions + scenario ID).
+1. Score the current customer base with the deployed model (dashboard: *Model evidence -> Data and new customers*, or `python -m telco_retention score`).
+2. Confirm assumptions with Finance (margin, offer cost) and Operations (contact cost, capacity) on the *Assumptions & sensitivity* page; check the chance of a loss.
+3. Review the list on the *Decision* page and export the campaign ZIP (list + assumptions + scenario ID).
 4. Apply consent / DNC suppression; randomise the holdout; freeze and archive the list.
 5. Execute contacts within the legal windows; log outcomes daily.
 6. After {{ pilot.outcome_window_days }} days, measure churn by arm and offer, update the assumption register, decide go / extend / stop.

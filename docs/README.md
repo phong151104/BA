@@ -9,6 +9,7 @@ Documents marked *(generated)* are rendered from templates in `src/telco_retenti
 - [Retention playbook](retention-playbook.md) *(generated)*
 - [Pilot design](pilot-design.md) *(generated)*
 - [Governance, monitoring and risk register](governance-and-risks.md) *(generated)*
+- [Deploying at a Vietnamese operator](deployment-vietnam.md) *(generated)* - what transfers, local prices and law, stress test
 - [Presentation deck](../reports/presentation/retention-deck.pptx), [deck outline with notes](../reports/presentation/deck.md), [demo script](../reports/presentation/demo-script.md), [Q&A preparation](../reports/presentation/qa-prep.md) *(generated)*
 - [Glossary](glossary.md)
 

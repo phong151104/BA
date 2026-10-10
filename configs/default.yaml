@@ -84,6 +84,16 @@ pilot:
   outcome_window_days: 90
   save_rate_grid: [0.05, 0.10, 0.15, 0.20, 0.30]
 
+project:
+  # Team assumptions for the roadmap and the one-off effort, to be confirmed by the owners named in the business case.
+  roadmap:
+    - {phase: Set-up, weeks: 4, owner: "Retention, Legal/DPO, IT", work: "consent and Do-Not-Call checks, data-protection impact assessment, CRM list export, call script and agent training"}
+    - {phase: Pilot wave, weeks: 13, owner: "Call centre, Retention", work: "contact the offered half once; follow both halves for the 90-day outcome window"}
+    - {phase: Read-out, weeks: 2, owner: Retention analytics, work: "save rate with its interval, net value per customer, guardrail metrics; go, extend or stop"}
+    - {phase: Scale or stop, weeks: 4, owner: "Head of Retention, Finance", work: "retrain and recalibrate on own data, replace assumed save rates, roll out the recommended budget"}
+  effort_person_weeks: {analytics: 4, crm_and_it: 2, legal_and_dpo: 1, agent_training: 1}
+  max_extend_waves: 2
+
 monte_carlo:
   # Joint uncertainty: every register assumption is drawn at once from a triangular distribution (low, base, high),
   # independently. Frozen lists are repriced for every draw; the plan is re-optimised for the first draws only (slower).

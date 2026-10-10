@@ -9,13 +9,13 @@
 
 **Today's rule (baseline):** call the customers with the highest churn risk until the budget runs out.
 
-**Why it matters:** retention budgets are limited, and an offer costs money whether or not it changes the customer's mind. A customer who is very likely to leave but brings little margin may not be worth an offer. A valuable customer at moderate risk may be. The course question is:
+**Why it matters:** retention budgets are limited, and an offer costs money whether or not it changes the customer's mind. A customer who is very likely to leave but brings little margin may not be worth an offer. A valuable customer at moderate risk may be. The business question is:
 
 > *Given a limited retention budget, which customers should receive an offer when both churn risk and expected economic value are considered?*
 
 ## Problem statement
 
-On the IBM Telco sample ({{ data.rows | num }} customers, {{ data.churn_rate | pct }} labelled as churners), a fixed budget of {{ budget.base | usd }} per {{ budget.n_test | num }} customers covers the standard offer for only {{ budget.share | pct(0) }} of them. The team must:
+On the IBM Telco sample ({{ data.rows | num }} customers of a fictional US telco, {{ data.churn_rate | pct }} labelled as churners), churn puts about **{{ value_at_risk.expected_scaled | usd }}** of twelve-month customer margin at risk (expected value lost with churners, valued with the documented proxy). A base budget of {{ budget.base | usd }} per {{ budget.n_test | num }} customers, set by the team as a starting point, covers the standard offer for {{ budget.share | pct(0) }} of them. The team must:
 
 1. Estimate each customer's churn probability honestly (well calibrated).
 2. Turn it into money: expected value = probability x save rate x customer value - offer and contact costs.
@@ -56,7 +56,23 @@ The analysis compares all five on the same customers and budget. On validation d
 | Precision among contacted | Share of contacted customers who churn (labels) or mean predicted probability (no labels) | Read with value: high precision on low-value customers is not the goal |
 | High-risk/high-value coverage | Share of customers above both 75th percentiles (validation) that are contacted | As close to 100% as the budget allows |
 | Model quality | PR-AUC, ROC-AUC, Brier, calibration slope/ECE on untouched test data | PR-AUC well above the {{ data.churn_rate | num(2) }} random baseline; ECE below 0.05 |
-| Pilot outcome | Measured save rate = 1 - churn(contacted) / churn(holdout) | Effect significant (95% interval above 0) and measured save rate at least the recommended list's break-even ([pilot design](pilot-design.md)) |
+| Pilot outcome | Measured save rate = 1 - churn(offered) / churn(holdout) | Effect significant (95% interval above 0) and measured save rate at least the recommended list's break-even, {{ pilot.break_even_save_rate | pct }} ([pilot design](pilot-design.md)) |
+
+## Roadmap
+
+| Phase | Weeks | Owner | Work |
+|---|---:|---|---|
+{% for r in cfg.project.roadmap %}
+| {{ r.phase }} | {{ r.weeks }} | {{ r.owner }} | {{ r.work }} |
+{% endfor %}
+
+A go/extend/stop decision is due about {{ pilot.weeks_to_decision }} weeks after approval; each extension adds one wave and is allowed at most {{ cfg.project.max_extend_waves }} times.
+
+**One-off effort (team assumption, to be confirmed by the owners):** {% for k, v in cfg.project.effort_person_weeks.items() %}{{ k | replace('_', ' ') | replace('crm and it', 'CRM and IT') | replace('legal and dpo', 'Legal and DPO') }} {{ v }} person-week{{ "s" if v != 1 }}{{ ", " if not loop.last }}{% endfor %}, mostly the data-protection assessment, the CRM list export and agent training. Offer and contact costs of the pilot are in the [pilot design](pilot-design.md#4-cost-value-and-timeline-of-the-pilot).
+
+**If the pilot says stop:** keep today's budget, move it from risk-only to the expected-value list with the cheapest offer the pilot did not rule out, and act on the service reasons customers give for leaving (staff attitude, network and support account for {{ reasons.service_share | pct(0) }} of churners in the sample). The scored list and the dashboard still tell agents who is worth a call.
+
+**Outside this sample:** a Vietnamese operator would rebuild the model on its own prepaid and fibre data and price offers and contact locally ([deployment note](deployment-vietnam.md)).
 
 ## Scope and non-goals
 

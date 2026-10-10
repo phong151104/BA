@@ -12,16 +12,15 @@ Open http://127.0.0.1:8501. The dashboard reads the latest pipeline run; it neve
 
 ## Layout
 
-- **Sidebar:** page navigation, the customer list in use (held-out test customers, or an uploaded CSV once scored), the deployed model and run.
-- **Assumption strip** (top of every page): budget, standard offer cost, contact cost, save rate, margin, value horizon, discount rate and the **scenario ID**. With default assumptions the ID equals the one in the reports.
-- **Budget and assumptions** panel (expanded on *Campaign builder*): every assumption can be changed for the session; the configuration file is never modified.
+- **Sidebar:** page navigation, the customer list in use (held-out test customers, or an uploaded CSV once scored) and the deployed model.
+- **Assumption strip** (top of the *Decision* and *Assumptions & sensitivity* pages): budget, standard offer and its cost, contact cost, save rate, margin, value horizon and discount rate. The run and **scenario ID** are under *Technical details* on the Decision page and in every export; with default assumptions the ID equals the one in the reports.
+- Budget and offer policy can be changed on the Decision page; every other assumption on the *Assumptions & sensitivity* page. Changes last for the session and carry across pages; the configuration file is never modified.
 
 ## Pages
 
-1. **Overview** - the decision page. Five KPI cards (expected net value with the difference vs risk-only targeting, ROI, customers contacted, precision among contacted, high-risk/high-value coverage), the recommended action with its break-even save rate, the risk x value map with validation cut-offs, a segment table comparing the plan with risk-only targeting, and the top 10 customers to call.
-2. **Campaign builder** - all assumptions, the same-budget comparison of six rules, the full **action list** (search, contacted-only filter, per-customer explanation) and the **export** button.
-3. **Scenarios & budget** - press *Run scenario analysis* to compute, for the current list and assumptions: break-even save rate and offer cost, minimum viable save rate, tornado chart, pessimistic/base/optimistic scenarios, profit curve with marginal ROI, and the save rate x offer cost grid (frozen or re-optimised list). Results are cached per scenario; if assumptions change, a warning asks to re-run.
-4. **Model & data** - test metrics of the deployed calibrated logistic model with bootstrap intervals, calibration and gains charts, model drivers, all candidates, the XGBoost challenger with SHAP (clearly marked as not deployed), data source and quality, and **Score new customers** (CSV upload).
+1. **Decision** - answers the business question. Five KPI cards (expected net value with the difference vs risk-only targeting, ROI, customers contacted, precision among contacted, high-risk/high-value coverage), the recommended action with its break-even save rate, **who gets an offer and who does not** (profile of the list, risk x value segments compared with risk-only targeting, and the risk x value map), a same-budget comparison of six rules, the **action list** (search, contacted-only filter, per-customer explanation) and the **export** button.
+2. **Assumptions & sensitivity** - every assumption, the expected net value and break-even save rate of the current list, and the **chance this list loses money** when all register assumptions are drawn at once (live, 2,000 draws). Press *Run scenario analysis* to compute the tornado chart, pessimistic/base/optimistic scenarios, profit curve with marginal ROI and the save rate x offer cost grid (frozen or re-optimised list); results are cached per scenario and a warning asks to re-run after changes. The page ends with the pipeline's stress test (lower churn, Vietnamese prices).
+3. **Model evidence** - four tabs: *Performance* (test metrics of the deployed calibrated logistic model with bootstrap intervals, calibration and gains, all candidates), *Drivers and scorecard* (odds ratios, the points card with score bands, and the XGBoost challenger with SHAP, clearly marked as not deployed), *Errors and money check* (each candidate valued in money, who the model gets wrong, performance by segment) and *Data and new customers* (source, quality and join, why churners left, **Score new customers**). This page computes no campaign.
 
 ## Offer policy
 
@@ -54,4 +53,5 @@ Open http://127.0.0.1:8501. The dashboard reads the latest pipeline run; it neve
 | CSV rejected | Export UTF-8 comma-separated, follow the template, read the error table |
 | Raw checksum mismatch | The raw file changed; restore it - the pipeline never overwrites raw data |
 | Scenario charts out of date | Press *Run scenario analysis* again after changing assumptions |
+| Chance of a loss shows 0% with nobody selected | No customer has positive expected value under these assumptions: not running the campaign is the right decision |
 | PDF export fails | Microsoft Word/PowerPoint are needed for PDF; run `export --pdf skip` for DOCX/PPTX only |

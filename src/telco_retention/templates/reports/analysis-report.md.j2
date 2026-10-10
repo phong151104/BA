@@ -7,13 +7,15 @@ Run `{{ run.id }}` · every number below is generated from this run's artifacts 
 
 - **Question:** with a limited retention budget, which customers should receive an offer when both churn risk and economic value count?
 - **Answer:** rank customers by expected net value of an offer (p(churn) x save rate x value - cost), let an optimiser pick the customer-offer combination within budget, and size the budget where the marginal return falls below {{ recommendation.hurdle_marginal_roi | pct(0) }}.
-- **Impact (test split, same {{ budget.base | usd }} budget):** {{ strategy_label | lower }} {{ chosen.expected_net_value | usd }} vs {{ c.risk.expected_net_value | usd }} for risk-only targeting (+{{ headline.delta_vs_risk | usd }}); label-based check of the targeting gain {{ unc['ev minus risk'].label_based_simulated_net | usd }} (95% interval {{ unc['ev minus risk'].lower_95 | usd }} to {{ unc['ev minus risk'].upper_95 | usd }}).
+- **Who:** the recommended list is {{ profile.by['InternetService|Fiber optic'].list_share | pct(0) }} fibre and {{ profile.by['Contract|Month-to-month'].list_share | pct(0) }} month-to-month customers with a median bill of {{ profile.list.median_monthly_charges | usd }} ({{ profile.all.median_monthly_charges | usd }} overall); low-risk customers and risky customers with small bills get no offer.
+- **Impact (test split, same {{ budget.base | usd }} budget):** {{ strategy_label | lower }} {{ chosen.expected_net_value | usd }} vs {{ c.risk.expected_net_value | usd }} for risk-only targeting, **{{ headline.delta_vs_risk | signed_usd }}** ({{ headline.targeting_effect | usd }} from targeting, {{ headline.offer_design_effect | usd }} from offer design); valued with actual churn {{ headline.gain_label.label_based_simulated_net | signed_usd }} (95% interval {{ headline.gain_label.lower_95 | usd }} to {{ headline.gain_label.upper_95 | usd }}).
 - **Budget:** {{ budget.recommended_per_base_customer | usd(2) }} per customer in the base (enough for the standard offer to {{ recommendation.recommended_share | pct(0) }} of customers; validation rule) buys {{ recommended.selected_count | num }} offers on test ({{ recommended.contacted_share | pct(0) }} of customers) for {{ recommended.cost | usd }} and {{ recommended.expected_net_value | usd }} expected net value.
-- **Main risk:** the save rate is assumed. Break-even {{ be.break_even_default_save_rate | pct }} for the base-budget list and {{ rbe | pct }} for the recommended list, vs assumed {{ default_offer.save_rate | pct(0) }}; a randomised pilot measures it before scale-up.
+- **Main risk:** the save rate is assumed. Break-even {{ be.break_even_default_save_rate | pct }} for the base-budget list and {{ rbe | pct }} for the recommended list, vs assumed {{ default_offer.save_rate | pct(0) }}; with all assumptions uncertain the recommended list loses money in {{ monte_carlo.by.recommended.prob_loss | pct(0) }} of draws. A randomised pilot measures the save rate before scale-up.
+- **Outside the sample:** at {{ stress.targets[0] | pct(0) }} average churn only {{ stress.by['sample|' ~ ('%g' % stress.targets[0])].positive_ev_share | pct(0) }} of customers would be worth the standard offer; only {{ reasons.addressable_share | pct(0) }} of churners left for reasons an offer can address.
 
 ## 2. Business question and decision
 
-The decision owner (Head of Customer Retention) chooses, for each campaign wave, the contact list, the offer per customer and the budget. Today's rule contacts the highest-risk customers. The [business case](../docs/business-case.md) lists stakeholders, options and KPI definitions; the course requirements are mapped to evidence in [requirements traceability](../docs/requirements-traceability.md).
+The decision owner (Head of Customer Retention) chooses, for each campaign wave, the contact list, the offer per customer and the budget. Today's rule contacts the highest-risk customers. The [business case](../docs/business-case.md) lists stakeholders, options and KPI definitions; every requirement of the brief is mapped to evidence in [requirements traceability](../docs/requirements-traceability.md).
 
 ## 3. Data and readiness
 
@@ -27,7 +29,7 @@ On train, churn is highest for {% for a in ['Contract', 'tenure_segment', 'Inter
 
 Risk and value only partly overlap. Using validation cut-offs (75th percentiles: risk {{ thresholds.risk | num(3) }}, value {{ thresholds.value | usd }}), the test customers fall into four segments:
 
-{{ matrix | md_table([("quadrant", "Segment", None), ("customers", "Customers", "num"), ("observed_churn", "Observed churn", "pct"), ("mean_customer_value", "Mean value", "usd"), ("value_at_risk_share", "Share of value at risk", "pct"), ("selected_risk", "Contacted: risk-only", "num"), ("selected_" ~ strategy, "Contacted: recommended", "num")]) }}
+{{ matrix | md_table([("quadrant", "Segment", None), ("customers", "Customers", "num"), ("observed_churn", "Observed churn", "pct"), ("mean_customer_value", "Mean value", "usd"), ("value_at_risk_share", "Share of value at risk", "pct"), ("selected_risk", "Contacted: risk-only", "num"), ("selected_" ~ strategy, "Contacted: recommended rule, base budget", "num")]) }}
 
 The high-risk/low-value segment holds the most value at risk in total ({{ quadrant.hrlv.value_at_risk_share | pct(0) }}) but each customer is worth little; risk-only targeting spends almost all its budget there. The recommended rule reaches all {{ quadrant.hrhv.customers }} high-risk/high-value customers and adds valuable customers at moderate risk.
 
@@ -164,10 +166,11 @@ Beyond {{ curve.positive_ev_customers | num }} contacts on test ({{ curve.positi
 ![Fairness](figures/fairness.png)
 
 {% set senior = fairness_by[strategy ~ '|SeniorCitizen|1'] %}{% set senior_risk = fairness_by['risk|SeniorCitizen|1'] %}{% set female = fairness_by[strategy ~ '|gender|Female'] %}
-- **Seniors** are contacted {{ senior.ratio_to_reference | ratio(2) }} as often as non-seniors under the recommended rule (risk-only: {{ senior_risk.ratio_to_reference | ratio(2) }}). Adjusted for risk decile the ratio falls to {{ senior.risk_adjusted_ratio | ratio(2) }}: most of the gap comes from higher churn risk, the rest from higher monthly charges (value). Being selected means receiving a discount and a call, so the gap is both a benefit and a burden; it is flagged for review rather than corrected automatically.
+- **Seniors** are contacted {{ senior.ratio_to_reference | ratio(2) }} as often as non-seniors under the recommended rule (risk-only: {{ senior_risk.ratio_to_reference | ratio(2) }}). Adjusted for risk decile the ratio falls to {{ senior.risk_adjusted_ratio | ratio(2) }}: higher churn risk explains part of the gap and higher monthly charges (value) the rest{{ ", so adding value to risk widens the gap compared with risk-only targeting" if senior.ratio_to_reference > senior_risk.ratio_to_reference }}. Calibration is also weakest for seniors ([model card](../docs/model-card.md#diagnostics-and-error-analysis)). Being selected means receiving a discount and a call, so the gap is both a benefit and a burden; it is flagged for review rather than corrected automatically.
 - **Gender:** ratio {{ female.ratio_to_reference | ratio(2) }} (interval {{ female.ratio_lower_95 | num(2) }}-{{ female.ratio_upper_95 | num(2) }}), within normal variation.
-- **Loyalty:** one- and two-year contract customers are not contacted because their churn risk is low; long-tenure customers get fewer offers than new ones. A loyalty reward is in the catalog and the playbook recommends a non-targeted loyalty benefit to avoid a "loyalty penalty" perception.
-- **Contact burden:** the cap ({{ cfg.campaign.max_contact_share | pct(0) }} of customers), one retention contact per 30 days, and the legal call window (08:00-17:00, one advertising call per 24 hours) limit intrusiveness.
+{% set loyalty_used = recommended_offer_mix | selectattr('offer_id', 'equalto', 'loyalty_reward') | list | length > 0 %}
+- **Loyalty:** one- and two-year contract customers are rarely contacted because their churn risk is low, and long-tenure customers get fewer offers than new ones. {{ "The loyalty reward in the catalog is part of the recommended mix." if loyalty_used else "The loyalty reward in the catalog is never chosen by the optimiser under current assumptions, so it does not fix this." }} The playbook recommends a non-targeted loyalty benefit, funded outside the retention budget, to avoid a "loyalty penalty" perception.
+- **Contact burden:** the cap ({{ cfg.campaign.max_contact_share | pct(0) }} of customers), one retention contact per 30 days and legal contact limits (in Vietnam calls 08:00-17:00 and one advertising call per 24 hours) limit intrusiveness.
 
 Gender and seniority are not model inputs. Full table: [fairness.csv](tables/fairness.csv).
 
@@ -201,6 +204,8 @@ The sample's {{ data.churn_rate | pct }} churn is far above real operators'. To 
 3. Replace assumed save rates, margin and costs with measured values; re-run the pipeline.
 4. Retrain on own data with time-based validation; after several waves, move to uplift targeting.
 5. Operate under the controls in [governance and risks](../docs/governance-and-risks.md) and the [retention playbook](../docs/retention-playbook.md).
+6. Log customers' reasons for leaving in the call centre and act on service problems (attitude, network, support: {{ reasons.service_share | pct(0) }} of churners in the sample), which no offer budget fixes.
+7. Before any use outside this sample, size offers, contact and the pilot from the operator's own churn level ([Vietnam deployment note](../docs/deployment-vietnam.md)).
 
 ## 12. Reproducibility
 

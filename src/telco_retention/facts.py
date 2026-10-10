@@ -208,6 +208,9 @@ def build_facts(run):
         "fairness_by": {f"{r['strategy']}|{r['attribute']}|{r['group']}": r for r in records(fairness)},
         "pilot": {**pilot, "cost_per_contact": recommended["cost"] / recommended["selected_count"] if recommended["selected_count"] else None,
                   "wave_cost": pilot["arm_size_per_wave"] * (recommended["cost"] / recommended["selected_count"]) if recommended["selected_count"] else None,
+                  # The offered half is itself a campaign; the held-out half forgoes the same expected value (the price of learning).
+                  "wave_expected_net": pilot["arm_size_per_wave"] * (recommended["expected_net_value"] / recommended["selected_count"]) if recommended["selected_count"] else None,
+                  "weeks_to_decision": sum(p["weeks"] for p in cfg["project"]["roadmap"][:3]),
                   "required_per_arm_at_base": next((r["customers_per_arm"] for r in power if abs(r["assumed_save_rate"] - offer["save_rate"]) < 1e-9), None),
                   "at_assumed": next((r for r in power if abs(r["assumed_save_rate"] - offer["save_rate"]) < 1e-9), None),
                   "at_break_even": next((r for r in power if r["is_break_even"]), None)},

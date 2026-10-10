@@ -21,14 +21,21 @@ class ExportUnavailable(RuntimeError):
 
 
 def _runs(paragraph, text, size=None, color=INK):
-    """Add text with **bold** spans."""
-    for i, part in enumerate(re.split(r"\*\*", text)):
-        if part:
-            run = paragraph.add_run(part.replace("`", ""))
-            run.bold = i % 2 == 1
-            run.font.color.rgb = RGBColor.from_string(color)
-            if size:
-                run.font.size = Pt(size)
+    """Add text with **bold** and *italic* spans; Markdown links keep only their text."""
+    text = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", text)
+    for part in re.split(r"(\*\*.+?\*\*|(?<![*\w])\*[^*\s][^*]*\*(?![*\w]))", text):
+        if not part:
+            continue
+        bold, italic = part.startswith("**") and part.endswith("**") and len(part) > 4, False
+        if bold:
+            part = part[2:-2]
+        elif len(part) > 2 and part.startswith("*") and part.endswith("*"):
+            part, italic = part[1:-1], True
+        run = paragraph.add_run(part.replace("`", ""))
+        run.bold, run.italic = bold, italic
+        run.font.color.rgb = RGBColor.from_string(color)
+        if size:
+            run.font.size = Pt(size)
 
 
 def _table_rows(lines):
@@ -85,11 +92,18 @@ def markdown_to_docx(md_path, out_path, image_width_cm=15.5):
             alt, src = IMAGE.search(line).groups()
             doc.add_picture(str((md_path.parent / src).resolve()), width=Cm(image_width_cm))
             doc.paragraphs[-1].alignment = WD_ALIGN_PARAGRAPH.CENTER
-        elif re.match(r"^\s*([-*]|\d+\.)\s+", line):
-            style = "List Number" if re.match(r"^\s*\d+\.", line) else "List Bullet"
-            paragraph = doc.add_paragraph(style=style)
+        elif re.match(r"^\s*\d+\.\s+", line):
+            # Keep the Markdown number: Word's list styles would continue numbering across separate lists.
+            number, rest = re.match(r"^\s*(\d+)\.\s+(.*)$", line).groups()
+            paragraph = doc.add_paragraph()
+            paragraph.paragraph_format.left_indent, paragraph.paragraph_format.first_line_indent = Cm(0.63), Cm(-0.63)
             paragraph.paragraph_format.space_after = Pt(1)
-            _runs(paragraph, re.sub(r"^\s*([-*]|\d+\.)\s+", "", line))
+            _runs(paragraph, f"{number}.\t{rest}")
+            paragraph.paragraph_format.tab_stops.add_tab_stop(Cm(0.63))
+        elif re.match(r"^\s*[-*]\s+", line):
+            paragraph = doc.add_paragraph(style="List Bullet")
+            paragraph.paragraph_format.space_after = Pt(1)
+            _runs(paragraph, re.sub(r"^\s*[-*]\s+", "", line))
         else:
             paragraph = doc.add_paragraph()
             _runs(paragraph, line.strip(), color=SECONDARY if line.startswith("_") else INK)

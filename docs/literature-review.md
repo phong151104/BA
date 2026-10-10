@@ -19,7 +19,7 @@ Verbeke et al. [[verbeke2012](references.md#verbeke2012)] turned the equation in
 
 **What it deliberately simplifies:**
 - **The offer cost is charged to every contacted customer.** Neslin's equation does not charge the incentive to would-be churners who decline it. Our treatment is slightly conservative, and is correct for an unconditional incentive such as a bill credit [[lemmens2020](references.md#lemmens2020)].
-- **The model is trained for probability quality** (average precision, then calibration), not for profit. Profit enters at the decision stage, through the expected-value rule and the budget optimiser. This keeps the model reusable when assumptions change, which is the main practical argument of decision-focused designs.
+- **The model is trained for probability quality** (average precision, then calibration), not for profit. Profit enters at the decision stage, through the expected-value rule and the budget optimiser. This keeps the model reusable when assumptions change, which is the main practical argument of decision-focused designs. In the spirit of MP and EMPC, the model card still checks the choice in money: each candidate's list is valued at the same budget, and the candidates turn out to be close.
 
 ## 2. Risk is not responsiveness
 
@@ -31,7 +31,7 @@ The literature's biggest warning concerns the save rate. Ascarza [[ascarza2018](
 - **Uplift models:** Devriendt et al. [[devriendt2021](references.md#devriendt2021)] and Lemmens & Gupta [[lemmens2020](references.md#lemmens2020)] recommend targeting on predicted uplift or "profit lift" rather than risk.
 
 **Implications for this project:**
-1. **The data contain no randomised campaign, so uplift cannot be estimated.** The course brief forbids claiming it. The save rate is therefore a visible assumption, with a range of 10–30% in the tornado chart and 5–40% in the sensitivity grid.
+1. **The data contain no randomised campaign, so uplift cannot be estimated.** The project brief rules out claiming it. The save rate is therefore a visible assumption, with a range of 10–30% in the tornado chart and 5–40% in the sensitivity grid.
 2. **The base save rate of 20% sits below the literature convention of 30%.** The evidence above shows that 30% is not a measured average. Neslin et al. say directly that "no published data are available for acceptance rate", and test 10%, 30% and 50%.
 3. **The recommendation is a randomised pilot,** not a rollout ([pilot-design.md](pilot-design.md)). A random holdout within the target list measures the real save rate. Repeated waves would eventually provide the data needed for uplift modelling.
 
@@ -45,7 +45,7 @@ The project's value proxy follows this logic:
 
 **Choices behind it:**
 - **Truncated horizon.** It is a 12-month truncated value, not a lifetime value, because a saved would-be churner is likely to leave again sooner than an average customer.
-- **Tenure factor.** The direction comes from Fader & Hardie; the specific factors are a team assumption, tested in sensitivity.
+- **Tenure factor.** The direction comes from Fader & Hardie; the specific factors are a team assumption (A7 in the register), varied in the tornado chart and in the Monte Carlo of all assumptions.
 - **Discount rate of 10%.** US telecom cost of capital is about 5.4% [[damodaran2026wacc](references.md#damodaran2026wacc)], and Vietnam's country risk premium adds about 3.9% [[damodaran2026crp](references.md#damodaran2026crp)]. Gupta et al.'s 12% is used as a cross-check.
 - **Contribution margin of 30%.** This is deliberately below US telecom EBITDA margins of 35–42% [[damodaran2026margin](references.md#damodaran2026margin)], [[verizon2026](references.md#verizon2026)], [[att2026](references.md#att2026)]. EBITDA is not contribution margin, but it bounds it from below for an incremental customer.
 
@@ -85,5 +85,7 @@ For this reason the audit also reports a risk-adjusted ratio. A gap explained by
 The IBM Telco sample is a fictional Californian provider [[ibm2019](references.md#ibm2019)]. Its 26.5% churn label is far above real monthly postpaid churn of about 0.9–1.0% at major US carriers in 2025 [[att2026](references.md#att2026)], [[verizon2026](references.md#verizon2026)], [[tmobile2026](references.md#tmobile2026)].
 
 Vietnam's market is about 90% prepaid [[sggp2022](references.md#sggp2022)], and churn there is usually seen as inactivity or number porting, not contract cancellation.
+
+To show what a lower churn level does to the answer without real data, the project shifts every predicted probability by one constant on the log-odds scale until the average matches a target rate. This is the prior-shift correction of Saerens et al. [[saerens2002](references.md#saerens2002)]: it keeps the ranking of customers and changes only the base rate. It is a stress test, not a substitute for recalibrating on the operator's own data.
 
 The project therefore treats its numbers as a demonstration of a method on one sample. Its rollout plan starts with retraining on the operator's own data and a randomised pilot.

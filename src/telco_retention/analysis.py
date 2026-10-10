@@ -683,7 +683,7 @@ def simulate(run=None):
     write_json(run / "churn_reasons_summary.json", reason_summary)
     write_json(run / "cltv_check.json", cltv)
     offers = pd.DataFrame(cfg["offers"])
-    offers["eligibility"] = offers.eligibility.map(lambda rule: "; ".join(f"{k} in {v}" for k, v in rule.items()) or "All customers")
+    offers["eligibility"] = offers.eligibility.map(lambda rule: "; ".join(f"{k}: {' or '.join(map(str, v))}" for k, v in rule.items()) or "All customers")
     save_csv(offers, run / "offer_catalog.csv")
     eda(run)
     write_json(run / "simulation_manifest.json", {"run_id": run.name, "budget": budget, "thresholds": thresholds, "strategy": strategy,

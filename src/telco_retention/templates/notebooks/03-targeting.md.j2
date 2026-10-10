@@ -41,7 +41,7 @@ display(pd.read_csv(run / "economic_uncertainty.csv")[["strategy", "label_based_
 display(Image(filename=str(ROOT / "reports/figures/strategy_comparison.png")))
 ```
 
-**Interpretation.** With {{ budget.base | usd }}, risk-only earns {{ comparison.risk.expected_net_value | usd }} and expected-value targeting with the standard offer earns {{ comparison.ev.expected_net_value | usd }} ({{ headline.targeting_effect | signed_usd }}). Checked against actual outcomes (paired bootstrap), the targeting gain is {{ uncertainty['ev minus risk'].label_based_simulated_net | usd }} with a 95% interval of {{ uncertainty['ev minus risk'].lower_95 | usd }} to {{ uncertainty['ev minus risk'].upper_95 | usd }}. Risk-only has higher precision ({{ comparison.risk.precision_contacted | pct(0) }}) but reaches only {{ comparison.risk.high_risk_high_value_coverage | pct(0) }} of high-risk, high-value customers.
+**Interpretation.** With {{ budget.base | usd }}, risk-only targeting has an expected net value of {{ comparison.risk.expected_net_value | usd }} and expected-value targeting with the standard offer {{ comparison.ev.expected_net_value | usd }} ({{ headline.targeting_effect | signed_usd }}). Checked against actual outcomes (paired bootstrap), the targeting gain is {{ uncertainty['ev minus risk'].label_based_simulated_net | usd }} with a 95% interval of {{ uncertainty['ev minus risk'].lower_95 | usd }} to {{ uncertainty['ev minus risk'].upper_95 | usd }}. Risk-only has higher precision ({{ comparison.risk.precision_contacted | pct(0) }}) but reaches only {{ comparison.risk.high_risk_high_value_coverage | pct(0) }} of high-risk, high-value customers.
 
 ## Segment-specific offers
 
@@ -65,4 +65,15 @@ print("Scenario", summary["scenario_id"], "| matches the report:", summary["scen
 display(target.loc[target.selected].nlargest(10, "expected_net_value")[["customer_id", "churn_probability", "customer_value", "offer_id", "expected_net_value", "decision_detail"]])
 ```
 
-**So what.** The customer-level targeting table (`reports/tables/targeting_{{ strategy }}.csv`) and the churn scorecard (`reports/tables/scorecard.csv`) are the operational deliverables; every row carries its formula and scenario ID.
+## Who the recommended list contacts
+
+```python
+display(pd.read_csv(run / "target_profile.csv").round(3))
+display(read_json(run / "target_profile_summary.json"))
+display(pd.read_csv(run / "recommended_offer_mix.csv").round(2))
+display(Image(filename=str(ROOT / "reports/figures/target_profile.png")))
+```
+
+**Interpretation.** The recommended list is {{ profile.by['InternetService|Fiber optic'].list_share | pct(0) }} fibre and {{ profile.by['Contract|Month-to-month'].list_share | pct(0) }} month-to-month, with a median bill of {{ profile.list.median_monthly_charges | usd }} against {{ profile.all.median_monthly_charges | usd }} for all test customers. Low-risk customers and risky customers with small bills are left out. Because the campaign rides on one segment, the pilot reports fibre and month-to-month customers separately.
+
+**So what.** The customer-level targeting tables (`reports/tables/targeting_recommended.csv` and `targeting_{{ strategy }}.csv`) and the churn scorecard (`reports/tables/scorecard.csv`, plus the [points card](../docs/churn-scorecard.md)) are the operational deliverables; every row carries its formula and scenario ID.

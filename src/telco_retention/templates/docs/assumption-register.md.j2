@@ -43,10 +43,10 @@ All save rates are assumptions, deliberately at or below the 30% convention of p
 
 | Parameter | Value | Why |
 |---|---|---|
-| Default budget | {{ cfg.campaign.budget_share | pct(0) }} of customers x standard offer ({{ budget.base | usd }} for {{ budget.n_test | num }} customers) | Course requirement of a fixed budget; a capacity-style rule a manager can scale |
+| Default budget | {{ cfg.campaign.budget_share | pct(0) }} of customers x standard offer ({{ budget.base | usd }} for {{ budget.n_test | num }} customers) | The business question fixes a budget; the team set it as a share of customers so a manager can scale it with the customer base. It is a starting point, not a recommendation |
 | Contact cap | {{ cfg.campaign.max_contact_share | pct(0) }} of customers per wave | Customer-experience guardrail against over-contacting |
 | Strategy selection | Segment offers only if they beat the single offer by >= {{ cfg.campaign.strategy_selection.min_relative_gain | pct(0) }} on validation | Prefer the simpler policy unless the gain is material |
-| Budget recommendation | Largest budget whose last step earns >= {{ cfg.campaign.recommendation.min_marginal_roi | pct(0) }} marginal ROI, chosen on validation | Hurdle close to the cost of capital; avoids spending where the next dollar barely pays |
+| Budget recommendation | Largest budget whose last step earns >= {{ cfg.campaign.recommendation.min_marginal_roi | pct(0) }} marginal ROI, chosen on validation | A management minimum return on marketing spend; time value is already in the discounted customer value, so the hurdle only stops spending where the next dollar barely pays |
 | Value horizon cap | {{ cfg.value.horizon_cap_months }} months | Upper bound on remaining months whatever the horizon and factors |
 | Tenure factors | new {{ cfg.value.tenure_factors.new }}, developing {{ cfg.value.tenure_factors.developing }}, loyal {{ cfg.value.tenure_factors.loyal }} | Retention rises with tenure [faderhardie2010]; the factors themselves are a team assumption |
 | Risk / value cut-offs | {{ cfg.segments.high_risk_quantile | pct(0) }} percentiles on validation (risk {{ thresholds.risk | num(3) }}, value {{ thresholds.value | usd }}) | Defines the high-risk/high-value segment used in coverage |
