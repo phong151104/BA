@@ -165,11 +165,18 @@ def prepare():
         except (requests.RequestException, ValueError, StopIteration) as exc:
             write_json(metadata_path, {"metadata_url": METADATA_URL, "error": str(exc), "license": "See upstream data card; metadata unavailable"})
     df, quality = validate(pd.read_csv(raw), training=True)
-    seed = config()["seed"]
+    cfg = config()
+    seed = cfg["seed"]
     train, rest = train_test_split(df.index, test_size=0.4, stratify=df.churn, random_state=seed)
     val, test = train_test_split(rest, test_size=0.5, stratify=df.loc[rest, "churn"], random_state=seed)
     df["split"] = "train"
     df.loc[val, "split"], df.loc[test, "split"] = "validation", "test"
+    # Churn reasons and CLTV go to a separate context file that the model never reads.
+    from .extended import prepare_context
+    _, joined = prepare_context(df, cfg)
+    quality["joins"] = (f"IBM extended sample joined one-to-one on customerID ({joined['matched']:,} of {joined['base_rows']:,} matched; "
+                        f"{len(joined['field_agreement'])} shared fields agree for every customer); only churn reasons and the CLTV index are kept, "
+                        "in a separate file used for description, never as model inputs")
     save_csv(df, ROOT / "data/processed/customers.csv")
     save_csv(df[["customerID", "split"]], ROOT / "data/processed/splits.csv")
     write_json(ROOT / "data/processed/quality.json", quality)

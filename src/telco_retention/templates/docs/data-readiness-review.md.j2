@@ -12,7 +12,7 @@
 | Downloaded | {{ data.source.downloaded_at_utc[:19] }} UTC; SHA-256 `{{ data.source.sha256 }}` |
 | Size | {{ data.rows | num }} customers x {{ data.columns }} columns, one row per customer |
 | Licence | Kaggle shows "{{ data.metadata.get('license', 'Data files (c) Original Authors') }}"; the raw file is kept for reproducibility of coursework only |
-| Joins | None: one file, no external customer data |
+| Joins | {{ q.joins }} ([source log](source-log.md#second-source-churn-reasons-joined-for-description-only)) |
 
 ## 2. Completeness and validity
 
@@ -33,8 +33,9 @@ All checks are automated (`telco_retention.data.validate`) and the same checks r
 | Need | Available? | Consequence |
 |---|---|---|
 | Churn label | Yes, but its window is ambiguous: "within the last month" (Kaggle, IBM base sample) vs "this quarter" (IBM extended sample) | Treat probabilities as relative risk within this sample; recalibrate on own data |
-| Predictors observed before churn | Partly: tenure, contract and charges are a single snapshot; `TotalCharges` largely duplicates tenure x charges | Random split only; no time-based validation possible; no leakage of the label itself |
-| Customer value inputs | Monthly charges and tenure; no cost-to-serve or margin | Value is a documented proxy using an assumed margin |
+| Predictors observed before churn | Partly: tenure, contract and charges are a single snapshot; `TotalCharges` is almost exactly tenure x charges and was dropped in the feature review | Random split only; no time-based validation possible; no leakage of the label itself |
+| Customer value inputs | Monthly charges and tenure; no cost-to-serve or margin. IBM's CLTV index ranks customers differently (Spearman {{ cltv.spearman_value_proxy | num(2) }} with our proxy; it follows tenure, {{ cltv.spearman_tenure | num(2) }}, more than the bill, {{ cltv.spearman_monthly_charges | num(2) }}) | Value is a documented proxy using an assumed margin; the value definition is a real source of uncertainty, tested through margin, horizon and tenure factors |
+| Reasons for leaving | Yes, from the extended sample, for all {{ reasons.churners | num }} churners, recorded after they left | Descriptive only: {{ reasons.addressable_share | pct(0) }} left for price or a competitor's offer, which an offer can address; {{ reasons.service_share | pct(0) }} for staff attitude or dissatisfaction |
 | Offer cost and response | **No** | Synthetic offer table with assumed save rates; causal effect must be measured in a pilot |
 | Representativeness | Fictional, US, home phone + internet, 26.5% churn (real US postpaid churn is about 1% per month) | Results illustrate the method; magnitudes do not transfer |
 | Protected attributes | `gender`, `SeniorCitizen` available | Excluded from the model; used only for the fairness audit |

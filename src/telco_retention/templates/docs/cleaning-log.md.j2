@@ -9,7 +9,8 @@
 | Other numeric gaps | Median imputation fitted on train inside the model pipeline; the same train medians fill gaps before valuing customers | 0 in the source |
 | `SeniorCitizen` | Normalised to the strings "0"/"1" | all |
 | Label | `Churn` Yes/No mapped to `churn` 1/0; not used as a feature | all |
-| Service consistency | "No phone service" / "No internet service" kept as their own categories and checked against the parent service | 0 violations |
+| Service consistency | "No phone service" / "No internet service" kept as their own categories and checked against the parent service; as model inputs they count as "does not have the service" | 0 violations |
+| Extended-sample join | Join on customer ID only after every shared field agrees; keep churn reason (churners only) and CLTV in a separate file; map the {{ reasons.by_reason | length }} reasons to IBM's five categories | {{ extended.join.matched | num }} matched |
 | Outliers | Valid extreme values kept; nothing trimmed | 0 |
 | Split | Stratified 60/20/20 train/validation/test, seed {{ cfg.seed }}; IDs saved in `data/processed/splits.csv` | {{ data.splits.train | num }} / {{ data.splits.validation | num }} / {{ data.splits.test | num }} |
 

@@ -389,6 +389,53 @@ def pilot_plan(target, cfg, recommended_share, break_even_rate):
     return pd.DataFrame(rows), summary
 
 
+def churn_reasons(run, cfg, scores, reco_table, min_segment=100):
+    """Why churners left (IBM extended sample), overall and on the recommended list; descriptive only, never a model input."""
+    ext = cfg["extended"]
+    order, addressable = list(ext["reason_categories"]), set(ext["offer_addressable_categories"])
+    data = scores.merge(pd.read_csv(run / "customer_context.csv"), on="customerID", how="left", validate="one_to_one")
+    data["tenure_segment"] = tenure_segment(data.tenure).astype(str)
+    churners = data.loc[data.churn.eq(1)]
+    listed = set(reco_table.loc[reco_table.selected, "customer_id"])
+    groups = {"all churners": churners, "churners on the recommended list (test)": churners.loc[churners.customerID.isin(listed)],
+              "test churners not contacted": churners.loc[churners.split.eq("test") & ~churners.customerID.isin(listed)]}
+
+    def category_share(frame):
+        return frame.churn_category.value_counts(normalize=True).reindex(order, fill_value=0.0)
+
+    rows = []
+    for population, frame in groups.items():
+        counts = frame.groupby(["churn_category", "churn_reason"]).size().rename("churners").reset_index()
+        rows.append(counts.assign(population=population, share=counts.churners / max(len(frame), 1)))
+    table = pd.concat(rows, ignore_index=True)
+    table["addressable_by_offer"] = table.churn_category.isin(addressable)
+    overall = category_share(churners)
+    segments = []
+    for column in ["InternetService", "Contract", "tenure_segment"]:
+        for group, part in churners.groupby(column):
+            segments.append({"attribute": column, "group": group, "churners": len(part), **category_share(part).to_dict(),
+                             "max_gap_to_overall": float((category_share(part) - overall).abs().max())})
+    segments = pd.DataFrame(segments)
+    reasons = churners.churn_reason.value_counts()
+    on_list = groups["churners on the recommended list (test)"]
+    summary = {"churners": len(churners), "category_share": overall.to_dict(), "addressable_categories": [c for c in order if c in addressable],
+               "addressable_share": float(churners.churn_category.isin(addressable).mean()),
+               "service_share": float(churners.churn_category.isin(["Attitude", "Dissatisfaction"]).mean()),
+               "moved_or_deceased_share": float(churners.churn_reason.isin(["Moved", "Deceased"]).mean()), "unknown_share": float(churners.churn_reason.eq("Don't know").mean()),
+               "on_list_churners": len(on_list), "addressable_share_on_list": float(on_list.churn_category.isin(addressable).mean()) if len(on_list) else None,
+               "category_share_on_list": category_share(on_list).to_dict() if len(on_list) else {},
+               "max_segment_gap": float(segments.loc[segments.churners >= min_segment, "max_gap_to_overall"].max()), "min_segment_churners": min_segment,
+               "top_reasons": [{"reason": r, "churners": int(n), "share": n / len(churners)} for r, n in reasons.head(5).items()]}
+    valued = value_customers(data, cfg)
+    cltv = {"customers": int(valued.cltv.notna().sum()),
+            "spearman_value_proxy": float(valued[["customer_value", "cltv"]].corr("spearman").iloc[0, 1]),
+            "spearman_tenure": float(valued[["tenure", "cltv"]].corr("spearman").iloc[0, 1]),
+            "spearman_monthly_charges": float(valued[["MonthlyCharges", "cltv"]].corr("spearman").iloc[0, 1]),
+            "top_quartile_overlap": float((valued.customer_value.rank(pct=True).gt(0.75) & valued.cltv.rank(pct=True).gt(0.75)).sum() / valued.customer_value.rank(pct=True).gt(0.75).sum()),
+            "mean_cltv_churners": float(valued.loc[valued.churn.eq(1), "cltv"].mean()), "mean_cltv_stayers": float(valued.loc[valued.churn.eq(0), "cltv"].mean())}
+    return table, segments, summary, cltv
+
+
 def model_profit_check(run, cfg, scores):
     """Money check of the model choice: every calibrated candidate ranks the same customers for the same budget and standard offer."""
     import joblib
@@ -479,6 +526,11 @@ def simulate(run=None):
     write_json(run / "pilot_plan.json", pilot)
     save_csv(offer_mix(details["segment_offers"]), run / "segment_offer_mix.csv")
     save_csv(model_profit_check(run, cfg, scores), run / "model_profit_check.csv")
+    reasons, reason_segments, reason_summary, cltv = churn_reasons(run, cfg, scores, reco_table)
+    save_csv(reasons, run / "churn_reasons.csv")
+    save_csv(reason_segments, run / "churn_reasons_by_segment.csv")
+    write_json(run / "churn_reasons_summary.json", reason_summary)
+    write_json(run / "cltv_check.json", cltv)
     offers = pd.DataFrame(cfg["offers"])
     offers["eligibility"] = offers.eligibility.map(lambda rule: "; ".join(f"{k} in {v}" for k, v in rule.items()) or "All customers")
     save_csv(offers, run / "offer_catalog.csv")

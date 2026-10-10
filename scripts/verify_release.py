@@ -24,7 +24,8 @@ required = ["model.joblib", "manifest.json", "validation_metrics.csv", "test_met
             "risk_value_matrix.csv", "threshold_business.csv", "break_even.json", "tornado.csv", "scenarios.csv", "sensitivity.csv", "budget_curve.csv",
             "validation_decisions.json", "recommended_campaign.json", "fairness.csv", "pilot_plan.json", "pilot_power.csv", "segment_offer_mix.csv",
             "offer_catalog.csv", "shap_global.csv", "calibration.csv", "gains_test.csv", "bootstrap_intervals.csv", "dataset_source.json", "customers.csv",
-            "feature_ablation.csv", "odds_ratios.csv", "scorecard_points.csv", "scorecard_bands.csv", "scorecard_meta.json", "error_profiles.csv", "model_profit_check.csv"]
+            "feature_ablation.csv", "odds_ratios.csv", "scorecard_points.csv", "scorecard_bands.csv", "scorecard_meta.json", "error_profiles.csv", "model_profit_check.csv",
+            "customer_context.csv", "extended_join.json", "extended_source.json", "churn_reasons.csv", "churn_reasons_by_segment.csv", "churn_reasons_summary.json", "cltv_check.json"]
 missing = [name for name in required if not (run / name).is_file()]
 assert not missing, missing
 grids = cfg["sensitivity"]
@@ -43,6 +44,12 @@ n_test = manifest["split_counts"]["test"]
 assert pilot["list_size_per_wave"] == round(reco["selected_count"] / n_test * cfg["pilot"]["base_population"]), (pilot["list_size_per_wave"], reco["selected_count"])
 assert abs(pilot["break_even_save_rate"] - reco["break_even"]["break_even_default_save_rate"]) < 1e-12
 checks["pilot"] = {k: pilot[k] for k in ["list_size_per_wave", "arm_size_per_wave", "break_even_save_rate"]}
+
+# The second source joins only when every customer and every shared field matches; its fields never reach the model.
+join = read_json(run / "extended_join.json")
+assert join["accepted"] and join["matched"] == sum(manifest["split_counts"].values()), join
+assert not {"churn_reason", "churn_category", "cltv"} & set(manifest["feature_columns"])
+checks["extended_join"] = {"matched": join["matched"], "field_agreement": join["field_agreement"]}
 
 # 2. Code and report traceability.
 def same_text(a, b):

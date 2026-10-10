@@ -57,6 +57,6 @@
     "0": 5174,
     "1": 1869
   },
-  "joins": "None: single source file, no external customer data joined",
+  "joins": "IBM extended sample joined one-to-one on customerID (7,043 of 7,043 matched; 7 shared fields agree for every customer); only churn reasons and the CLTV index are kept, in a separate file used for description, never as model inputs",
   "filters": "Exact duplicate rows removed from the full file before splitting; no other rows filtered"
 }

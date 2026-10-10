@@ -16,7 +16,7 @@ COLORS = {"ev": "#2a78d6", "risk": "#eb6834", "segment_offers": "#1baf7a", "risk
 INK, SECONDARY, MUTED, GRID, AXIS, SURFACE, GREY = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb", "#b9b8b2"
 DIVERGING = LinearSegmentedColormap.from_list("net", ["#d03b3b", "#f0efec", "#2a78d6"])
 FIGURES = ["eda_drivers", "calibration", "discrimination", "gains", "risk_value", "quadrant_selection", "strategy_comparison",
-           "profit_curve", "tornado", "sensitivity_heatmap", "fairness", "model_drivers", "shap_challenger"]
+           "profit_curve", "tornado", "sensitivity_heatmap", "fairness", "model_drivers", "shap_challenger", "churn_reasons"]
 
 
 def pretty_feature(name):
@@ -54,8 +54,9 @@ def figures(run):
             stale.unlink()
     catalog = []
 
-    def finish(fig, name, title, caption, population="test split (1,409 customers, never used for selection)"):
-        fig.text(0.01, 0.005, f"{caption}\nPopulation: {population}. Run {run.name}.", fontsize=7.5, color=MUTED, va="bottom")
+    def finish(fig, name, title, caption, population="1,409 test customers, held out from every choice"):
+        # The run ID is recorded in catalog.json rather than printed on charts meant for managers.
+        fig.text(0.01, 0.005, f"{caption}\nPopulation: {population}.", fontsize=7.5, color=MUTED, va="bottom")
         fig.tight_layout(rect=(0, 0.07, 1, 1))
         fig.savefig(dest / f"{name}.png", dpi=160)
         plt.close(fig)
@@ -278,6 +279,22 @@ def figures(run):
     ax.grid(axis="y", visible=False); ax.set_xlabel("Mean |SHAP value| (log-odds)")
     ax.set_title("Challenger XGBoost (not deployed): SHAP feature attribution")
     finish(fig, "shap_challenger", "Challenger model SHAP", "TreeSHAP on 200 validation customers; explains the raw XGBoost challenger, not the deployed calibrated logistic model.", "validation sample")
+
+    # 14. Why churners left (IBM extended sample), all churners vs churners on the recommended list.
+    summary = read_json(run / "churn_reasons_summary.json")
+    categories = list(summary["category_share"])[::-1]
+    fig, ax = plt.subplots(figsize=(9, 4.6))
+    y = np.arange(len(categories))
+    ax.barh(y + 0.2, [summary["category_share"][c] for c in categories], height=0.36, color=GREY, label="All churners")
+    ax.barh(y - 0.2, [summary["category_share_on_list"].get(c, 0) for c in categories], height=0.36, color=COLORS["ev"], label="Churners on the recommended list (test)")
+    for i, c in enumerate(categories):
+        ax.text(summary["category_share"][c] + 0.006, i + 0.2, f"{summary['category_share'][c]:.0%}", va="center", fontsize=8.5, color=SECONDARY)
+    ax.set_yticks(y, [f"{c}\n(offer can address)" if c in summary["addressable_categories"] else c for c in categories])
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0%}"); ax.grid(axis="y", visible=False)
+    ax.set_xlabel("Share of churners"); ax.legend(loc="lower right", fontsize=8.5)
+    ax.set_title(f"Only {summary['addressable_share']:.0%} of churners left for price or a competitor's offer")
+    finish(fig, "churn_reasons", "Why churners left", "Reason categories as grouped by IBM; recorded after customers left, so descriptive only, never a model input.",
+           f"all {summary['churners']:,} churners in the IBM extended sample; list churners from the test split")
 
     write_json(dest / "catalog.json", catalog)
     return catalog

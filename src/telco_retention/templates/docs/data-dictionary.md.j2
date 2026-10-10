@@ -58,6 +58,14 @@
 | `scenario_id` | text | Hash of value settings, offers, budget, strategy, contact cap and customer list |
 | `quadrant` | text | Risk x value segment using validation 75th-percentile cut-offs |
 
+## Context fields from the extended sample (never model inputs)
+
+| Field | Type / unit | Definition |
+|---|---|---|
+| `churn_reason` | text, churners only | The customer's stated reason for leaving ({{ reasons.by_reason | length }} values), recorded after they left |
+| `churn_category` | Competitor / Dissatisfaction / Attitude / Price / Other | IBM's grouping of the reasons; {{ reasons.addressable_categories | join(" and ") }} are treated as addressable by a price or contract offer |
+| `cltv` | index, {{ cltv.customers | num }} customers | IBM's predicted lifetime-value index (undocumented formula); cross-check only |
+
 ## Rules applied to every input file
 
 - Blank `TotalCharges` with tenure 0 becomes 0; other numeric gaps are filled with training medians.

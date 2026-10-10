@@ -10,7 +10,7 @@ from .templating import DOCUMENTS, TEMPLATES, render_documents
 from . import notebooks
 
 # Large or internal files that stay in the run folder only.
-SKIP_TABLES = {"customers.csv", "shap_feature_values.csv", "cv_logistic.csv", "cv_random_forest.csv", "cv_xgboost.csv", "random_campaigns.csv"}
+SKIP_TABLES = {"customers.csv", "customer_context.csv", "shap_feature_values.csv", "cv_logistic.csv", "cv_random_forest.csv", "cv_xgboost.csv", "random_campaigns.csv"}
 
 
 def copy_tables(run, root=ROOT):

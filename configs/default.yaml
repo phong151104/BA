@@ -84,6 +84,23 @@ pilot:
   outcome_window_days: 90
   save_rate_grid: [0.05, 0.10, 0.15, 0.20, 0.30]
 
+extended:
+  # IBM's extended sample of the same 7,043 customers. Only churn reasons and the CLTV index are kept, for description;
+  # they are never model inputs (a reason is known only after a customer has left). IBM's own churn score is not used.
+  url: https://www.kaggle.com/api/v1/datasets/download/yeanzc/telco-customer-churn-ibm-dataset
+  dataset_page: https://www.kaggle.com/datasets/yeanzc/telco-customer-churn-ibm-dataset
+  required: true
+  # IBM's five churn categories, as assigned in its 11.1.3+ sample.
+  reason_categories:
+    Competitor: [Competitor offered higher download speeds, Competitor offered more data, Competitor made better offer, Competitor had better devices]
+    Dissatisfaction: [Network reliability, Product dissatisfaction, Service dissatisfaction, Lack of self-service on Website, Limited range of services,
+                      Poor expertise of phone support, Poor expertise of online support]
+    Attitude: [Attitude of support person, Attitude of service provider]
+    Price: [Price too high, Extra data charges, Lack of affordable download/upload speed, Long distance charges]
+    Other: ["Don't know", Moved, Deceased]
+  # Categories a price or contract offer could plausibly address; the others need service fixes or cannot be saved.
+  offer_addressable_categories: [Price, Competitor]
+
 # One row per business assumption; low/high drive the tornado chart. Sources: docs/references.md.
 assumption_register:
   - {id: A1, parameter: save_rate, label: Save rate of the standard offer, unit: share, low: 0.10, high: 0.30, sources: [verbraken2013, ascarza2016, ascarza2018],

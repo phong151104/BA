@@ -108,6 +108,11 @@ def build_facts(run):
                  "train_churn_rate": float(train.churn.mean()), "mean_monthly_charges": float(customers.MonthlyCharges.mean()),
                  "median_tenure": float(customers.tenure.median())},
         "eda": eda_groups,
+        "extended": {"source": read_json(run / "extended_source.json"), "join": read_json(run / "extended_join.json")},
+        "reasons": {**read_json(run / "churn_reasons_summary.json"),
+                    "by_reason": records(csv("churn_reasons.csv").query("population == 'all churners'").sort_values("churners", ascending=False)),
+                    "segments": records(csv("churn_reasons_by_segment.csv"))},
+        "cltv": read_json(run / "cltv_check.json"),
         "model": {"selected": selected_model, "label": MODEL_LABELS[selected_model], "threshold": manifest["threshold"], "selection_rule": manifest["selection_rule"],
                   "features": manifest["feature_columns"], "best_parameters": manifest["best_parameters"],
                   "feature_design": {"chosen": manifest["feature_set"], "rule": manifest["feature_rule"], "ablation": records(csv("feature_ablation.csv")),
@@ -190,6 +195,8 @@ def build_facts(run):
         "offers": rel("offer_catalog.csv"), "offer_mix": rel("segment_offer_mix.csv"),
         "model.feature_design": rel("feature_ablation.csv"), "model.odds_ratios": rel("odds_ratios.csv"), "model.scorecard": rel("scorecard_points.csv"),
         "model.error_profiles": rel("error_profiles.csv"), "model.segment_errors": rel("segment_errors.csv"), "model.profit_check": rel("model_profit_check.csv"),
+        "reasons": rel("churn_reasons_summary.json"), "reasons.by_reason": rel("churn_reasons.csv"), "reasons.segments": rel("churn_reasons_by_segment.csv"),
+        "cltv": rel("cltv_check.json"), "extended.join": rel("extended_join.json"),
     }
     return facts
 

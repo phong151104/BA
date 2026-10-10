@@ -33,6 +33,24 @@ The high-risk/low-value segment holds the most value at risk in total ({{ quadra
 
 ![Risk x value](figures/risk_value.png)
 
+### Why customers leave
+{% set r = reasons %}{% set q = default_offer.save_rate %}
+
+IBM's extended version of the sample records a reason for each of the {{ r.churners | num }} churners ([source log](../docs/source-log.md#second-source-churn-reasons-joined-for-description-only)). Reasons are known only after a customer has left, so they are never model inputs; they show what an offer can and cannot fix.
+
+| Reason category | All churners | Churners on the recommended list (test) | Can a price or contract offer address it? |
+|---|---:|---:|---|
+{% for c, share in r.category_share.items() %}
+| {{ c }} | {{ share | pct(0) }} | {{ r.category_share_on_list.get(c, 0) | pct(0) }} | {{ "Yes" if c in r.addressable_categories else "No" }} |
+{% endfor %}
+
+- Only **{{ r.addressable_share | pct(0) }}** left for price or a competitor's offer. {{ r.service_share | pct(0) }} cite staff attitude or dissatisfaction with the network, product or support, which need service fixes rather than discounts; {{ r.moved_or_deceased_share | pct(0) }} moved or died and {{ r.unknown_share | pct(0) }} gave no reason.
+- **This bounds the save rate.** If offers reach only the addressable churners, the assumed {{ q | pct(0) }} save rate means keeping about **{{ (q / r.addressable_share) | pct(0) }} of those an offer can reach** - an ambitious figure, and one more reason to measure it in a pilot before scaling.
+- The mix hardly differs between segments (largest gap {{ (r.max_segment_gap * 100) | num(0) }} percentage points for segments with at least {{ r.min_segment_churners }} churners) or on the recommended list ({{ r.addressable_share_on_list | pct(0) }} addressable). In this sample the reasons cannot steer which offer goes to whom; with real data, reason codes from the call centre should.
+- The most common single reason is "{{ r.top_reasons[0].reason }}" ({{ r.top_reasons[0].share | pct(0) }} of churners): service quality is a retention lever outside any offer budget.
+
+![Churn reasons](figures/churn_reasons.png)
+
 ## 5. Churn model
 
 **Candidates:** logistic regression (baseline), random forest (tree-based, required), XGBoost gradient boosting (stretch), each tuned by 5-fold cross-validation on average precision and calibrated with a sigmoid on out-of-fold predictions; a prior-only baseline anchors the metrics.

@@ -16,6 +16,26 @@
 | Joins | {{ data.quality.joins }} |
 | Filters | {{ data.quality.filters }} ({{ data.quality.duplicates_removed }} rows removed) |
 
+## Second source: churn reasons (joined for description only)
+{% set e = extended.source %}{% set j = extended.join %}
+
+| Field | Value |
+|---|---|
+| Dataset | IBM Telco customer churn, extended version (same 7,043 fictional customers, 33 columns) ([TanKY, 2020](references.md#kaggle2020ibm)) |
+| Download source | **{{ e.source }}** |
+| Download URL | {{ e.url }} |
+| Dataset page | {{ e.dataset_page }} |
+| Original file | `{{ e.original_filename }}` |
+| Downloaded (UTC) | {{ e.downloaded_at_utc }} |
+| SHA-256 | `{{ e.sha256 }}` |
+| Rows x columns | {{ e.rows | num }} x {{ e.columns | length }} |
+| Licence | {{ e.license_note }} |
+| Join | One-to-one on `{{ j.joined_on }}`: {{ j.matched | num }} of {{ j.base_rows | num }} customers matched; {% for f, v in j.field_agreement.items() %}{{ f }} {{ v | pct(0) }}{{ ", " if not loop.last }}{% endfor %} agreement |
+| Fields kept | {{ j.kept_fields | join(", ") }}, stored in `data/processed/customer_context.csv`, separate from the modelling file |
+| Fields not used | {{ j.dropped_fields }}. IBM's churn score comes from IBM's own model with undocumented inputs, so it could carry information unavailable before a customer leaves; it is never stored |
+
+Churn reasons are recorded only for customers who left, after they left, so they can never be a model input; they are used to judge which offers can plausibly work ([analysis report](../reports/analysis-report.md#why-customers-leave)). The CLTV index is IBM's undocumented formula and is used only to cross-check the value proxy.
+
 ## Provenance notes
 
 - IBM publishes the data as a sample for its analytics products: "a fictional telco company that provided home phone and Internet services to 7043 customers in California in Q3" ([IBM, 2019](references.md#ibm2019); [IBM docs](references.md#ibmdocs)). The Kaggle copy is the 21-column base version ([BlastChar, 2018](references.md#kaggle2018)).
