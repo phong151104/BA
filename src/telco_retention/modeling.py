@@ -225,6 +225,126 @@ def score_frame(df, bundle=None, origin="uploaded_unverified"):
     return out
 
 
+def deployed_linear(bundle):
+    """Deployed logistic model as one linear score: logit = slope x (intercept + coef . x) + offset, with the sigmoid calibration folded in."""
+    if bundle["metadata"]["selected_model"] != "logistic":
+        return None
+    calibrated = bundle["model"].calibrated_classifiers_[0]
+    sigmoid = calibrated.calibrators[0]  # predicts expit(-(a * f + b))
+    return calibrated.estimator, -float(sigmoid.a_), -float(sigmoid.b_)
+
+
+def _terms(bundle):
+    pipe, slope, offset = deployed_linear(bundle)
+    prep, lr = pipe.named_steps["prep"], pipe.named_steps["model"]
+    meta = bundle["metadata"]
+    scaler = prep.named_transformers_["num"].named_steps["scale"]
+    cont = meta["continuous_features"]
+    return (dict(zip(prep.get_feature_names_out(), slope * lr.coef_[0])), slope * float(lr.intercept_[0]) + offset,
+            dict(zip(cont, scaler.mean_)), dict(zip(cont, scaler.scale_)))
+
+
+def odds_ratios(bundle, cfg):
+    """Odds ratios of the deployed model: continuous inputs per natural step, flags yes vs no, categories vs their reference."""
+    if deployed_linear(bundle) is None:
+        return pd.DataFrame()
+    beta, _, _, sd = _terms(bundle)
+    meta, steps = bundle["metadata"], cfg["scorecard"]["odds_ratio_steps"]
+    rows = []
+    for term, b in beta.items():
+        if term in meta["continuous_features"]:
+            step = steps.get(term, sd[term])
+            unit = "months" if term == "tenure" else "USD a month"
+            rows.append({"term": term, "variable": term, "comparison": f"+{step:g} {unit}", "coefficient": b / sd[term] * step})
+        elif term in meta["binary_features"]:
+            rows.append({"term": term, "variable": term, "comparison": "Yes vs No", "coefficient": b})
+        else:
+            variable, level = term.split("_", 1)
+            rows.append({"term": term, "variable": variable, "comparison": f"{level} vs {meta['reference_levels'][variable]}", "coefficient": b})
+    out = pd.DataFrame(rows)
+    out["odds_ratio"] = np.exp(out.coefficient)
+    return out.sort_values("odds_ratio", ascending=False).reset_index(drop=True)
+
+
+def _band_label(interval, unit):
+    low, high = interval.left, interval.right
+    if unit == "months":
+        return f"{0 if not np.isfinite(low) else int(low) + 1}+ months" if not np.isfinite(high) else f"{0 if not np.isfinite(low) else int(low) + 1}-{int(high)} months"
+    if not np.isfinite(low):
+        return f"up to ${high:g}"
+    return f"over ${low:g}" if not np.isfinite(high) else f"${low:g}-{high:g}"
+
+
+def points_scorecard(bundle, train_df, cfg):
+    """Points card for the call centre: each attribute adds whole points, and the total maps back to a churn probability."""
+    if deployed_linear(bundle) is None:
+        return pd.DataFrame(), {}
+    sc, meta = cfg["scorecard"], bundle["metadata"]
+    factor = sc["pdo"] / np.log(2)
+    beta, intercept, mu, sd = _terms(bundle)
+    intercept -= sum(beta[c] * mu[c] / sd[c] for c in meta["continuous_features"])  # work on raw units
+    levels = {**DOMAINS, "tenure_band": SEGMENTS}
+    rows = []
+    for c in meta["continuous_features"]:
+        bands = pd.cut(train_df[c], [-np.inf, *sc["bands"][c], np.inf])
+        for interval, part in train_df[c].groupby(bands, observed=False):
+            rows.append({"characteristic": c, "attribute": _band_label(interval, "months" if c == "tenure" else "usd"), "lower": interval.left, "upper": interval.right,
+                         "representative": float(part.median()), "raw": factor * beta[c] / sd[c] * float(part.median())})
+    for c in meta["binary_features"]:
+        rows += [{"characteristic": c, "attribute": "Yes", "raw": factor * beta[c]}, {"characteristic": c, "attribute": "No", "raw": 0.0}]
+    for c in meta["categorical_features"]:
+        rows += [{"characteristic": c, "attribute": level, "raw": factor * beta.get(f"{c}_{level}", 0.0)} for level in levels[c]]
+    card = pd.DataFrame(rows)
+    shift = card.groupby("characteristic", sort=False).raw.min()
+    card["points"] = (card.raw - card.characteristic.map(shift)).round().astype(int)
+    base = int(round(sc["anchor_score"] + factor * intercept + shift.sum()))
+    return card, {"anchor_score": sc["anchor_score"], "pdo": sc["pdo"], "base_points": base, "factor": factor}
+
+
+def apply_scorecard(card, meta, df):
+    """Score customers with the points card; returns points and the probability they imply."""
+    total = pd.Series(meta["base_points"], index=df.index, dtype=float)
+    X = features(df)
+    for c, part in card.groupby("characteristic", sort=False):
+        if part.lower.notna().any():
+            edges = [-np.inf, *part.upper.iloc[:-1], np.inf]
+            total += pd.cut(df[c], edges, labels=False).map(dict(enumerate(part.points))).astype(float)
+        elif set(part.attribute) == {"Yes", "No"}:
+            total += np.where(X[c].eq(1), part.set_index("attribute").points["Yes"], part.set_index("attribute").points["No"])
+        else:
+            total += X[c].map(part.set_index("attribute").points).astype(float)
+    probability = 1 / (1 + np.exp(-(total - meta["anchor_score"]) / meta["factor"]))
+    return total, probability
+
+
+def scorecard_outputs(run, bundle, df, cfg):
+    """Odds ratios, points card, score bands and how closely the card reproduces the model on test."""
+    ratios = odds_ratios(bundle, cfg)
+    card, meta = points_scorecard(bundle, df.loc[df.split.eq("train")], cfg)
+    save_csv(ratios, run / "odds_ratios.csv")
+    save_csv(card, run / "scorecard_points.csv")
+    if card.empty:
+        write_json(run / "scorecard_meta.json", {"available": False, "reason": "the deployed model is not logistic regression"})
+        return
+    test = df.loc[df.split.eq("test")]
+    points, implied = apply_scorecard(card, meta, test)
+    model_p = bundle["model"].predict_proba(features(test)[bundle["metadata"]["feature_columns"]])[:, 1]
+    edges = [-np.inf, *[meta["anchor_score"] + k * meta["pdo"] for k in range(-3, 3)], np.inf]
+    bands = pd.cut(points, edges)
+    table = pd.DataFrame({"band": bands, "points": points, "card_probability": implied, "model_probability": model_p, "churn": test.churn.to_numpy()})
+    summary = table.groupby("band", observed=False).agg(customers=("churn", "size"), mean_points=("points", "mean"), card_probability=("card_probability", "mean"),
+                                                         model_probability=("model_probability", "mean"), observed_churn=("churn", "mean")).reset_index()
+    summary["band"] = [f"up to {int(i.right)}" if not np.isfinite(i.left) else f"over {int(i.left)}" if not np.isfinite(i.right) else f"{int(i.left) + 1}-{int(i.right)}" for i in summary.band]
+    save_csv(summary, run / "scorecard_bands.csv")
+    gap = np.abs(implied - model_p)
+    val = df.loc[df.split.eq("validation")]
+    val_gap = np.abs(apply_scorecard(card, meta, val)[1] - bundle["model"].predict_proba(features(val)[bundle["metadata"]["feature_columns"]])[:, 1])
+    write_json(run / "scorecard_meta.json", {"available": True, **meta, "population": "test", "mean_abs_probability_gap": float(gap.mean()), "max_abs_probability_gap": float(gap.max()),
+                                             "validation_mean_abs_probability_gap": float(val_gap.mean()),
+                                             "card_roc_auc": float(roc_auc_score(test.churn, points)), "model_roc_auc": float(roc_auc_score(test.churn, model_p)),
+                                             "score_min": float(points.min()), "score_max": float(points.max())})
+
+
 def evaluate(run=None):
     run = run or latest_run()
     df = pd.read_csv(run / "customers.csv")
@@ -269,6 +389,7 @@ def evaluate(run=None):
         for group, part in scores.loc[scores.split.eq("test")].groupby(col):
             diagnostic.append({"attribute": col, "group": group, "n": len(part), "small_sample": len(part) < 50, **metrics(part.churn, part.churn_probability, threshold)})
     save_csv(pd.DataFrame(diagnostic), run / "segment_errors.csv")
+    scorecard_outputs(run, bundle, df, cfg)
     explain(run, models, df, columns, cfg["seed"])
     return run
 

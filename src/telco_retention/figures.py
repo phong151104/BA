@@ -7,6 +7,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
+from matplotlib.ticker import NullFormatter
 from .common import ROOT, read_json, write_json
 from .business import STRATEGY_LABELS
 
@@ -250,15 +251,25 @@ def figures(run):
     ax.legend(loc="lower right", fontsize=8.5); ax.set_title("Selection-rate ratio by protected attribute")
     finish(fig, "fairness", "Allocation audit by protected attribute", "Gender and SeniorCitizen are not model inputs; they are used only for this audit.")
 
-    # 12. Drivers of the deployed (logistic) model.
-    coefficients = pd.read_csv(run / "logistic_coefficients.csv")
-    picks = pd.concat([coefficients.nsmallest(6, "coefficient"), coefficients.nlargest(6, "coefficient")]).drop_duplicates().sort_values("coefficient")
-    fig, ax = plt.subplots(figsize=(9, 5.2))
-    ax.barh([pretty_feature(f) for f in picks.feature], picks.coefficient, height=0.5, color=[COLORS["risk"] if c > 0 else COLORS["ev"] for c in picks.coefficient])
-    ax.axvline(0, color=AXIS, linewidth=1); ax.grid(axis="y", visible=False)
-    ax.set_xlabel("Coefficient on standardised/one-hot inputs (log-odds); right = raises churn risk")
-    ax.set_title("What moves the deployed model's risk score")
-    finish(fig, "model_drivers", "Deployed model drivers", "Logistic regression before calibration; associations, not causes. Orange raises predicted risk, blue lowers it.", "train split")
+    # 12. Drivers of the deployed (logistic) model as odds ratios against stated references.
+    ratios = pd.read_csv(run / "odds_ratios.csv") if (run / "odds_ratios.csv").stat().st_size > 10 else pd.DataFrame()
+    fig, ax = plt.subplots(figsize=(9, 5.6))
+    if len(ratios):
+        picks = pd.concat([ratios.nlargest(7, "odds_ratio"), ratios.nsmallest(5, "odds_ratio")]).drop_duplicates().sort_values("odds_ratio")
+        names = [f"{r.variable}: {r.comparison}" for r in picks.itertuples()]
+        colors = [COLORS["risk"] if v > 1 else COLORS["ev"] for v in picks.odds_ratio]
+        ax.hlines(range(len(picks)), 1, picks.odds_ratio, color=colors, linewidth=2)
+        ax.scatter(picks.odds_ratio, range(len(picks)), s=60, color=colors, zorder=3, edgecolor=SURFACE, linewidth=2)
+        for y, v in enumerate(picks.odds_ratio):
+            ax.text(v * (1.06 if v > 1 else 0.94), y, f"{v:.2f}", va="center", ha="left" if v > 1 else "right", fontsize=8.5, color=SECONDARY)
+        ax.set_xscale("log"); ax.set_yticks(range(len(picks)), names)
+        ticks = [0.25, 0.5, 1, 2, 4]
+        ax.set_xticks(ticks, [f"{t:g}" for t in ticks]); ax.xaxis.set_minor_formatter(NullFormatter()); ax.set_xlim(0.3, 6)
+        ax.axvline(1, color=AXIS, linewidth=1); ax.grid(axis="y", visible=False)
+        ax.set_xlabel("Odds ratio of churning (log scale): 2 = twice the odds, 0.5 = half")
+    ax.set_title("What moves the deployed model's churn odds")
+    finish(fig, "model_drivers", "Deployed model drivers", "Calibrated logistic model. Categories vs their lowest-churn level, flags vs not having the service,\n"
+           "tenure per 12 months. Associations, not causes.", "train split")
 
     # 13. Challenger SHAP (clearly labelled as not deployed).
     shap = pd.read_csv(run / "shap_global.csv").head(12).iloc[::-1]

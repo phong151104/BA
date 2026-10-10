@@ -1,0 +1,44 @@
+{% set meta = model.scorecard_meta %}
+# Churn scorecard
+
+The course deliverable "churn scorecard" has two forms in this project:
+
+1. **Customer scores:** every customer's calibrated churn probability and risk band ([scorecard table](../reports/tables/scorecard.csv)); the targeting tables add value, offer, expected value and the reason for each decision.
+2. **Points card (this page):** the deployed model rewritten as whole points, so a call-centre agent or CRM rule can score a customer without the model and see why the score is high.
+
+{% if meta.available %}
+## How to read it
+
+- Start from **{{ meta.base_points }} points** and add the points for each of the customer's attributes.
+- **{{ meta.anchor_score }} points = 50% churn probability.** Every **{{ meta.pdo }} points doubles the odds** of churning; {{ meta.pdo }} points fewer halves them.
+- Higher means riskier. The points come from the calibrated {{ model.label }} (calibration folded in); tenure and monthly charges are banded.
+- On the {{ data.splits.test | num }} test customers the card's probability is within **{{ (meta.mean_abs_probability_gap * 100) | num(1) }} percentage points** of the model's on average (largest gap {{ (meta.max_abs_probability_gap * 100) | num(1) }} points; validation {{ (meta.validation_mean_abs_probability_gap * 100) | num(1) }}). It ranks customers as well as the model (ROC-AUC {{ meta.card_roc_auc | num(3) }} vs {{ meta.model_roc_auc | num(3) }}).
+
+Points measure churn risk only. Whether to make an offer also depends on the customer's value and the offer's cost; use the targeting list for that.
+
+## Points
+
+| Characteristic | Attribute | Points |
+|---|---|---:|
+{% for row in model.scorecard %}
+| {{ row.characteristic }} | {{ row.attribute }} | {{ row.points }} |
+{% endfor %}
+
+## Score bands on test customers
+
+{{ model.scorecard_bands | md_table([("band", "Points", None), ("customers", "Customers", "num"), ("card_probability", "Card probability", "pct"), ("model_probability", "Model probability", "pct"), ("observed_churn", "Observed churn", "pct")]) }}
+
+## What drives the points
+
+Odds ratios of the deployed model; each category is compared with its lowest-churn level and each flag with not having the service. These are associations in a snapshot, not causes: a customer who signs a two-year contract does not acquire a two-year customer's risk.
+
+{{ model.odds_ratios | md_table([("variable", "Field", None), ("comparison", "Comparison", None), ("odds_ratio", "Odds ratio", "num2")]) }}
+
+## Use and limits
+
+- Recompute the card whenever the model is retrained; points from different runs are not comparable.
+- Do not add age or gender: they are not model inputs and are audited separately ([model card](model-card.md#8-fairness-and-customer-experience)).
+- The points are fitted on the IBM sample; a real operator needs its own card ([data readiness](data-readiness-review.md)).
+{% else %}
+The deployed model is not logistic regression, so no points card is produced for this run; use the customer scores.
+{% endif %}

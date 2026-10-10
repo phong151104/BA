@@ -12,6 +12,16 @@ solver:
   time_limit_seconds: 30
   mip_rel_gap: 0.0
 
+scorecard:
+  # Points = anchor + PDO / ln 2 x logit(churn probability): higher means riskier; every PDO points doubles the odds.
+  anchor_score: 500
+  pdo: 40
+  odds_ratio_steps: {tenure: 12, MonthlyCharges: 10}
+  # Round-number bands; narrow enough that the card stays within about 1 point of the model's probability.
+  bands:
+    tenure: [3, 6, 12, 18, 24, 36, 48, 60]
+    MonthlyCharges: [30, 45, 60, 75, 90, 105]
+
 segments:
   # Risk/value cut-offs are quantiles fitted on the validation split, then frozen.
   high_risk_quantile: 0.75

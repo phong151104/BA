@@ -16,6 +16,7 @@ Documents marked *(generated)* are rendered from templates in `src/telco_retenti
 
 - [Analysis report](../reports/analysis-report.md) *(generated)* - full storyline with figures
 - [Model and analysis card](model-card.md) *(generated)*
+- [Churn scorecard](churn-scorecard.md) *(generated)* - points card for the call centre, score bands and odds ratios
 - [Assumption register](assumption-register.md) *(generated)*
 - [Literature review](literature-review.md) and [references](references.md)
 - Notebooks: [01 data and EDA](../notebooks/01-data-eda.ipynb), [02 models and validation](../notebooks/02-models-validation.ipynb), [03 targeting](../notebooks/03-targeting.ipynb), [04 sensitivity, fairness and pilot](../notebooks/04-sensitivity-fairness.ipynb) *(generated, executed)*

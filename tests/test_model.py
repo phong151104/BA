@@ -3,8 +3,40 @@ import numpy as np
 import pandas as pd
 import pytest
 from telco_retention.common import ROOT, latest_run, read_json
-from telco_retention.modeling import score_frame, choose_model, calibration_stats, gains_table, precision_at_k
+from telco_retention.modeling import score_frame, choose_model, calibration_stats, gains_table, precision_at_k, deployed_linear, apply_scorecard
 from telco_retention.data import features, validate
+
+
+def test_deployed_model_is_one_linear_score():
+    bundle = joblib.load(latest_run() / "model.joblib")
+    if deployed_linear(bundle) is None:
+        pytest.skip("deployed model is not logistic regression")
+    pipe, slope, offset = deployed_linear(bundle)
+    df = pd.read_csv(ROOT / "data/processed/customers.csv").query("split == 'test'").head(200)
+    X = features(df)[bundle["metadata"]["feature_columns"]]
+    np.testing.assert_allclose(1 / (1 + np.exp(-(slope * pipe.decision_function(X) + offset))), bundle["model"].predict_proba(X)[:, 1], atol=1e-10)
+
+
+def test_points_card_adds_up_and_tracks_the_model():
+    run = latest_run()
+    meta = read_json(run / "scorecard_meta.json")
+    if not meta["available"]:
+        pytest.skip("no points card for this run")
+    card = pd.read_csv(run / "scorecard_points.csv")
+    assert (card.groupby("characteristic").points.min() == 0).all()
+    customer = pd.read_csv(ROOT / "data/processed/customers.csv").query("split == 'test'").head(1)
+    points, probability = apply_scorecard(card, meta, customer)
+    row, flags = customer.iloc[0], features(customer).iloc[0]
+    expected = meta["base_points"]
+    for name, part in card.groupby("characteristic", sort=False):
+        if part.lower.notna().any():
+            expected += part.loc[(part.lower < row[name]) & (row[name] <= part.upper), "points"].item()
+        elif set(part.attribute) == {"Yes", "No"}:
+            expected += part.set_index("attribute").points["Yes" if flags[name] == 1 else "No"]
+        else:
+            expected += part.set_index("attribute").points[row[name]]
+    assert points.iloc[0] == expected
+    assert meta["mean_abs_probability_gap"] < 0.015 and abs(meta["card_roc_auc"] - meta["model_roc_auc"]) < 0.01
 
 
 def test_model_roundtrip_and_probability(tmp_path):

@@ -70,7 +70,11 @@ The challengers rank about as well as logistic regression; the selection rule pr
 
 ## 7. Explanations
 
+{% if model.odds_ratios %}{% set up = model.odds_ratios[:3] %}{% set down = (model.odds_ratios | reverse | list)[:3] %}
+- **Deployed model, as odds ratios** (calibration folded in; associations, not causes): the odds of churning are higher for {% for r in up %}{{ r.variable }} {{ r.comparison }} ({{ r.odds_ratio | num(2) }}x){{ ", " if not loop.last }}{% endfor %}, and lower for {% for r in down %}{{ r.variable }} {{ r.comparison }} ({{ r.odds_ratio | num(2) }}x){{ ", " if not loop.last }}{% endfor %}. The full table and a points version for the call centre are in the [churn scorecard](churn-scorecard.md).
+{% else %}
 - **Deployed model:** the largest logistic coefficients (associations, not causes) raise risk for {{ model.top_positive[:3] | map(attribute='feature') | join(', ') }} and lower it for {{ model.top_negative[:3] | map(attribute='feature') | join(', ') }}.
+{% endif %}
 - **Challenger:** TreeSHAP [[lundberg2017](references.md#lundberg2017)] on 200 validation customers for the raw XGBoost model; top features {{ model.shap_top[:4] | map(attribute='feature') | join(', ') }}. It explains the challenger, not the deployed calibrated model.
 - **Customer-level:** each row of the targeting table states the expected-value formula with its numbers and the customer's break-even save rate.
 

@@ -87,6 +87,7 @@ def build_facts(run):
     selected_row = test_metrics.loc[test_metrics.model.eq(selected_model + "_calibrated")].iloc[0]
     intervals = by_key(csv("bootstrap_intervals.csv"), "metric")
     coefficients = csv("logistic_coefficients.csv").assign(odds_ratio=lambda d: np.exp(d.coefficient))
+    card_meta = read_json(run / "scorecard_meta.json")
     eda = csv("eda_segments.csv")
     eda_groups = {attribute: records(part.sort_values("churn_rate", ascending=False)) for attribute, part in eda.groupby("attribute")}
     train = customers.query("split == 'train'")
@@ -108,7 +109,11 @@ def build_facts(run):
                   "selected_test": {k: (None if pd.isna(v) else v) for k, v in selected_row.to_dict().items()}, "intervals": intervals,
                   "gains": records(csv("gains_test.csv")), "precision_at_k": records(csv("precision_at_k.csv")),
                   "top_positive": records(coefficients.nlargest(6, "coefficient")), "top_negative": records(coefficients.nsmallest(6, "coefficient")),
-                  "shap_top": records(csv("shap_global.csv").head(8)), "segment_errors": records(csv("segment_errors.csv"))},
+                  "shap_top": records(csv("shap_global.csv").head(8)), "segment_errors": records(csv("segment_errors.csv")),
+                  "scorecard_meta": card_meta,
+                  "odds_ratios": records(csv("odds_ratios.csv")) if card_meta["available"] else [],
+                  "scorecard": records(csv("scorecard_points.csv")) if card_meta["available"] else [],
+                  "scorecard_bands": records(csv("scorecard_bands.csv")) if card_meta["available"] else []},
         "thresholds": read_json(run / "targeting_thresholds.json"),
         "decisions": decisions, "strategy": strategy, "strategy_label": STRATEGY_LABELS[strategy],
         "budget": {"base": budget, "share": cfg["campaign"]["budget_share"], "n_test": n_test, "per_customer": offer["offer_cost"] + offer["contact_cost"],
