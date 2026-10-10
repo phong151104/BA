@@ -1,7 +1,7 @@
 {
   "run": {
-    "id": "20261010T124415068764Z-88be4b93",
-    "created_at": "2026-10-10T12:44:36.697280+00:00",
+    "id": "20261010T131542424757Z-88be4b93",
+    "created_at": "2026-10-10T13:16:04.424578+00:00",
     "python": "3.13.9",
     "source_sha256": "88be4b93fbe0cc83421af1c503794c97c342eca914c1576db7c276e61d61358a"
   },
@@ -667,7 +667,7 @@
           "model__C": 0.1
         },
         "cv_average_precision": 0.6649033037297131,
-        "seconds": 2.926647899992531
+        "seconds": 2.927057300010347
       },
       "random_forest": {
         "params": {
@@ -677,7 +677,7 @@
           "model__class_weight": null
         },
         "cv_average_precision": 0.6700883347413651,
-        "seconds": 13.873860300009255
+        "seconds": 13.84263739999733
       },
       "xgboost": {
         "params": {
@@ -689,7 +689,7 @@
           "model__colsample_bytree": 0.8
         },
         "cv_average_precision": 0.6764995003696914,
-        "seconds": 4.398008899996057
+        "seconds": 4.789078100002371
       }
     },
     "validation": [
@@ -747,7 +747,7 @@
         "f1": 0.58125,
         "ece": 0.0256035676655073,
         "calibration_slope": 1.1971551847813773,
-        "calibration_intercept": -0.0165678626353572
+        "calibration_intercept": -0.0165678626353573
       },
       {
         "model": "random_forest",
@@ -850,13 +850,13 @@
         "average_precision": 0.6293170093665753,
         "roc_auc": 0.8313312149629285,
         "brier": 0.1428630731859373,
-        "log_loss": 0.4390889297436759,
+        "log_loss": 0.4390889297436761,
         "precision": 0.5865384615384616,
         "recall": 0.6524064171122995,
         "f1": 0.6177215189873417,
         "ece": 0.0354022974719097,
-        "calibration_slope": 0.9163420935788222,
-        "calibration_intercept": -0.0245696105004393
+        "calibration_slope": 0.916342093578822,
+        "calibration_intercept": -0.0245696105004396
       },
       {
         "model": "xgboost_raw",
@@ -1487,7 +1487,9 @@
     "base": 3500.0,
     "share": 0.1,
     "n_test": 1409,
-    "per_customer": 25.0
+    "per_customer": 25.0,
+    "per_base_customer": 2.48403122782115,
+    "recommended_per_base_customer": 5.997161107168204
   },
   "comparison": {
     "none": {
@@ -1798,7 +1800,15 @@
     "high_risk_high_value_count": 51,
     "high_risk_high_value_coverage": 1.0,
     "scenario_id": "5433f51f5022",
-    "solver_status": "optimal"
+    "solver_status": "optimal",
+    "contacted_share": 0.22001419446415899,
+    "break_even": {
+      "selected_count": 310,
+      "save_rate_multiplier": 0.6959456349305692,
+      "break_even_default_save_rate": 0.13918912698611383,
+      "offer_cost_multiplier": 1.5350366665094117,
+      "break_even_default_offer_cost": 30.700733330188235
+    }
   },
   "scaled": {
     "factor": 4.998580553584103,
@@ -6127,7 +6137,10 @@
       "net_high_retarget": 6050.431540258525,
       "net_high_fixed": 5428.190491317442,
       "base_net": 2420.146734576114,
-      "swing_retarget": 5724.51928148813
+      "swing_retarget": 5724.51928148813,
+      "low_text": "10%",
+      "high_text": "30%",
+      "base_text": "20%"
     },
     {
       "id": "A5",
@@ -6142,7 +6155,10 @@
       "net_high_retarget": 5163.2171340423565,
       "net_high_fixed": 5162.981898329012,
       "base_net": 2420.146734576114,
-      "swing_retarget": 5111.986243518642
+      "swing_retarget": 5111.986243518642,
+      "low_text": "6 months",
+      "high_text": "18 months",
+      "base_text": "12 months"
     },
     {
       "id": "A2",
@@ -6157,7 +6173,10 @@
       "net_high_retarget": 1014.7836443208796,
       "net_high_fixed": 1050.646734576114,
       "base_net": 2420.146734576114,
-      "swing_retarget": 4709.126710123277
+      "swing_retarget": 4709.126710123277,
+      "low_text": "x0.5",
+      "high_text": "x1.5",
+      "base_text": "x1"
     },
     {
       "id": "A4",
@@ -6172,7 +6191,10 @@
       "net_high_retarget": 4393.195646101486,
       "net_high_fixed": 4393.195646101485,
       "base_net": 2420.146734576114,
-      "swing_retarget": 3927.887258312852
+      "swing_retarget": 3927.887258312852,
+      "low_text": "20%",
+      "high_text": "40%",
+      "base_text": "30%"
     },
     {
       "id": "A3",
@@ -6187,7 +6209,10 @@
       "net_high_retarget": 1615.3694234423178,
       "net_high_fixed": 1660.146734576114,
       "base_net": 2420.146734576114,
-      "swing_retarget": 2001.951797921148
+      "swing_retarget": 2001.951797921148,
+      "low_text": "$1",
+      "high_text": "$10",
+      "base_text": "$5"
     },
     {
       "id": "A6",
@@ -6202,7 +6227,10 @@
       "net_high_retarget": 2274.62912012128,
       "net_high_fixed": 2274.490334215304,
       "base_net": 2420.146734576114,
-      "swing_retarget": 303.61785557074427
+      "swing_retarget": 303.61785557074427,
+      "low_text": "5%",
+      "high_text": "15%",
+      "base_text": "10%"
     }
   ],
   "scenarios": {
@@ -6215,7 +6243,8 @@
       "roi": null,
       "expected_saved": 0.0,
       "fixed_expected_net_value": -2797.0971411404557,
-      "fixed_roi": -0.6028551411477893
+      "fixed_roi": -0.6028551411477893,
+      "overrides_text": "save rate 10%, offer cost x1.25, contact cost $8, margin 25%, value horizon 9 months"
     },
     "base": {
       "scenario": "base",
@@ -6226,7 +6255,8 @@
       "roi": 0.6916681150546196,
       "expected_saved": 17.9097125939941,
       "fixed_expected_net_value": 2420.146734576114,
-      "fixed_roi": 0.6916681150546196
+      "fixed_roi": 0.6916681150546196,
+      "overrides_text": "assumptions as registered"
     },
     "optimistic": {
       "scenario": "optimistic",
@@ -6237,7 +6267,8 @@
       "roi": 5.2929122788486085,
       "expected_saved": 46.742478797676334,
       "fixed_expected_net_value": 12338.315578996106,
-      "fixed_roi": 5.231979467400024
+      "fixed_roi": 5.231979467400024,
+      "overrides_text": "save rate 30%, offer cost x0.75, contact cost $2, margin 40%, value horizon 15 months"
     }
   },
   "sensitivity": {
@@ -7679,64 +7710,126 @@
     "control_churn_expected": 0.5981078929635952,
     "observed_churn_test_list": 0.567741935483871,
     "recommended_share": 0.24,
+    "contacted_share": 0.22001419446415899,
     "base_population": 7043,
-    "list_size_per_wave": 1690,
-    "arm_size_per_wave": 845,
-    "minimum_detectable_save_rate_one_wave": 0.11293335716477239,
+    "list_size_per_wave": 1550,
+    "arm_size_per_wave": 775,
+    "break_even_save_rate": 0.13918912698611383,
+    "per_arm_break_even": 558.0,
+    "minimum_detectable_save_rate_one_wave": 0.11800352983705129,
+    "decision_rule": "go if the 95% interval of q is above 0 and q >= break-even; stop if q <= 0 or the interval is below break-even; otherwise extend",
     "alpha": 0.05,
     "power": 0.8,
     "holdout_share": 0.5,
     "outcome_window_days": 90,
     "cost_per_contact": 27.258064516129032,
-    "wave_cost": 23033.06451612903,
-    "per_arm_break_even": 772.0,
-    "required_per_arm_at_base": 272.0
-  },
-  "pilot_power": [
-    {
-      "assumed_save_rate": 0.05,
-      "control_churn": 0.5981078929635952,
-      "treated_churn": 0.5682024983154155,
-      "customers_per_arm": 4266.0,
-      "total_customers": 8532.0,
-      "arm_size_per_wave": 845,
-      "waves_needed": 6
-    },
-    {
-      "assumed_save_rate": 0.1,
-      "control_churn": 0.5981078929635952,
-      "treated_churn": 0.5382971036672357,
-      "customers_per_arm": 1076.0,
-      "total_customers": 2152.0,
-      "arm_size_per_wave": 845,
-      "waves_needed": 2
-    },
-    {
-      "assumed_save_rate": 0.15,
-      "control_churn": 0.5981078929635952,
-      "treated_churn": 0.508391709019056,
-      "customers_per_arm": 481.0,
-      "total_customers": 962.0,
-      "arm_size_per_wave": 845,
-      "waves_needed": 1
-    },
-    {
+    "wave_cost": 21125.0,
+    "required_per_arm_at_base": 272.0,
+    "at_assumed": {
       "assumed_save_rate": 0.2,
+      "is_break_even": false,
       "control_churn": 0.5981078929635952,
       "treated_churn": 0.4784863143708762,
       "customers_per_arm": 272.0,
       "total_customers": 544.0,
-      "arm_size_per_wave": 845,
-      "waves_needed": 1
+      "arm_size_per_wave": 775,
+      "waves_needed": 1,
+      "p_go": 0.9398,
+      "p_extend": 0.06,
+      "p_stop": 0.0002
+    },
+    "at_break_even": {
+      "assumed_save_rate": 0.1392,
+      "is_break_even": true,
+      "control_churn": 0.5981078929635952,
+      "treated_churn": 0.5148512742630628,
+      "customers_per_arm": 558.0,
+      "total_customers": 1116.0,
+      "arm_size_per_wave": 775,
+      "waves_needed": 1,
+      "p_go": 0.5045,
+      "p_extend": 0.477,
+      "p_stop": 0.0185
+    }
+  },
+  "pilot_power": [
+    {
+      "assumed_save_rate": 0.05,
+      "is_break_even": false,
+      "control_churn": 0.5981078929635952,
+      "treated_churn": 0.5682024983154155,
+      "customers_per_arm": 4266.0,
+      "total_customers": 8532.0,
+      "arm_size_per_wave": 775,
+      "waves_needed": 6,
+      "p_go": 0.01185,
+      "p_extend": 0.39525,
+      "p_stop": 0.5929
+    },
+    {
+      "assumed_save_rate": 0.1,
+      "is_break_even": false,
+      "control_churn": 0.5981078929635952,
+      "treated_churn": 0.5382971036672357,
+      "customers_per_arm": 1076.0,
+      "total_customers": 2152.0,
+      "arm_size_per_wave": 775,
+      "waves_needed": 2,
+      "p_go": 0.1614,
+      "p_extend": 0.6934,
+      "p_stop": 0.1452
+    },
+    {
+      "assumed_save_rate": 0.1392,
+      "is_break_even": true,
+      "control_churn": 0.5981078929635952,
+      "treated_churn": 0.5148512742630628,
+      "customers_per_arm": 558.0,
+      "total_customers": 1116.0,
+      "arm_size_per_wave": 775,
+      "waves_needed": 1,
+      "p_go": 0.5045,
+      "p_extend": 0.477,
+      "p_stop": 0.0185
+    },
+    {
+      "assumed_save_rate": 0.15,
+      "is_break_even": false,
+      "control_churn": 0.5981078929635952,
+      "treated_churn": 0.508391709019056,
+      "customers_per_arm": 481.0,
+      "total_customers": 962.0,
+      "arm_size_per_wave": 775,
+      "waves_needed": 1,
+      "p_go": 0.60835,
+      "p_extend": 0.38105,
+      "p_stop": 0.0106
+    },
+    {
+      "assumed_save_rate": 0.2,
+      "is_break_even": false,
+      "control_churn": 0.5981078929635952,
+      "treated_churn": 0.4784863143708762,
+      "customers_per_arm": 272.0,
+      "total_customers": 544.0,
+      "arm_size_per_wave": 775,
+      "waves_needed": 1,
+      "p_go": 0.9398,
+      "p_extend": 0.06,
+      "p_stop": 0.0002
     },
     {
       "assumed_save_rate": 0.3,
+      "is_break_even": false,
       "control_churn": 0.5981078929635952,
       "treated_churn": 0.4186755250745166,
       "customers_per_arm": 121.0,
       "total_customers": 242.0,
-      "arm_size_per_wave": 845,
-      "waves_needed": 1
+      "arm_size_per_wave": 775,
+      "waves_needed": 1,
+      "p_go": 1.0,
+      "p_extend": 0.0,
+      "p_stop": 0.0
     }
   ],
   "schema": [
@@ -8031,29 +8124,29 @@
     "min_value": 208.33333333333334
   },
   "sources": {
-    "comparison": "artifacts/runs/20261010T124415068764Z-88be4b93/strategy_comparison.csv",
-    "uncertainty": "artifacts/runs/20261010T124415068764Z-88be4b93/economic_uncertainty.csv",
-    "recommendation": "artifacts/runs/20261010T124415068764Z-88be4b93/validation_decisions.json",
-    "recommended": "artifacts/runs/20261010T124415068764Z-88be4b93/recommended_campaign.json",
-    "curve": "artifacts/runs/20261010T124415068764Z-88be4b93/budget_curve.csv",
-    "break_even": "artifacts/runs/20261010T124415068764Z-88be4b93/break_even.json",
-    "tornado": "artifacts/runs/20261010T124415068764Z-88be4b93/tornado.csv",
-    "scenarios": "artifacts/runs/20261010T124415068764Z-88be4b93/scenarios.csv",
-    "sensitivity": "artifacts/runs/20261010T124415068764Z-88be4b93/sensitivity.csv",
-    "matrix": "artifacts/runs/20261010T124415068764Z-88be4b93/risk_value_matrix.csv",
-    "threshold_rules": "artifacts/runs/20261010T124415068764Z-88be4b93/threshold_business.csv",
-    "fairness": "artifacts/runs/20261010T124415068764Z-88be4b93/fairness.csv",
-    "pilot": "artifacts/runs/20261010T124415068764Z-88be4b93/pilot_plan.json",
-    "pilot_power": "artifacts/runs/20261010T124415068764Z-88be4b93/pilot_power.csv",
-    "model.test": "artifacts/runs/20261010T124415068764Z-88be4b93/test_metrics.csv",
-    "model.validation": "artifacts/runs/20261010T124415068764Z-88be4b93/validation_metrics.csv",
-    "model.intervals": "artifacts/runs/20261010T124415068764Z-88be4b93/bootstrap_intervals.csv",
-    "model.gains": "artifacts/runs/20261010T124415068764Z-88be4b93/gains_test.csv",
-    "eda": "artifacts/runs/20261010T124415068764Z-88be4b93/eda_segments.csv",
-    "data.quality": "artifacts/runs/20261010T124415068764Z-88be4b93/data_quality.json",
-    "data.source": "artifacts/runs/20261010T124415068764Z-88be4b93/dataset_source.json",
-    "cfg": "artifacts/runs/20261010T124415068764Z-88be4b93/manifest.json",
-    "offers": "artifacts/runs/20261010T124415068764Z-88be4b93/offer_catalog.csv",
-    "offer_mix": "artifacts/runs/20261010T124415068764Z-88be4b93/segment_offer_mix.csv"
+    "comparison": "artifacts/runs/20261010T131542424757Z-88be4b93/strategy_comparison.csv",
+    "uncertainty": "artifacts/runs/20261010T131542424757Z-88be4b93/economic_uncertainty.csv",
+    "recommendation": "artifacts/runs/20261010T131542424757Z-88be4b93/validation_decisions.json",
+    "recommended": "artifacts/runs/20261010T131542424757Z-88be4b93/recommended_campaign.json",
+    "curve": "artifacts/runs/20261010T131542424757Z-88be4b93/budget_curve.csv",
+    "break_even": "artifacts/runs/20261010T131542424757Z-88be4b93/break_even.json",
+    "tornado": "artifacts/runs/20261010T131542424757Z-88be4b93/tornado.csv",
+    "scenarios": "artifacts/runs/20261010T131542424757Z-88be4b93/scenarios.csv",
+    "sensitivity": "artifacts/runs/20261010T131542424757Z-88be4b93/sensitivity.csv",
+    "matrix": "artifacts/runs/20261010T131542424757Z-88be4b93/risk_value_matrix.csv",
+    "threshold_rules": "artifacts/runs/20261010T131542424757Z-88be4b93/threshold_business.csv",
+    "fairness": "artifacts/runs/20261010T131542424757Z-88be4b93/fairness.csv",
+    "pilot": "artifacts/runs/20261010T131542424757Z-88be4b93/pilot_plan.json",
+    "pilot_power": "artifacts/runs/20261010T131542424757Z-88be4b93/pilot_power.csv",
+    "model.test": "artifacts/runs/20261010T131542424757Z-88be4b93/test_metrics.csv",
+    "model.validation": "artifacts/runs/20261010T131542424757Z-88be4b93/validation_metrics.csv",
+    "model.intervals": "artifacts/runs/20261010T131542424757Z-88be4b93/bootstrap_intervals.csv",
+    "model.gains": "artifacts/runs/20261010T131542424757Z-88be4b93/gains_test.csv",
+    "eda": "artifacts/runs/20261010T131542424757Z-88be4b93/eda_segments.csv",
+    "data.quality": "artifacts/runs/20261010T131542424757Z-88be4b93/data_quality.json",
+    "data.source": "artifacts/runs/20261010T131542424757Z-88be4b93/dataset_source.json",
+    "cfg": "artifacts/runs/20261010T131542424757Z-88be4b93/manifest.json",
+    "offers": "artifacts/runs/20261010T131542424757Z-88be4b93/offer_catalog.csv",
+    "offer_mix": "artifacts/runs/20261010T131542424757Z-88be4b93/segment_offer_mix.csv"
   }
 }

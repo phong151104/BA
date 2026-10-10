@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/retention-playbook.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/retention-playbook.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
 # Retention playbook
 
 How to run one retention wave with the recommended rule: who to contact, with which offer, through which channel, at what budget, and how to know whether it worked.
@@ -19,17 +19,17 @@ The optimiser picks at most one offer per customer to maximise total EV within t
 
 ## 2. Who to contact (campaign size)
 
-| Plan | Customers (test sample of 1,409) | Budget | Expected net value | ROI |
+| Plan | Customers contacted (test sample of 1,409) | Budget | Expected net value | ROI |
 |---|---:|---:|---:|---:|
-| Base budget (10% of customers) | 152 | $3,499 | $2,420 | 69% |
-| **Recommended (24%, validation rule)** | **310** | **$8,450** | **$3,692** | **44%** |
-| All positive-EV customers | 383 | $11,378 | see profit curve | lower marginal return |
+| Base budget (standard offer for 10% of customers) | 152 (11%) | $3,499 | $2,420 | 69% |
+| **Recommended (standard offer for 24% of customers, validation rule)** | **310 (22%)** | **$8,450** | **$3,692** | **44%** |
+| All positive-EV customers | 383 (27%) | $11,378 | see profit curve | lower marginal return |
 
 Scaled to the full base of 7,043 customers (linear, indicative): about 1,550 offers, $42,238 budget and $18,454 expected net value per wave.
 
-**Budget tranches.** Release budget in steps and stop when the marginal ROI of the next step falls below 10%:
+**Budget tranches.** Release budget in steps and stop when the marginal ROI of the next step falls below 10%. The budget share is the share of customers the standard offer ($25) could reach; the optimiser mixes offers, so the number contacted differs:
 
-| Budget share | Customers | Cumulative cost | Cumulative expected net value | Marginal ROI of the step |
+| Budget share | Customers contacted | Cumulative cost | Cumulative expected net value | Marginal ROI of the step |
 |---:|---:|---:|---:|---:|
 | 4% | 71 | $1,400 | $1,283 | 75% |
 | 8% | 128 | $2,799 | $2,097 | 54% |
@@ -82,9 +82,9 @@ Every wave keeps a **random holdout** inside the target list ([pilot design](pil
 
 | Signal | Action |
 |---|---|
-| Measured save rate: lower 95% bound > 11.8% (break-even) | Go: scale to the recommended budget |
-| Point estimate above break-even but interval includes it | Extend the pilot (another wave) |
-| Point estimate below break-even, or contacted churn > holdout churn | Stop; redesign offers and targeting (consider uplift modelling) |
+| Measured save rate: 95% interval above 0 and estimate at least 13.9% (break-even of the recommended list) | Go: scale to the recommended budget |
+| Estimate at or below 0 (contacted churn >= holdout churn), or whole interval below break-even | Stop; redesign offers and targeting (consider uplift modelling) |
+| Anything else | Extend the pilot (another wave, pooled) |
 | Opt-out or complaint rate > 2x the normal campaign rate | Pause and review script and frequency |
 | Fairness review flag on the wave list | DPO and Retention owner review before launch |
 

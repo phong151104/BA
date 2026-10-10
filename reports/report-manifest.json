@@ -1,6 +1,6 @@
 {
-  "run_id": "20261010T124415068764Z-88be4b93",
-  "generated_at_utc": "2026-10-10T12:46:13.002141+00:00",
+  "run_id": "20261010T131542424757Z-88be4b93",
+  "generated_at_utc": "2026-10-10T13:17:42.544176+00:00",
   "strategy": "segment_offers",
   "scenario_id": "d081da7490e0",
   "documents": [
@@ -21,27 +21,27 @@
     "reports/presentation/qa-prep.md"
   ],
   "figure_count": 13,
-  "executive_brief_words": 731,
-  "facts_sha256": "424cbd9ccada523c28355d5aed789d4123a99dc57386117761f780a2abe0b5c7",
+  "executive_brief_words": 789,
+  "facts_sha256": "acfd82e8777910f2b9af6e428c3d8a2a4772cc2892e64340df40b5714e8a96c3",
   "template_sha256": {
     "docs/assumption-register.md.j2": "4c0e14dd952c396bb5a48efd8c895ebd7d1ad8d90a56512ed996253d4607c6a4",
-    "docs/business-case.md.j2": "894965638fc5c36f08d444f5395b5674562ee12b76d7cb46e4fb7632d6342460",
+    "docs/business-case.md.j2": "df1a852284b902c1699fe37fe4fd7b7d15ef07b145e45807c1202ed34f97ebbf",
     "docs/cleaning-log.md.j2": "48554051b062448e8a5ffe390b1a11f33ca38fd7f1e1a0ad274914c3de21f1f7",
     "docs/data-dictionary.md.j2": "d282cf86a00771e7042b30ffa88a3e57e15c6bad7c51e22774604c336898cb21",
     "docs/data-readiness-review.md.j2": "035b13b6df5581b03a97b76e9f7cfed8f0522e07fc98189314c2e2c2e0ea0851",
-    "docs/governance-and-risks.md.j2": "6caa60532eda7fb0ea9d07a5a2d3589daf34a50d4b2d437c5a995ddb15662d06",
-    "docs/model-card.md.j2": "46ddacdbcee579877122d1038f07c47c7181575bd27dcd63d026fbd9e4e69aaa",
-    "docs/pilot-design.md.j2": "eab4ab317b63fb8f0a0df836ed2c5d04ec6f285be68bc79ab87ebbae56eb4036",
-    "docs/retention-playbook.md.j2": "6bc645502dac5cc83fad470b96f121f4ae558031c9ab76d3f543cae9a0a45411",
+    "docs/governance-and-risks.md.j2": "e359815efa1264a2a1263e01a546ce012951fa93f380a82858ba14ec12d3f435",
+    "docs/model-card.md.j2": "9250a1f782b11608a2f3da887d11f622c5c27040f32e43927b0713a553ac1539",
+    "docs/pilot-design.md.j2": "dd2b886922543b7c7d75aa77d215460bd7c7c925eb09dde002da9e3cfc254027",
+    "docs/retention-playbook.md.j2": "93b806a2db9012bf6c50b03c5037826c3bd10db10c5863721c8f5c46d140aa15",
     "docs/source-log.md.j2": "d2537ea661498567c90f74abab071e5096751c1db620b29abbfcdc7eaa6191a7",
     "notebooks/01-data-eda.md.j2": "ccc757c69ba328a3465d8f5d04e8dd1fa3b0d4b7f808c8bfca81120403672a9b",
     "notebooks/02-models-validation.md.j2": "61dfb35f63574676acb46e1f9855b1d184de2be425ff25db274eeae132fdda39",
     "notebooks/03-targeting.md.j2": "83f93eb10cb3ddea9a6a699aea9d95533413c452e3265aa1ead2bccaba288a13",
-    "notebooks/04-sensitivity-fairness.md.j2": "27e9887fb15887e3fadb25078f95b8fc91e70c2401fba95d47c12c290ad73b23",
-    "presentation/deck.md.j2": "62fed194a96531f6c8fb722f5f98d2e0854cc8c074cd3d4b407b4d14b7ebbae3",
+    "notebooks/04-sensitivity-fairness.md.j2": "6970b5dc6bf86fecae1eb2978beda63bec6dc18a4dcab1afcafff766d94fa6c6",
+    "presentation/deck.md.j2": "43b6cafd4343068dfd1623f9ab2503600f4039d977733b55535a7ca1b700ce96",
     "presentation/demo-script.md.j2": "3412ddf1bfd9f2f23d5a0911689524d01a9ab9498a954a43626f964ec22f8cb6",
-    "presentation/qa-prep.md.j2": "bbbb4c5476fede3bf4692948312c7ddc80a74783a9f96e9b27828544fd13508e",
-    "reports/analysis-report.md.j2": "f8e7d1115262a53858f19a4a10245e005c5c554b976af46b860a2db7bc599df3",
-    "reports/executive-brief.md.j2": "f2eda6b1cb84fffd113b9f8522bcb471f573bf1616361786f9554d2b2d6f9af2"
+    "presentation/qa-prep.md.j2": "3f8e2002921c95723bccc9ecf09532fea9aa622d31401e55012e98232a30c674",
+    "reports/analysis-report.md.j2": "cd312cf726abaa359e549bc2d8f7b281ebd0f48796467be643c451860abc5150",
+    "reports/executive-brief.md.j2": "83a7d883e49f7b0ca181d4671d54062ab5095962ce37ac01698addb19e5f9676"
   }
 }

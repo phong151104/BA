@@ -1,0 +1,482 @@
+{
+  "run_id": "20261010T131258449942Z-88be4b93",
+  "selected_model": "logistic",
+  "threshold": 0.35000000000000003,
+  "seed": 42,
+  "created_at": "2026-10-10T13:13:21.622053+00:00",
+  "source_sha256": "88be4b93fbe0cc83421af1c503794c97c342eca914c1576db7c276e61d61358a",
+  "config": {
+    "seed": 42,
+    "cv_folds": 5,
+    "search_iterations": 12,
+    "bootstrap_iterations": 1000,
+    "random_campaign_iterations": 100,
+    "currency": "USD",
+    "assumptions_version": "v2",
+    "solver": {
+      "time_limit_seconds": 30,
+      "mip_rel_gap": 0.0
+    },
+    "segments": {
+      "high_risk_quantile": 0.75,
+      "high_value_quantile": 0.75
+    },
+    "value": {
+      "margin": 0.3,
+      "base_horizon_months": 12,
+      "horizon_cap_months": 24,
+      "tenure_factors": {
+        "new": 0.75,
+        "developing": 1.0,
+        "loyal": 1.25
+      },
+      "discount_rate_annual": 0.1
+    },
+    "campaign": {
+      "default_offer": "standard",
+      "budget_share": 0.1,
+      "max_contact_share": 0.3,
+      "strategy_selection": {
+        "candidates": [
+          "ev",
+          "segment_offers"
+        ],
+        "min_relative_gain": 0.05
+      },
+      "recommendation": {
+        "share_grid": {
+          "start": 0.0,
+          "stop": 0.6,
+          "step": 0.02
+        },
+        "min_marginal_roi": 0.1
+      }
+    },
+    "offers": [
+      {
+        "offer_id": "standard",
+        "label": "One-time $20 bill credit",
+        "offer_cost": 20.0,
+        "contact_cost": 5.0,
+        "save_rate": 0.2,
+        "eligibility": {}
+      },
+      {
+        "offer_id": "contract_upgrade",
+        "label": "$35 credit for moving to a 1-year contract",
+        "offer_cost": 35.0,
+        "contact_cost": 5.0,
+        "save_rate": 0.3,
+        "eligibility": {
+          "Contract": [
+            "Month-to-month"
+          ]
+        }
+      },
+      {
+        "offer_id": "service_bundle",
+        "label": "6 months free TechSupport + OnlineSecurity",
+        "offer_cost": 12.0,
+        "contact_cost": 5.0,
+        "save_rate": 0.15,
+        "eligibility": {
+          "InternetService": [
+            "DSL",
+            "Fiber optic"
+          ],
+          "TechSupport": [
+            "No"
+          ]
+        }
+      },
+      {
+        "offer_id": "loyalty_reward",
+        "label": "$10 loyalty reward",
+        "offer_cost": 10.0,
+        "contact_cost": 5.0,
+        "save_rate": 0.1,
+        "eligibility": {
+          "tenure_segment": [
+            "loyal"
+          ]
+        }
+      }
+    ],
+    "guardrails": {
+      "audit_attributes": [
+        "gender",
+        "SeniorCitizen",
+        "tenure_segment",
+        "Contract"
+      ],
+      "reference_groups": {
+        "gender": "Male",
+        "SeniorCitizen": "0",
+        "tenure_segment": "overall",
+        "Contract": "overall"
+      },
+      "selection_ratio_alert": [
+        0.8,
+        1.25
+      ],
+      "min_group_size": 50
+    },
+    "sensitivity": {
+      "save_rate": [
+        0.05,
+        0.1,
+        0.15,
+        0.2,
+        0.25,
+        0.3,
+        0.4
+      ],
+      "offer_cost_multiplier": [
+        0.5,
+        0.75,
+        1.0,
+        1.25,
+        1.5,
+        2.0
+      ],
+      "contact_cost": [
+        1.0,
+        2.0,
+        5.0,
+        8.0,
+        10.0
+      ],
+      "value.margin": [
+        0.2,
+        0.3,
+        0.4
+      ],
+      "value.base_horizon_months": [
+        6,
+        12,
+        18,
+        24
+      ],
+      "value.discount_rate_annual": [
+        0.05,
+        0.1,
+        0.15
+      ],
+      "scenarios": {
+        "pessimistic": {
+          "save_rate": 0.1,
+          "offer_cost_multiplier": 1.25,
+          "contact_cost": 8.0,
+          "value.margin": 0.25,
+          "value.base_horizon_months": 9
+        },
+        "base": {},
+        "optimistic": {
+          "save_rate": 0.3,
+          "offer_cost_multiplier": 0.75,
+          "contact_cost": 2.0,
+          "value.margin": 0.4,
+          "value.base_horizon_months": 15
+        }
+      }
+    },
+    "pilot": {
+      "alpha": 0.05,
+      "power": 0.8,
+      "holdout_share": 0.5,
+      "base_population": 7043,
+      "outcome_window_days": 90,
+      "save_rate_grid": [
+        0.05,
+        0.1,
+        0.15,
+        0.2,
+        0.3
+      ]
+    },
+    "assumption_register": [
+      {
+        "id": "A1",
+        "parameter": "save_rate",
+        "label": "Save rate of the standard offer",
+        "unit": "share",
+        "low": 0.1,
+        "high": 0.3,
+        "sources": [
+          "verbraken2013",
+          "ascarza2016",
+          "ascarza2018"
+        ],
+        "rationale": "Share of would-be churners kept by the offer. Profit-based churn studies use a mean acceptance of 30%; we take 20% because proactive contact can backfire and high-risk customers are not always responsive.",
+        "validate_by": "Randomised holdout pilot (docs/pilot-design.md)"
+      },
+      {
+        "id": "A2",
+        "parameter": "offer_cost_multiplier",
+        "label": "Offer cost (multiplier on catalog cost)",
+        "unit": "x",
+        "low": 0.5,
+        "high": 1.5,
+        "sources": [
+          "verbraken2013",
+          "cma2020"
+        ],
+        "rationale": "Standard offer is a one-time $20 credit, about 30% of the $64.76 average monthly bill and about 8% of the average customer value; published loyalty discounts run around 10% of the bill per month.",
+        "validate_by": "Finance sign-off of the offer budget"
+      },
+      {
+        "id": "A3",
+        "parameter": "contact_cost",
+        "label": "Contact cost per customer (USD)",
+        "unit": "USD",
+        "low": 1.0,
+        "high": 10.0,
+        "sources": [
+          "gartner2019",
+          "verbraken2013",
+          "twilio2026"
+        ],
+        "rationale": "One outbound retention call plus SMS follow-up. Live-agent contacts average US$8.01; profit-metric studies use about 0.5% of customer value; SMS costs cents.",
+        "validate_by": "Call-centre cost per completed contact"
+      },
+      {
+        "id": "A4",
+        "parameter": "value.margin",
+        "label": "Contribution margin",
+        "unit": "share",
+        "low": 0.2,
+        "high": 0.4,
+        "sources": [
+          "damodaran2026margin",
+          "verizon2026",
+          "att2026",
+          "tmobile2026"
+        ],
+        "rationale": "Share of the monthly bill kept as contribution. US telecom EBITDA margins are 35-42% and gross margins about 60%, so 30% is deliberately conservative.",
+        "validate_by": "Finance (product P&L)"
+      },
+      {
+        "id": "A5",
+        "parameter": "value.base_horizon_months",
+        "label": "Value horizon (months)",
+        "unit": "months",
+        "low": 6,
+        "high": 18,
+        "sources": [
+          "gupta2004"
+        ],
+        "rationale": "Months of margin a saved customer is expected to stay. One contract year, scaled 0.75/1.0/1.25 by tenure, because a saved would-be churner is likely to churn again sooner than an average customer.",
+        "validate_by": "Survival of pilot customers after 6 and 12 months"
+      },
+      {
+        "id": "A6",
+        "parameter": "value.discount_rate_annual",
+        "label": "Annual discount rate",
+        "unit": "share",
+        "low": 0.05,
+        "high": 0.15,
+        "sources": [
+          "damodaran2026wacc",
+          "damodaran2026crp",
+          "gupta2004"
+        ],
+        "rationale": "US telecom cost of capital is about 5.4%; adding Vietnam's 3.9% country risk premium gives about 10%.",
+        "validate_by": "Finance hurdle rate"
+      }
+    ]
+  },
+  "selection_rule": "AP within 0.01 of best calibrated candidate; Brier within 0.002 of best; prefer simpler",
+  "split_counts": {
+    "train": 4225,
+    "validation": 1409,
+    "test": 1409
+  },
+  "feature_columns": [
+    "Partner",
+    "Dependents",
+    "tenure",
+    "PhoneService",
+    "MultipleLines",
+    "InternetService",
+    "OnlineSecurity",
+    "OnlineBackup",
+    "DeviceProtection",
+    "TechSupport",
+    "StreamingTV",
+    "StreamingMovies",
+    "Contract",
+    "PaperlessBilling",
+    "PaymentMethod",
+    "MonthlyCharges",
+    "TotalCharges",
+    "tenure_band",
+    "addon_count",
+    "monthly_contract",
+    "autopay"
+  ],
+  "numeric_medians": {
+    "tenure": 29.0,
+    "MonthlyCharges": 70.55,
+    "TotalCharges": 1372.45
+  },
+  "best_parameters": {
+    "logistic": {
+      "params": {
+        "model__class_weight": null,
+        "model__C": 0.1
+      },
+      "cv_average_precision": 0.6649033037297131,
+      "seconds": 3.0528341000026558
+    },
+    "random_forest": {
+      "params": {
+        "model__n_estimators": 150,
+        "model__min_samples_leaf": 15,
+        "model__max_depth": null,
+        "model__class_weight": null
+      },
+      "cv_average_precision": 0.6700883347413651,
+      "seconds": 14.735900999992737
+    },
+    "xgboost": {
+      "params": {
+        "model__subsample": 1.0,
+        "model__reg_lambda": 1,
+        "model__n_estimators": 100,
+        "model__max_depth": 3,
+        "model__learning_rate": 0.08,
+        "model__colsample_bytree": 0.8
+      },
+      "cv_average_precision": 0.6764995003696914,
+      "seconds": 4.909318100006203
+    }
+  },
+  "python": "3.13.9",
+  "dependencies": {
+    "altair": "6.3.0",
+    "anyio": "4.15.1",
+    "asttokens": "3.0.2",
+    "attrs": "26.1.0",
+    "beautifulsoup4": "4.15.0",
+    "bleach": "6.4.0",
+    "certifi": "2026.7.22",
+    "charset-normalizer": "3.5.2",
+    "click": "8.5.0",
+    "cloudpickle": "3.1.2",
+    "colorama": "0.4.6",
+    "comm": "0.2.3",
+    "contourpy": "1.4.0",
+    "cycler": "0.12.1",
+    "debugpy": "1.8.22",
+    "defusedxml": "0.7.1",
+    "docx2pdf": "0.1.8",
+    "executing": "2.2.1",
+    "fastjsonschema": "2.22.2",
+    "fonttools": "4.66.1",
+    "greenlet": "3.5.6",
+    "h11": "0.16.0",
+    "httptools": "0.8.0",
+    "idna": "3.20",
+    "iniconfig": "2.3.0",
+    "ipykernel": "7.4.0",
+    "ipython": "9.17.1",
+    "ipython_pygments_lexers": "1.1.1",
+    "itsdangerous": "2.2.0",
+    "jedi": "0.20.0",
+    "Jinja2": "3.1.6",
+    "joblib": "1.6.0",
+    "jsonschema": "4.26.0",
+    "jsonschema-specifications": "2025.9.1",
+    "jupyterlab_pygments": "0.3.0",
+    "jupyter_client": "8.10.0",
+    "jupyter_core": "5.9.1",
+    "kiwisolver": "1.5.1",
+    "llvmlite": "0.50.0",
+    "lxml": "6.1.3",
+    "MarkupSafe": "3.0.4",
+    "matplotlib": "3.11.2",
+    "matplotlib-inline": "0.2.2",
+    "mistune": "3.3.4",
+    "narwhals": "2.26.0",
+    "nbclient": "0.11.0",
+    "nbconvert": "7.17.1",
+    "nbformat": "5.11.1",
+    "nest-asyncio2": "1.7.3",
+    "numba": "0.68.0",
+    "numpy": "2.5.3",
+    "packaging": "26.3",
+    "pandas": "2.3.3",
+    "pandocfilters": "1.5.1",
+    "parso": "0.8.7",
+    "pillow": "12.3.0",
+    "pip": "26.2.1",
+    "platformdirs": "4.12.2",
+    "playwright": "1.63.0",
+    "plotly": "6.9.0",
+    "pluggy": "1.6.0",
+    "prompt_toolkit": "3.0.53",
+    "protobuf": "7.36.2",
+    "psutil": "7.2.2",
+    "pure_eval": "0.2.4",
+    "pyarrow": "25.0.1",
+    "pydeck": "0.9.3",
+    "pyee": "13.0.1",
+    "Pygments": "2.21.0",
+    "pyparsing": "3.3.3",
+    "pypdf": "6.20.0",
+    "pytest": "9.1.1",
+    "python-dateutil": "2.9.0.post0",
+    "python-docx": "1.2.0",
+    "python-multipart": "0.0.32",
+    "python-pptx": "1.0.2",
+    "pytz": "2026.4",
+    "pywin32": "312",
+    "PyYAML": "6.0.3",
+    "pyzmq": "27.2.0",
+    "referencing": "0.37.0",
+    "requests": "2.34.2",
+    "rpds-py": "2026.6.3",
+    "scikit-learn": "1.7.2",
+    "scipy": "1.17.1",
+    "shap": "0.49.1",
+    "six": "1.17.0",
+    "slicer": "0.0.8",
+    "soupsieve": "2.10",
+    "stack-data": "0.6.3",
+    "starlette": "1.7.0",
+    "streamlit": "1.65.0",
+    "tabulate": "0.10.0",
+    "telco-retention": "2.0.0",
+    "threadpoolctl": "3.7.0",
+    "tinycss2": "1.5.1",
+    "toml": "0.10.2",
+    "tornado": "6.5.10",
+    "tqdm": "4.70.1",
+    "traitlets": "5.16.1",
+    "typing_extensions": "4.16.0",
+    "tzdata": "2026.5",
+    "urllib3": "2.8.0",
+    "uvicorn": "0.54.0",
+    "watchdog": "6.0.0",
+    "wcwidth": "0.9.1",
+    "webencodings": "0.6.1",
+    "websockets": "17.1",
+    "xgboost": "3.4.1",
+    "xlsxwriter": "3.2.9"
+  },
+  "code_sha256": {
+    "src\\telco_retention\\analysis.py": "f194c2bc0835bbb35c8bb317d27a627b5a31a3567298cb4a946019beba29be95",
+    "src\\telco_retention\\business.py": "eaf4fa79549139c32d33cfd0185b284a34cf49ae52afdc9e74c500724bc3c466",
+    "src\\telco_retention\\common.py": "62b5b34598926132d84546562b398409b57ea89e98e167d92cd834169ce4ab45",
+    "src\\telco_retention\\data.py": "559d1d042f632e05cb309b3b0586fab575727c7ade2f830721ab0a65ec57e6a7",
+    "src\\telco_retention\\export.py": "5de8d9c7133ee038f8c6f5934d809f2884424ecd1b435740f29a909f86e5f700",
+    "src\\telco_retention\\facts.py": "c9f16afbbcfb5b434638ace16551a0297918f4a65ba6653d399653780614e2b2",
+    "src\\telco_retention\\figures.py": "28b7c74d4b73d94120769ffabda8150e899dae53e7c2ed8a289fd688f91d5e77",
+    "src\\telco_retention\\modeling.py": "0d9fd1c266d7974f92f17bd682c0af8a1c2b728b5ab09cc02ff4f2d6942594a8",
+    "src\\telco_retention\\notebooks.py": "9f6b7886343f8075183d4c9874f5540e111d5f003c825b855cf3dc299a9ec5d2",
+    "src\\telco_retention\\reporting.py": "924e2d5050db15a7bbb1dcf43f4630450ad81593f4d2956e5191d10cf2cb346d",
+    "src\\telco_retention\\templating.py": "f88f5055c43c69d9004e7a26e5eba596373b85d1981c54aabe06d18dc178813d",
+    "src\\telco_retention\\__init__.py": "4ee671abbf5266f51ac5660ed8611186d5354e1dd01410533de23adbe81d8dcc",
+    "src\\telco_retention\\__main__.py": "9cf53737bcf9a5a8cb10cbc2e537068028476db6128ae020951a8bacb12374f8"
+  }
+}

@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/presentation/deck.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/presentation/deck.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
 # Who should get a retention offer?
 ## Profit-aware churn and retention targeting - Business Analytics capstone, Topic 7
 
@@ -69,33 +69,33 @@ Notes: Worked example: a customer paying 70 dollars a month is worth about $239;
 ---
 
 # Same budget, more value
-| Rule | Customers | Net value | ROI | HR/HV coverage |
-|---|---|---|---|---|
-| Highest churn risk | 140 | $1,098 | 31% | 4% |
-| Expected value | 140 | $2,130 | 61% | 96% |
-| EV + segment offers | 152 | $2,420 | 69% | 100% |
+| Rule | Customers | Net value | ROI | Precision | HR/HV coverage |
+|---|---|---|---|---|---|
+| Highest churn risk | 140 | $1,098 | 31% | 70% | 4% |
+| Expected value | 140 | $2,130 | 61% | 62% | 96% |
+| EV + segment offers | 152 | $2,420 | 69% | 60% | 100% |
 
 - Better targeting: +$1,032; with actual outcomes +$1,308 (95% CI $509 to $2,153)
 
-Notes: Same customers, same budget, same assumptions. Risk-only has higher precision but lower value. Segment offers add $290 only under assumed save rates; with actual outcomes that extra gain is not distinguishable from zero, so the pilot must test offers.
+Notes: Same customers, same budget, same assumptions. Precision is the share of contacted customers who actually churned; HR/HV coverage is the share of high-risk, high-value customers reached. Risk-only has higher precision but lower value. Segment offers add $290 only under assumed save rates; with actual outcomes that extra gain is not distinguishable from zero, so the pilot must test offers.
 
 ---
 
 # How much to spend
 ![](../figures/profit_curve.png)
 
-- Recommended: 24% of customers (chosen on validation)
-- Test: 310 offers, $8,450, net $3,692 (ROI 44%)
+- Recommended budget: $6.00 per customer in the base (chosen on validation)
+- Test: 310 offers (22% of customers), $8,450, net $3,692 (ROI 44%)
 - Stop adding budget when the next step earns less than 10%
 
-Notes: Each extra step of budget reaches customers with lower expected value. Beyond about 27% of customers nobody has positive expected value, so spending more destroys value.
+Notes: The x-axis is the budget as the share of customers the standard offer could reach; the recommended budget equals the standard offer for 24% of customers, about $42,238 for the whole base. Each extra step reaches customers with lower expected value. Beyond 27% of customers contacted nobody has positive expected value, so spending more destroys value.
 
 ---
 
 # How robust is it?
 ![](../figures/tornado.png)
 
-- Break-even save rate 11.8% (assumed 20%)
+- Break-even save rate 11.8% at the base budget, 13.9% at the recommended budget (assumed 20%)
 - Pessimistic $0 (no campaign) / base $2,420 / optimistic $18,525
 - Below 8.9% save rate: run no campaign
 
@@ -125,19 +125,19 @@ Notes: We are explicit about what the analysis cannot claim. The course forbids 
 ---
 
 # The pilot measures what we assumed
-- One wave: 1,690 customers, 845 offered, 845 held out at random
+- One wave: 1,550 customers, 775 offered, 775 held out at random
 - Outcome: churn after 90 days; save rate = 1 - churn(offered) / churn(holdout)
-- Detects a save rate of about 11% or more in one wave
-- Offer and contact cost about $23,033
+- Detects a save rate of about 12% or more in one wave; break-even is 13.9%
+- Offer and contact cost about $21,125
 
-Notes: Randomising inside the target list gives the causal effect we could not estimate from the data. Each offer is its own arm. Measured save rates replace assumptions in the configuration and the whole analysis re-runs.
+Notes: The wave is the recommended list scaled to the 7,043-customer base (22% of customers). Randomising inside the target list gives the causal effect we could not estimate from the data. Each offer is its own arm. Measured save rates replace assumptions in the configuration and the whole analysis re-runs.
 
 ---
 
 # Decisions requested
-- Approve one pilot wave sized at 24% of the base, half held out
+- Approve one pilot wave: 1,550 customers, half held out, about $21,125
 - Name owners: Retention, Call centre, Finance, Legal/DPO
-- Agree the go rule now: scale only if the save rate's lower 95% bound is above 11.8%
+- Agree the rule now: go if the effect is significant and at least 13.9%; else stop or extend
 - Live demo: dashboard - KPIs, action list, scenarios
 
-Notes: Close with the ask. Then switch to the dashboard demo: change the save rate and budget, show the KPIs and the action list update, export the campaign file with its scenario ID.
+Notes: Close with the ask. If the true save rate is 20%, the rule says go after one wave 94% of the time; the significance test protects against acting on noise, the break-even test protects the budget. Then switch to the dashboard demo: change the save rate and budget, show the KPIs and the action list update, export the campaign file with its scenario ID.

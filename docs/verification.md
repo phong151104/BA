@@ -6,8 +6,8 @@ Final release checks on 2026-10-10, Windows 11, Python 3.13.9, environment insta
 
 | Run | Role |
 |---|---|
-| `20261010T124155118613Z-88be4b93` | Run A: first complete `run-all` with the final code and configuration |
-| `20261010T124415068764Z-88be4b93` | Run B: second complete `run-all`, current (`artifacts/latest.json`); all reports use it |
+| `20261010T131258449942Z-88be4b93` | Run A: first complete `run-all` with the final code and configuration |
+| `20261010T131542424757Z-88be4b93` | Run B: second complete `run-all`, current (`artifacts/latest.json`); all reports use it |
 
 Earlier development runs were pruned with `python -m telco_retention prune --keep 2`; they remain in git history.
 
@@ -16,14 +16,15 @@ Earlier development runs were pruned with `python -m telco_retention prune --kee
 | Check | Command | Result |
 |---|---|---|
 | Dependencies | `pip check` | No broken requirements |
-| Automated tests | `pytest -q --junitxml artifacts/qa/pytest.xml` | **97 passed**, 0 failed, 0 errors (77 s) |
+| Automated tests | `pytest -q --junitxml artifacts/qa/pytest.xml` | **99 passed**, 0 failed, 0 errors (79 s) |
 | Notebooks | `scripts/verify_notebooks.py` | 4/4 committed notebooks executed for run B with no errors; re-executed copies in `artifacts/qa/notebooks/` ([notebooks.json](../artifacts/qa/notebooks.json)) |
-| Release | `scripts/verify_release.py` | Passed ([release.json](../artifacts/qa/release.json)): 27 required artifacts, sizes derived from configuration, code hashes unchanged since training, 15 documents identical to a fresh render of the templates, no broken relative links |
+| Release | `scripts/verify_release.py` | Passed ([release.json](../artifacts/qa/release.json)): 27 required artifacts, sizes derived from configuration, only registered figures in `reports/figures`, pilot sized from the recommended list and tested against its break-even, code hashes unchanged since training, 15 documents identical to a fresh render of the templates, no broken relative links |
 | Reproducibility | part of `verify_release.py` | Run A vs run B: test metrics equal (absolute tolerance 1e-10), identical selected customers and offers for both expected-value strategies, identical scenario IDs |
-| Submission files | `python -m telco_retention export --pdf require` | Executive brief 717 words, **2 pages** as PDF (Word); deck **13 slides, all with speaker notes**, deck lint clean, PDF 13 pages ([deliverables manifest](../reports/deliverables-manifest.json)) |
-| Dashboard (headless) | part of `verify_release.py` | Warmed recalculation after a budget change: max 0.53 s |
+| Submission files | `python -m telco_retention export --pdf require` | Executive brief 775 words, **2 pages** as PDF (Word); deck **13 slides, all with speaker notes**, deck lint clean, PDF 13 pages ([deliverables manifest](../reports/deliverables-manifest.json)) |
+| Dashboard (headless) | part of `verify_release.py` | Warmed recalculation after a budget change: max 0.85 s |
 | Dashboard (browser) | `scripts/browser_qa.py` with Chrome | Passed 8 checks ([browser.json](../artifacts/qa/browser.json)): five KPIs and the report's scenario ID on Overview; budget 0 and restore; ZIP export with list, assumptions and scenario ID; model page with separate challenger SHAP; custom budget survives navigation; scenario analysis computed; CSV upload scored with ID-overlap notice; contradictory and invalid CSVs rejected |
 | Visual review | screenshots and rendered PDF pages | Brief, deck slides and the four dashboard pages inspected; issues found and fixed during review: money rendered as LaTeX in Streamlit markdown, money columns without thousands separators, profit-curve colours not following the strategy colours, truncated KPI labels |
+| Requirements review | course brief re-read item by item against the repository | Fixed: 11 obsolete Vietnamese-labelled figures from pruned runs; pilot sized from the budget share instead of customers contacted (1,690 instead of 1,550); go rule tested against the base list's break-even (11.8%) instead of the recommended list's (13.9%) and not matched to the power calculation; ambiguous "24% of the base" budget wording; raw JSON scenario assumptions in the report |
 
 Screenshots: [overview](../artifacts/qa/dashboard-overview.png), [campaign builder](../artifacts/qa/dashboard-campaign.png), [scenarios](../artifacts/qa/dashboard-scenarios.png), [model & data](../artifacts/qa/dashboard-model.png), [upload](../artifacts/qa/dashboard-upload.png).
 
@@ -43,7 +44,8 @@ Screenshots: [overview](../artifacts/qa/dashboard-overview.png), [campaign build
 |---|---|
 | Deployed model | Calibrated logistic regression; ROC-AUC 0.831, PR-AUC 0.619, ECE 0.020 |
 | Same $3,500 budget | Risk-only $1,098; expected value (standard offer) $2,130; expected value + segment offers (recommended on validation) $2,420 |
-| Recommended budget | 24% of customers (validation rule): $8,450 for $3,692 expected net value on test |
-| Break-even save rate | 11.8% (assumed 20%) |
+| Recommended budget | Standard offer for 24% of customers (validation rule): $8,450 buys 310 offers (22% of test customers) for $3,692 expected net value |
+| Break-even save rate | 11.8% for the base-budget list, 13.9% for the recommended list (assumed 20%) |
+| Pilot | 1,550 customers (775 offered, 775 held out), about $21,125; go after one wave with probability 94% if the true save rate is 20% |
 
 All figures are expected values under the documented assumptions; see the [assumption register](assumption-register.md) and the [analysis report](../reports/analysis-report.md).

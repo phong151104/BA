@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/presentation/qa-prep.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/presentation/qa-prep.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
 # Questions to expect, and short answers
 
 **1. Is this causal? Do your offers actually reduce churn?**
@@ -20,7 +20,7 @@ Partly, so we also evaluate with actual churn labels: the targeting gain over ri
 No. Model, threshold, risk/value cut-offs, offer strategy and budget recommendation were all chosen on validation; test was scored once. Reproducibility checks compare two complete runs.
 
 **7. How was the budget chosen?**
-The course fixes a budget (10% of customers x standard offer). For the stretch goal we traced the profit curve and chose, on validation, the largest budget whose last step still returns 10%: 24% of customers.
+The course fixes a budget (10% of customers x standard offer). For the stretch goal we traced the profit curve and chose, on validation, the largest budget whose last step still returns 10%: enough for the standard offer to 24% of customers, which buys 310 mixed offers (22% of customers) on test.
 
 **8. Is the 26.5% churn rate realistic?**
 No. US carriers report about 1% monthly postpaid churn in 2025. The IBM sample is fictional and describes its churn window inconsistently. Our numbers demonstrate the method; magnitudes must be re-estimated on real data.

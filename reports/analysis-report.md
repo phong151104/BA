@@ -1,15 +1,15 @@
-<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
 # Analysis report: profit-aware churn and retention targeting
 
-Run `20261010T124415068764Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
+Run `20261010T131542424757Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
 
 ## 1. Summary
 
 - **Question:** with a limited retention budget, which customers should receive an offer when both churn risk and economic value count?
 - **Answer:** rank customers by expected net value of an offer (p(churn) x save rate x value - cost), let an optimiser pick the customer-offer combination within budget, and size the budget where the marginal return falls below 10%.
 - **Impact (test split, same $3,500 budget):** expected value + segment offers $2,420 vs $1,098 for risk-only targeting (+$1,322); label-based check of the targeting gain $1,308 (95% interval $509 to $2,153).
-- **Budget:** 24% of the base (validation rule) gives $3,692 on test from $8,450.
-- **Main risk:** the save rate is assumed. Break-even 11.8% vs assumed 20%; a randomised pilot measures it before scale-up.
+- **Budget:** $6.00 per customer in the base (enough for the standard offer to 24% of customers; validation rule) buys 310 offers on test (22% of customers) for $8,450 and $3,692 expected net value.
+- **Main risk:** the save rate is assumed. Break-even 11.8% for the base-budget list and 13.9% for the recommended list, vs assumed 20%; a randomised pilot measures it before scale-up.
 
 ## 2. Business question and decision
 
@@ -121,12 +121,12 @@ The challenger XGBoost model is explained with SHAP; its leading features (month
 
 | Assumption | Low | High | Net at low | Net at high | Frozen list at low | Frozen list at high |
 | --- | --- | --- | ---: | ---: | ---: | ---: |
-| Save rate of the standard offer | 0.1 | 0.3 | $326 | $6,050 | -$588 | $5,428 |
-| Value horizon (months) | 6.0 | 18.0 | $51 | $5,163 | -$465 | $5,163 |
-| Offer cost (multiplier on catalog cost) | 0.5 | 1.5 | $5,724 | $1,015 | $3,790 | $1,051 |
-| Contribution margin | 0.2 | 0.4 | $465 | $4,393 | $447 | $4,393 |
-| Contact cost per customer (USD) | 1.0 | 10.0 | $3,617 | $1,615 | $3,028 | $1,660 |
-| Annual discount rate | 0.05 | 0.15 | $2,578 | $2,275 | $2,578 | $2,274 |
+| Save rate of the standard offer | 10% | 30% | $326 | $6,050 | -$588 | $5,428 |
+| Value horizon (months) | 6 months | 18 months | $51 | $5,163 | -$465 | $5,163 |
+| Offer cost (multiplier on catalog cost) | x0.5 | x1.5 | $5,724 | $1,015 | $3,790 | $1,051 |
+| Contribution margin | 20% | 40% | $465 | $4,393 | $447 | $4,393 |
+| Contact cost per customer (USD) | $1 | $10 | $3,617 | $1,615 | $3,028 | $1,660 |
+| Annual discount rate | 5% | 15% | $2,578 | $2,275 | $2,578 | $2,274 |
 
 ![Tornado](figures/tornado.png)
 
@@ -138,24 +138,24 @@ The challenger XGBoost model is explained with SHAP; its leading features (month
 
 | Scenario | Assumptions | Customers | Net (re-optimised) | Net (frozen list) |
 |---|---|---:|---:|---:|
-| Pessimistic | `{"save_rate": 0.1, "offer_cost_multiplier": 1.25, "contact_cost": 8.0, "value.margin": 0.25, "value.base_horizon_months": 9}` | 0 | $0 | -$2,797 |
-| Base | `{}` | 152 | $2,420 | $2,420 |
-| Optimistic | `{"save_rate": 0.3, "offer_cost_multiplier": 0.75, "contact_cost": 2.0, "value.margin": 0.4, "value.base_horizon_months": 15}` | 313 | $18,525 | $12,338 |
+| Pessimistic | save rate 10%, offer cost x1.25, contact cost $8, margin 25%, value horizon 9 months | 0 | $0 | -$2,797 |
+| Base | assumptions as registered | 152 | $2,420 | $2,420 |
+| Optimistic | save rate 30%, offer cost x0.75, contact cost $2, margin 40%, value horizon 15 months | 313 | $18,525 | $12,338 |
 
-**Break-even.** The recommended list breaks even at a standard-offer save rate of **11.8%** (all offers scaled proportionally) or at offer costs 1.88x today's; below a save rate of 8.9%, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
+**Break-even.** The base-budget list breaks even at a standard-offer save rate of **11.8%** (all offers scaled proportionally) or at offer costs 1.88x today's; the larger recommended list (section 8) breaks even at **13.9%**, because its extra customers have lower expected value; below a save rate of 8.9%, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
 
 ## 8. How much to spend
 
 ![Profit curve](figures/profit_curve.png)
 
-Expected net value rises with the budget at a falling marginal return. The recommendation rule (largest budget whose last step still earns 10%) was applied on validation and chose **24%** of customers (net-maximising share on validation: 32%). Applied to test:
+Expected net value rises with the budget at a falling marginal return. The recommendation rule (largest budget whose last step still earns 10%) was applied on validation and chose a budget of **24%** (net-maximising budget on validation: 32%). Budgets are expressed as the share of customers the standard offer could reach ($25 each); because the optimiser mixes cheaper and dearer offers, the share actually contacted differs. Applied to test:
 
-| Budget | Customers | Cost | Expected net value | ROI | Label-based net |
+| Budget | Customers contacted | Cost | Expected net value | ROI | Label-based net |
 |---|---:|---:|---:|---:|---:|
-| Base (10%) | 152 | $3,499 | $2,420 | 69% | $2,056 |
-| Recommended (24%) | 310 | $8,450 | $3,692 | 44% | $3,286 |
+| Base (10%) | 152 (11%) | $3,499 | $2,420 | 69% | $2,056 |
+| Recommended (24%) | 310 (22%) | $8,450 | $3,692 | 44% | $3,286 |
 
-Beyond about 27% of customers (383 on test, $11,378) no customer has positive EV and extra budget should stay unspent. Scaled to the 7,043-customer base, the recommended wave is about $42,238 for $18,454 expected net value (linear scaling, indicative only).
+Beyond 383 contacts on test (27% of customers, $11,378) no customer has positive EV and extra budget should stay unspent. Scaled to the 7,043-customer base, the recommended wave is about 1,550 customers and $42,238 for $18,454 expected net value (linear scaling, indicative only).
 
 ## 9. Fairness and customer experience
 
@@ -179,8 +179,8 @@ Gender and seniority are not model inputs. Full table: [fairness.csv](tables/fai
 
 ## 11. Recommendations and next steps
 
-1. Adopt expected-value targeting (expected value + segment offers) for the next wave, sized at 24% of the base.
-2. Run it as a randomised pilot: 1,690 customers, half held out, 90-day outcome ([pilot design](../docs/pilot-design.md)); go only if the measured save rate's lower bound exceeds 11.8%.
+1. Adopt expected-value targeting (expected value + segment offers) for the next wave, with the recommended budget ($6.00 per customer in the base).
+2. Run it as a randomised pilot: 1,550 customers, half held out, 90-day outcome ([pilot design](../docs/pilot-design.md)); go if the offer effect is significant and the measured save rate is at least the list's break-even of 13.9% (probability of go 94% if the true save rate is 20%).
 3. Replace assumed save rates, margin and costs with measured values; re-run the pipeline.
 4. Retrain on own data with time-based validation; after several waves, move to uplift targeting.
 5. Operate under the controls in [governance and risks](../docs/governance-and-risks.md) and the [retention playbook](../docs/retention-playbook.md).

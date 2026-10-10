@@ -1,11 +1,11 @@
-<!-- Generated from src/telco_retention/templates/reports/executive-brief.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/reports/executive-brief.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
 # Executive brief: profit-aware retention targeting
 
 **To:** Head of Customer Retention | **From:** Retention analytics team | **Decision requested:** approve a 90-day retention pilot
 
 ## Recommendation
 
-Stop allocating the retention budget to "the customers most likely to leave". Allocate it to the customers for whom **churn risk x customer value x the offer's save rate** most exceeds the cost of the offer, and give each customer an offer their segment qualifies for. Start with a **randomised pilot**: one wave of 1,690 customers (24% of the 7,043-customer base), with half held out as a control group. Scale up only if the measured save rate clears the **11.8% break-even**.
+Stop allocating the retention budget to "the customers most likely to leave". Allocate it to the customers for whom **churn risk x customer value x the offer's save rate** most exceeds the cost of the offer, and give each customer an offer their segment qualifies for. Start with a **randomised pilot** on the recommended list: one wave of 1,550 customers (22% of the 7,043-customer base), half held out as a control group. Scale up only if the measured save rate clears that list's **13.9% break-even**.
 
 ## Why: the same budget returns more
 
@@ -24,14 +24,14 @@ Results for 1,409 held-out customers with a fixed $3,500 budget (enough to offer
 
 ## How much to spend
 
-Each extra budget step returns less (figure). We keep only the steps that still earn at least a 10% marginal return; this was decided on validation data. That rule recommends a budget of **24% of the base**. On the test customers this means 310 offers for $8,450, an expected net value of $3,692 (ROI 44%). Above about 27% of the base, no remaining customer has positive expected value, so further budget should not be spent.
+Each extra budget step returns less (figure). We keep only the steps that still earn at least a 10% marginal return; this was decided on validation data. That rule recommends **$6.00 per customer in the base** (enough for the standard offer to 24% of customers; about $42,238 for all 7,043). On the test customers this buys 310 offers (22% of customers) for $8,450, an expected net value of $3,692 (ROI 44%). Beyond 27% of customers contacted, nobody left has positive expected value, so further budget should not be spent.
 
 ![Profit curve](figures/profit_curve.png)
 
 ## How sure are we?
 
-- **The model ranks customers well:** ROC-AUC 0.83, PR-AUC 0.62 (random contact: 0.27). Probabilities are off by 2.0% on average. It predicts who leaves, not who an offer would keep.
-- **Break-even:** the plan stays profitable while the true save rate is above **11.8%**; we assume 20%. Below 8.9% nobody is worth contacting.
+- **The model ranks customers well:** ROC-AUC 0.83, PR-AUC 0.62 (random contact: 0.27). Predicted churn is within 2.0 percentage points of observed churn on average. It predicts who leaves, not who an offer would keep.
+- **Break-even:** the base-budget list stays profitable while the true save rate is above **11.8%**, the larger recommended list above **13.9%**; we assume 20%. Below 8.9% nobody is worth contacting.
 - **Scenarios:** expected net value is $0 pessimistic (no campaign is run), $2,420 base and $18,525 optimistic. A list frozen under the pessimistic case would lose $2,797.
 - **Biggest uncertainties:** save rate of the standard offer and value horizon (months).
 
@@ -44,6 +44,6 @@ Each extra budget step returns less (figure). We keep only the steps that still 
 
 ## Decisions requested
 
-1. Approve one pilot wave: 845 customers contacted and 845 held out. Offer and contact budget about $23,033.
+1. Approve one pilot wave: 775 customers contacted and 775 held out. Offer and contact budget about $21,125.
 2. Name owners: Retention (offers and script), Call centre (capacity), Finance (margin and offer cost), Legal/DPO (consent and DPIA).
-3. Agree the go/no-go rule now. Scale to 24% of the base only if, after 90 days, the lower 95% bound of the measured save rate is above 11.8%.
+3. Agree the decision rule now. After 90 days: **go** (scale to the recommended budget) if the offer effect is statistically significant and the measured save rate is at least 13.9%; **stop** if it is clearly below; otherwise run one more wave. If the true save rate is 20%, this rule says go 94% of the time.

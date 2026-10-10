@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/model-card.md.j2 for run 20261010T124415068764Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/model-card.md.j2 for run 20261010T131542424757Z-88be4b93. Edit the template, not this file. -->
 # Model and analysis card
 
 Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.md#mitchell2019)].
@@ -7,12 +7,12 @@ Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.m
 
 | Item | Value |
 |---|---|
-| Name / version | Retention Lab churn scorer, run `20261010T124415068764Z-88be4b93` |
+| Name / version | Retention Lab churn scorer, run `20261010T131542424757Z-88be4b93` |
 | Deployed model | Calibrated Logistic Regression (sigmoid / Platt scaling on out-of-fold predictions) |
 | Challengers | Random Forest and XGBoost (gradient boosting), each raw and calibrated; prior-only baseline |
 | Decision layer | Expected-value targeting with a fixed budget and offer optimisation (`telco_retention.business`) |
 | Owner | Retention analytics team; business owner: Head of Customer Retention |
-| Created | 2026-10-10T12:44:36 UTC, Python 3.13.9; code and dependency hashes in the run manifest |
+| Created | 2026-10-10T13:16:04 UTC, Python 3.13.9; code and dependency hashes in the run manifest |
 
 ## 2. Intended use
 
@@ -48,7 +48,7 @@ Partner, Dependents, tenure, PhoneService, MultipleLines, InternetService, Onlin
 | PR-AUC (average precision) | 0.619 | 0.568 - 0.669 | Random contact scores 0.265 [[saito2015](references.md#saito2015)] |
 | ROC-AUC | 0.831 | 0.808 - 0.852 | Probability a churner outranks a non-churner |
 | Brier score | 0.142 | 0.131 - 0.153 | Prior-only baseline: 0.195 |
-| Expected calibration error | 0.020 | 0.017 - 0.047 | Average gap between predicted and observed churn (10 bins) [[guo2017](references.md#guo2017)] |
+| Expected calibration error | 0.020 | 0.017 - 0.047 | Average gap between predicted and observed churn (10 bins) [[guo2017](references.md#guo2017)]. ECE is biased upward in small resamples, so its bootstrap interval sits mostly above the point estimate |
 | Calibration slope | 0.93 | 0.82 - 1.05 | Target 1 [[vancalster2019](references.md#vancalster2019)] |
 | Calibration intercept | -0.022 | -0.164 - 0.127 | Target 0 |
 | Precision / recall at 0.35 | 54.4% / 70.9% | | Threshold metrics, for comparison only |
