@@ -1,36 +1,36 @@
-# Tài liệu dự án Business Analytics Capstone
+# Documentation index
 
-Thư mục này là nơi lưu các yêu cầu và định hướng triển khai chính thức của dự án.
+Documents marked *(generated)* are rendered from templates in `src/telco_retention/templates/` with the numbers of the latest run; edit the template, then run `python -m telco_retention report`.
 
-## Danh mục tài liệu
+## For managers
 
-1. [Yêu cầu chung và kế hoạch 6 tuần](./01-capstone-requirements.md)
-   - Mục tiêu và nguyên tắc thực hiện
-   - Bộ hồ sơ bắt buộc
-   - Kế hoạch làm việc 6 tuần
-   - Checklist trước khi nộp
+- [Executive brief](../reports/executive-brief.md) *(generated)* - also as [DOCX](../reports/executive-brief.docx) and [PDF](../reports/executive-brief.pdf), two pages
+- [Business case and problem statement](business-case.md) *(generated)*
+- [Retention playbook](retention-playbook.md) *(generated)*
+- [Pilot design](pilot-design.md) *(generated)*
+- [Governance, monitoring and risk register](governance-and-risks.md) *(generated)*
+- [Presentation deck](../reports/presentation/retention-deck.pptx), [deck outline with notes](../reports/presentation/deck.md), [demo script](../reports/presentation/demo-script.md), [Q&A preparation](../reports/presentation/qa-prep.md) *(generated)*
+- [Glossary](glossary.md)
 
-2. [Đặc tả đề tài Telecom Churn & Retention Targeting](./02-telecom-churn-project-brief.md)
-   - Câu hỏi kinh doanh
-   - Dữ liệu và phạm vi phân tích
-   - Mô hình tối thiểu bắt buộc
-   - Chỉ số thành công, sản phẩm bàn giao và giới hạn phạm vi
+## Analysis and evidence
 
-## Sản phẩm đã triển khai
+- [Analysis report](../reports/analysis-report.md) *(generated)* - full storyline with figures
+- [Model and analysis card](model-card.md) *(generated)*
+- [Assumption register](assumption-register.md) *(generated)*
+- [Literature review](literature-review.md) and [references](references.md)
+- Notebooks: [01 data and EDA](../notebooks/01-data-eda.ipynb), [02 models and validation](../notebooks/02-models-validation.ipynb), [03 targeting](../notebooks/03-targeting.ipynb), [04 sensitivity, fairness and pilot](../notebooks/04-sensitivity-fairness.ipynb) *(generated, executed)*
+- Tables: [reports/tables](../reports/tables) - churn scorecard (`scorecard.csv`), customer-level targeting tables (`targeting_*.csv`), and every analysis table
 
-- [Chạy ứng dụng và pipeline](../README.md)
-- [Hồ sơ phân tích đầy đủ cho báo cáo và slide](../reports/analysis-report.md)
-- [Executive brief](../reports/executive-brief.md)
-- [Data dictionary](data-dictionary.md), [source log](source-log.md), [cleaning log](cleaning-log.md)
-- [Model/analysis card](model-card.md)
-- [Retention playbook](retention-playbook.md)
-- [Hướng dẫn sử dụng](user-guide.md)
-- [Kiến trúc triển khai](implementation.md)
-- [Hồ sơ nghiệm thu](verification.md)
-- [Cải tiến sau review và bằng chứng kiểm chứng](review-improvements.md)
+## Data
 
-## Cập nhật và truy vết
+- [Data readiness review](data-readiness-review.md) *(generated)*
+- [Source log](source-log.md), [cleaning log](cleaning-log.md), [data dictionary](data-dictionary.md) *(generated)*
 
-- Coi hai tài liệu trên là nguồn tham chiếu chính khi phân chia công việc và kiểm tra tiến độ.
-- Khi có thay đổi về giả định, nguồn dữ liệu hoặc phạm vi, cập nhật tài liệu tương ứng cùng với code.
-- Mọi kết luận và khuyến nghị cuối cùng phải truy vết được về dữ liệu, giả định, phương pháp phân tích và kết quả kiểm định.
+## Course and quality
+
+- [Course requirements](course-requirements.md) (transcribed brief)
+- [Requirements traceability](requirements-traceability.md) - every requirement mapped to evidence
+- [Architecture and reproducibility](implementation.md)
+- [Dashboard user guide](user-guide.md)
+- [Verification record](verification.md)
+- [Change log](../CHANGELOG.md)
