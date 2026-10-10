@@ -3,8 +3,9 @@ import pandas as pd
 import pytest
 from scipy.stats import norm
 from telco_retention.analysis import (apply_overrides, campaign_budget, compare, economic_uncertainty, fairness_audit, pilot_decision, pilot_plan, pilot_sample_size, profit_curve,
-                                      recommend_budget, select_strategy, sensitivity, share_grid, tornado, break_even, risk_value_matrix, prior_shift, stress_test)
-from telco_retention.business import campaign, default_offer, offer_options, value_customers
+                                      recommend_budget, select_strategy, sensitivity, share_grid, tornado, break_even, risk_value_matrix, prior_shift, stress_test,
+                                      draw_assumptions, reprice_frozen)
+from telco_retention.business import campaign, default_offer, fixed_campaign, offer_options, value_customers
 from telco_retention.common import config
 
 
@@ -152,6 +153,20 @@ def test_break_even_save_rate_zeroes_frozen_list():
     q = changed["offers"][[o["offer_id"] for o in changed["offers"]].index(cfg["campaign"]["default_offer"])]["save_rate"]
     assert (picked.churn_probability * q * picked.customer_value - picked.total_cost).sum() == pytest.approx(0, abs=1e-6)
     assert be["minimum_viable_save_rate"] <= be["break_even_default_save_rate"]
+
+
+def test_vectorised_repricing_matches_fixed_campaign():
+    cfg = cfg_small()
+    data = sample()
+    target, _ = campaign(data, 220, cfg)
+    draws = draw_assumptions(cfg, 4, 3)
+    fast = reprice_frozen(target, cfg, draws)
+    for i in range(len(draws)):
+        changed = apply_overrides(cfg, draws.iloc[i].to_dict())
+        _, stats = fixed_campaign(data, target, 1e9, changed, [default_offer(changed)])
+        assert fast[i] == pytest.approx(stats["expected_net_value"], rel=1e-10, abs=1e-8)
+    assert (draw_assumptions(cfg, 4, 3).to_numpy() == draws.to_numpy()).all()
+    assert apply_overrides(cfg, {"value.tenure_factor_spread": 0.4})["value"]["tenure_factors"] == {"new": 0.6, "developing": 1.0, "loyal": 1.4}
 
 
 def test_prior_shift_hits_the_target_and_keeps_the_ranking():

@@ -32,9 +32,12 @@ for mode in ["fixed", "retarget"]:
 display(Image(filename=str(ROOT / "reports/figures/sensitivity_heatmap.png")))
 display(pd.read_csv(run / "scenarios.csv"))
 display(read_json(run / "break_even.json"))
+display(pd.read_csv(run / "monte_carlo_summary.csv").round(3))
+display(pd.read_csv(run / "monte_carlo_drivers.csv").round(3))
+display(Image(filename=str(ROOT / "reports/figures/monte_carlo.png")))
 ```
 
-**Interpretation.** Break-even save rate of the recommended list: {{ break_even.break_even_default_save_rate | pct }}; below {{ break_even.minimum_viable_save_rate | pct }} nobody has positive expected value. Pessimistic / base / optimistic: {{ scenarios.pessimistic.expected_net_value | usd }} / {{ scenarios.base.expected_net_value | usd }} / {{ scenarios.optimistic.expected_net_value | usd }}.
+**Interpretation.** Break-even save rate: {{ break_even.break_even_default_save_rate | pct }} for the base-budget list and {{ recommended.break_even.break_even_default_save_rate | pct }} for the larger recommended list; below {{ break_even.minimum_viable_save_rate | pct }} nobody has positive expected value. Re-optimised scenarios (pessimistic / base / optimistic): {{ scenarios.pessimistic.expected_net_value | usd }} / {{ scenarios.base.expected_net_value | usd }} / {{ scenarios.optimistic.expected_net_value | usd }}; a list frozen under pessimistic assumptions would make {{ scenarios.pessimistic.fixed_expected_net_value | usd }}. Drawing every assumption at once from its range ({{ monte_carlo.draws | num }} draws), the frozen recommended list loses money in {{ monte_carlo.by.recommended.prob_loss | pct(0) }} of draws and the base-budget list in {{ monte_carlo.by.base.prob_loss | pct(0) }}; the base-budget list beats the risk-only list in {{ monte_carlo.by.base_vs_risk.prob_gain | pct(0) }} of draws. {{ monte_carlo.drivers[0].label }} and {{ monte_carlo.drivers[1].label | lower }} drive the spread most.
 
 ## Budget optimisation across campaign sizes
 

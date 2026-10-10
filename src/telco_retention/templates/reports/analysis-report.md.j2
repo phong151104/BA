@@ -116,7 +116,7 @@ The challenger XGBoost model is explained with SHAP; its leading features ({{ mo
 
 ![Tornado](figures/tornado.png)
 
-**Save rate x offer cost.** Over the grid, the re-optimised plan ranges from {{ sensitivity.retarget_min | usd }} to {{ sensitivity.retarget_max | usd }}; a frozen list ranges from {{ sensitivity.fixed_min | usd }} to {{ sensitivity.fixed_max | usd }}. Re-optimising never loses money because it stops contacting customers whose EV turns negative; a frozen list can.
+**Save rate x offer cost.** Over the grid, the re-optimised plan ranges from {{ sensitivity.retarget_min | usd }} to {{ sensitivity.retarget_max | usd }}; a frozen list ranges from {{ sensitivity.fixed_min | usd }} to {{ sensitivity.fixed_max | usd }}. A re-optimised plan cannot lose money only because it assumes we already know the true assumptions and drop customers whose EV turns negative; a list that is sent out, as in a pilot, is frozen and can lose.
 
 ![Sensitivity grid](figures/sensitivity_heatmap.png)
 
@@ -129,6 +129,22 @@ The challenger XGBoost model is explained with SHAP; its leading features ({{ mo
 {% endfor %}
 
 **Break-even.** The base-budget list breaks even at a standard-offer save rate of **{{ be.break_even_default_save_rate | pct }}** (all offers scaled proportionally) or at offer costs {{ be.offer_cost_multiplier | ratio(2) }} today's; the larger recommended list (section 8) breaks even at **{{ rbe | pct }}**, because its extra customers have lower expected value; below a save rate of {{ be.minimum_viable_save_rate | pct }}, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
+{% set mc = monte_carlo.by %}
+
+**All assumptions uncertain at once (Monte Carlo).** Each of the {{ monte_carlo.draws | num }} draws picks every register assumption from a triangular distribution over its tested range (most likely at the base value), independently, and reprices the frozen lists:
+
+| List (frozen) | Mean net | 5th percentile | Median | 95th percentile | Chance of a loss | Average loss when it loses |
+|---|---:|---:|---:|---:|---:|---:|
+{% for key, label in [('base', 'Base-budget list (' ~ (budget.base | usd) ~ ')'), ('recommended', 'Recommended list (' ~ (recommended.cost | usd) ~ ')'), ('risk', 'Risk-only list (' ~ (budget.base | usd) ~ ')')] %}{% set r = mc[key] %}
+| {{ label }} | {{ r.mean | usd }} | {{ r.p05 | usd }} | {{ r.p50 | usd }} | {{ r.p95 | usd }} | {{ r.prob_loss | pct(0) }} | {{ r.mean_loss_if_loss | usd }} |
+{% endfor %}
+
+- The larger recommended list earns more on average but is more exposed: it loses money in {{ mc.recommended.prob_loss | pct(0) }} of draws against {{ mc.base.prob_loss | pct(0) }} for the base-budget list. Valued with customers' actual churn instead of predicted probabilities, the chance of a loss is {{ mc.recommended_label.prob_loss | pct(0) }}.
+- Against the risk-only list at the same budget, the recommended rule earns more in {{ mc.base_vs_risk.prob_gain | pct(0) }} of draws (median gain {{ mc.base_vs_risk.p50 | usd }}): **who to target is robust; how much an offer saves is not.**
+- {{ monte_carlo.drivers[0].label }}, {{ monte_carlo.drivers[1].label | lower }} and {{ monte_carlo.drivers[2].label | lower }} drive most of the spread (rank correlations {{ monte_carlo.drivers[0].spearman_with_recommended_net | num(2) }}, {{ monte_carlo.drivers[1].spearman_with_recommended_net | num(2) }}, {{ monte_carlo.drivers[2].spearman_with_recommended_net | num(2) }}).
+- If the true assumptions were known before sending the list, re-optimising would add {{ mc.evpi.mean | usd }} on average on these {{ data.splits.test | num }} customers (about {{ mc.evpi.mean_scaled | usd }} across the {{ scaled.base_population | num }}-customer base, from {{ monte_carlo.reoptimise_draws }} draws). That is what perfect knowledge of the assumptions is worth for one campaign of this size, and it recurs with every later wave. The pilot's offered half is itself a campaign with positive expected value, so the cost of learning is mainly the value forgone on the held-out half ([pilot design](../docs/pilot-design.md)).
+
+![Monte Carlo](figures/monte_carlo.png)
 
 ## 8. How much to spend
 

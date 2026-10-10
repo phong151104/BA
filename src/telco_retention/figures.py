@@ -16,7 +16,7 @@ COLORS = {"ev": "#2a78d6", "risk": "#eb6834", "segment_offers": "#1baf7a", "risk
 INK, SECONDARY, MUTED, GRID, AXIS, SURFACE, GREY = "#0b0b0b", "#52514e", "#898781", "#e1e0d9", "#c3c2b7", "#fcfcfb", "#b9b8b2"
 DIVERGING = LinearSegmentedColormap.from_list("net", ["#d03b3b", "#f0efec", "#2a78d6"])
 FIGURES = ["eda_drivers", "calibration", "discrimination", "gains", "risk_value", "quadrant_selection", "strategy_comparison",
-           "profit_curve", "tornado", "sensitivity_heatmap", "fairness", "model_drivers", "shap_challenger", "churn_reasons", "stress_test"]
+           "profit_curve", "tornado", "sensitivity_heatmap", "fairness", "model_drivers", "shap_challenger", "churn_reasons", "stress_test", "monte_carlo", "target_profile"]
 
 
 def pretty_feature(name):
@@ -316,6 +316,41 @@ def figures(run):
     left.legend(fontsize=8.5); left.set_ylim(bottom=0); right.set_ylim(bottom=0)
     finish(fig, "stress_test", "Outside the sample", "Probabilities shifted to lower average churn with ranks unchanged; Vietnam-like prices scale bills and offers to a "
            f"{cfg['vietnam_scenario']['monthly_bill_vnd']:,} VND bill\nand contact by SMS. Value horizon held fixed. Contact cap applies.")
+
+    # 16. Joint uncertainty: net value of frozen lists across assumption draws.
+    draws = pd.read_csv(run / "monte_carlo_draws.csv")
+    summary = pd.read_csv(run / "monte_carlo_summary.csv").set_index("plan")
+    fig, ax = plt.subplots(figsize=(9, 4.6))
+    values = np.concatenate([draws.net_recommended, draws.net_base_budget])
+    bins = np.linspace(np.quantile(values, 0.002), np.quantile(values, 0.998), 60)
+    ax.axvspan(bins[0], 0, color="#d03b3b", alpha=0.06, linewidth=0)
+    for column, label, color in [("net_base_budget", "Base-budget list", COLORS["segment_offers"]), ("net_recommended", "Recommended list", COLORS["ev"])]:
+        plan = "base budget" if column == "net_base_budget" else "recommended"
+        ax.hist(draws[column], bins=bins, histtype="step", linewidth=2, color=color,
+                label=f"{label}: loses money in {summary.loc[plan, 'prob_loss']:.0%} of draws")
+    ax.axvline(0, color=INK, linewidth=1)
+    ax.xaxis.set_major_formatter(money); ax.set_yticks([]); ax.grid(axis="y", visible=False)
+    ax.set_xlabel("Expected net value of the frozen list (test customers)"); ax.legend(loc="upper right", fontsize=8.5)
+    ax.set_title("How often the lists lose money when every assumption is uncertain")
+    finish(fig, "monte_carlo", "Joint uncertainty of the assumptions", f"{len(draws):,} draws; every register assumption drawn at once from a triangular distribution (low, base, high).\n"
+           "Lists and offers are frozen, as they would be in a pilot; shaded area = loss; the most extreme 0.2% at each end are not drawn.")
+
+    # 17. Who the recommended list contacts.
+    profile = pd.read_csv(run / "target_profile.csv")
+    picks = [("InternetService", "Fiber optic", "Fibre internet"), ("Contract", "Month-to-month", "Month-to-month contract"),
+             ("PaymentMethod", "Electronic check", "Pays by electronic check"), ("tenure_segment", "new", "Tenure 12 months or less"), ("SeniorCitizen", "1", "Senior")]
+    rows = [profile.loc[profile.attribute.eq(a) & profile.group.astype(str).eq(g)].iloc[0] for a, g, _ in picks]
+    fig, ax = plt.subplots(figsize=(9, 4.4))
+    y = np.arange(len(picks))[::-1]
+    ax.barh(y + 0.2, [r.all_share for r in rows], height=0.36, color=GREY, label="All test customers")
+    ax.barh(y - 0.2, [r.list_share for r in rows], height=0.36, color=COLORS["ev"], label="Recommended list")
+    for yi, r in zip(y, rows):
+        ax.text(r.list_share + 0.01, yi - 0.2, f"{r.list_share:.0%}", va="center", fontsize=8.5, color=SECONDARY)
+        ax.text(r.all_share + 0.01, yi + 0.2, f"{r.all_share:.0%}", va="center", fontsize=8.5, color=MUTED)
+    ax.set_yticks(y, [label for _, _, label in picks]); ax.set_xlim(0, 1.12)
+    ax.xaxis.set_major_formatter(lambda v, _: f"{v:.0%}"); ax.grid(axis="y", visible=False); ax.legend(loc="lower right", fontsize=8.5)
+    ax.set_title("Who the recommended list contacts")
+    finish(fig, "target_profile", "Target profile", "Share of customers with each attribute, on the recommended list and among all test customers.")
 
     write_json(dest / "catalog.json", catalog)
     return catalog

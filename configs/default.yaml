@@ -84,6 +84,13 @@ pilot:
   outcome_window_days: 90
   save_rate_grid: [0.05, 0.10, 0.15, 0.20, 0.30]
 
+monte_carlo:
+  # Joint uncertainty: every register assumption is drawn at once from a triangular distribution (low, base, high),
+  # independently. Frozen lists are repriced for every draw; the plan is re-optimised for the first draws only (slower).
+  draws: 5000
+  reoptimise_draws: 200
+  mip_rel_gap: 0.001         # re-optimised draws accept a 0.1% optimality gap (about 40 times faster)
+
 stress_test:
   # Prior shift (Saerens et al., 2002): one logit constant moves every probability so the average churn equals a lower level;
   # the ranking of customers is unchanged. The value horizon is held fixed, which understates value at lower churn.
@@ -130,6 +137,9 @@ assumption_register:
   - {id: A5, parameter: value.base_horizon_months, label: Value horizon (months), unit: months, low: 6, high: 18, sources: [gupta2004],
      rationale: "Months of margin a saved customer is expected to stay. One contract year, scaled 0.75/1.0/1.25 by tenure, because a saved would-be churner is likely to churn again sooner than an average customer.",
      validate_by: Survival of pilot customers after 6 and 12 months}
-  - {id: A6, parameter: value.discount_rate_annual, label: Annual discount rate, unit: share, low: 0.05, high: 0.15, sources: [damodaran2026wacc, damodaran2026crp, gupta2004],
-     rationale: "US telecom cost of capital is about 5.4%; adding Vietnam's 3.9% country risk premium gives about 10%.",
+  - {id: A6, parameter: value.discount_rate_annual, label: Annual discount rate, unit: share, low: 0.05, high: 0.15, sources: [damodaran2026wacc, gupta2004],
+     rationale: "US telecom cost of capital is about 5.4%; customer-valuation studies use 8-16% (average 12%) to reflect that future margin from a customer is less certain than a bond. 10% sits inside that range.",
      validate_by: Finance hurdle rate}
+  - {id: A7, parameter: value.tenure_factor_spread, label: "Tenure effect on remaining months (new 1-s, loyal 1+s)", unit: share, low: 0.0, high: 0.5, sources: [faderhardie2010, faderhardie2014],
+     rationale: "Retention rises with tenure, so a saved loyal customer is expected to stay longer than a saved new one. The base horizon is scaled by 0.75 for new and 1.25 for loyal customers (s = 25%); 0 means no tenure effect.",
+     validate_by: Survival of pilot customers by tenure segment}

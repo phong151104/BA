@@ -11,8 +11,8 @@ Every number below is a visible parameter in `configs/default.yaml` (version `{{
 
 | ID | Assumption | Base | Tested range | Sources | Validated by |
 |---|---|---:|---|---|---|
-{% for r in register %}
-| {{ r.id }} | {{ r.label }} | {% if r.parameter == 'save_rate' %}{{ default_offer.save_rate | pct(0) }}{% elif r.parameter == 'offer_cost_multiplier' %}1.0x (${{ default_offer.offer_cost | num }}){% elif r.parameter == 'contact_cost' %}{{ default_offer.contact_cost | usd }}{% elif r.parameter == 'value.margin' %}{{ cfg.value.margin | pct(0) }}{% elif r.parameter == 'value.base_horizon_months' %}{{ cfg.value.base_horizon_months }} months{% else %}{{ cfg.value.discount_rate_annual | pct(0) }}{% endif %} | {{ r.low }} - {{ r.high }} {{ r.unit }} | {% for s in r.sources %}[{{ s }}](references.md#{{ s }}){{ ", " if not loop.last }}{% endfor %} | {{ r.validate_by }} |
+{% for r in register %}{% set t = tornado | selectattr('parameter', 'equalto', r.parameter) | first %}
+| {{ r.id }} | {{ r.label }} | {{ t.base_text }}{{ " (" ~ (default_offer.offer_cost | usd) ~ " standard offer)" if r.parameter == 'offer_cost_multiplier' }} | {{ t.low_text }} to {{ t.high_text }} | {% for s in r.sources %}[{{ s }}](references.md#{{ s }}){{ ", " if not loop.last }}{% endfor %} | {{ r.validate_by }} |
 {% endfor %}
 
 ### Rationale
@@ -21,7 +21,7 @@ Every number below is a visible parameter in `configs/default.yaml` (version `{{
 - **{{ r.id }}. {{ r.label }}.** {{ r.rationale }}
 {% endfor %}
 
-**Effect on the decision:** the tornado chart ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)) shows {{ tornado[0].label | lower }} and {{ tornado[1].label | lower }} move the expected net value most. The break-even save rate of the recommended list is **{{ break_even.break_even_default_save_rate | pct }}**: below it the frozen list loses money, and below {{ break_even.minimum_viable_save_rate | pct }} no customer is worth contacting.
+**Effect on the decision:** the tornado chart ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)) shows {{ tornado[0].label | lower }} and {{ tornado[1].label | lower }} move the expected net value most. The break-even save rate is **{{ recommended.break_even.break_even_default_save_rate | pct }}** for the recommended list and {{ break_even.break_even_default_save_rate | pct }} for the smaller base-budget list: below it a frozen list loses money, and below {{ break_even.minimum_viable_save_rate | pct }} no customer is worth contacting. Drawing all assumptions at once from their ranges, the recommended list loses money in {{ monte_carlo.by.recommended.prob_loss | pct(0) }} of {{ monte_carlo.draws | num }} draws ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)).
 
 ## Offer catalog
 

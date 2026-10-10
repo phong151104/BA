@@ -11,7 +11,7 @@ from .data import DOMAINS, NUMERIC, SCHEMA
 MODEL_LABELS = {"logistic": "Logistic Regression", "random_forest": "Random Forest", "xgboost": "XGBoost (gradient boosting)", "dummy": "Prior-only baseline"}
 QUADRANT_KEYS = {"High risk / High value": "hrhv", "High risk / Low value": "hrlv", "Low risk / High value": "lrhv", "Low risk / Low value": "lrlv"}
 SHORT_NAMES = {"save_rate": "save rate", "offer_cost_multiplier": "offer cost", "contact_cost": "contact cost", "value.margin": "margin",
-               "value.base_horizon_months": "value horizon", "value.discount_rate_annual": "discount rate"}
+               "value.base_horizon_months": "value horizon", "value.discount_rate_annual": "discount rate", "value.tenure_factor_spread": "tenure effect"}
 
 
 def records(frame):
@@ -38,6 +38,28 @@ def describe_overrides(overrides, units):
 
 def by_key(frame, key):
     return {row[key]: row for row in records(frame)}
+
+
+def monte_carlo_facts(summary, drivers, cfg, scale):
+    """Monte Carlo rows keyed by plan, with test-sample values and the same values scaled to the whole customer base."""
+    keys = {"recommended": "recommended", "base budget": "base", "risk only": "risk", "recommended (label-based)": "recommended_label",
+            "recommended, re-optimised for each draw": "reoptimised", "value of knowing the assumptions (re-optimised minus frozen)": "evpi",
+            "base-budget list minus risk-only list": "base_vs_risk"}
+    rows = {keys[r["plan"]]: {**r, **{f"{k}_scaled": r[k] * scale for k in ["mean", "p05", "p50", "p95", "mean_loss_if_loss"] if r.get(k) is not None}}
+            for r in records(summary)}
+    labels = {item["parameter"]: item["label"] for item in cfg["assumption_register"]}
+    return {"by": rows, "draws": int(cfg["monte_carlo"]["draws"]), "reoptimise_draws": int(cfg["monte_carlo"]["reoptimise_draws"]),
+            "drivers": [{**r, "label": labels.get(r["parameter"], r["parameter"])} for r in records(drivers)]}
+
+
+def value_at_risk(table, scale):
+    """Twelve-month value expected to leave with churners, and what the recommended list is expected to keep."""
+    picked = table.loc[table.selected]
+    at_risk = float((table.churn_probability * table.customer_value).sum())
+    kept = float((picked.churn_probability * picked.assumed_save_rate * picked.customer_value).sum())
+    out = {"customers": len(table), "expected": at_risk, "observed": float((table.churn * table.customer_value).sum()),
+           "kept_by_recommended": kept, "kept_share": kept / at_risk if at_risk else None, "recommended_cost": float(picked.total_cost.sum())}
+    return {**out, **{f"{k}_scaled": out[k] * scale for k in ["expected", "observed", "kept_by_recommended", "recommended_cost"]}}
 
 
 def stress_facts(stress, cfg):
@@ -124,6 +146,11 @@ def build_facts(run):
                     "segments": records(csv("churn_reasons_by_segment.csv"))},
         "cltv": read_json(run / "cltv_check.json"),
         "stress": stress_facts(csv("stress_test.csv"), cfg),
+        "monte_carlo": monte_carlo_facts(csv("monte_carlo_summary.csv"), csv("monte_carlo_drivers.csv"), cfg, scale),
+        "profile": {**read_json(run / "target_profile_summary.json"),
+                    "by": {f"{r['attribute']}|{r['group']}": r for r in records(csv("target_profile.csv"))}},
+        "recommended_offer_mix": [{**r, "label": next(o["label"] for o in cfg["offers"] if o["offer_id"] == r["offer_id"])} for r in records(csv("recommended_offer_mix.csv"))],
+        "value_at_risk": value_at_risk(csv("targeting_recommended.csv"), scale),
         "model": {"selected": selected_model, "label": MODEL_LABELS[selected_model], "threshold": manifest["threshold"], "selection_rule": manifest["selection_rule"],
                   "features": manifest["feature_columns"], "best_parameters": manifest["best_parameters"],
                   "feature_design": {"chosen": manifest["feature_set"], "rule": manifest["feature_rule"], "ablation": records(csv("feature_ablation.csv")),
@@ -156,6 +183,7 @@ def build_facts(run):
         "headline": {"chosen": chosen, "risk": risk, "ev": ev,
                      "delta_vs_risk": chosen["expected_net_value"] - risk["expected_net_value"],
                      "delta_vs_risk_pct": (chosen["expected_net_value"] - risk["expected_net_value"]) / abs(risk["expected_net_value"]) if risk["expected_net_value"] else None,
+                     "gain_label": uncertainty.get(f"{strategy} minus risk"),
                      "targeting_effect": ev["expected_net_value"] - risk["expected_net_value"],
                      "offer_design_effect": comparison["segment_offers"]["expected_net_value"] - ev["expected_net_value"]},
         "uncertainty": uncertainty,

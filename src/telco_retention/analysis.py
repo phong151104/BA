@@ -51,6 +51,8 @@ def apply_overrides(cfg, overrides):
         elif key == "contact_cost":
             for offer in out["offers"]:
                 offer["contact_cost"] = float(value)
+        elif key == "value.tenure_factor_spread":
+            out["value"]["tenure_factors"] = {"new": 1 - value, "developing": 1.0, "loyal": 1 + value}
         else:
             out = set_param(out, key, value)
     return out
@@ -63,6 +65,9 @@ def base_value(cfg, key):
         return 1.0
     if key == "contact_cost":
         return default_offer(cfg)["contact_cost"]
+    if key == "value.tenure_factor_spread":
+        factors = cfg["value"]["tenure_factors"]
+        return (factors["loyal"] - factors["new"]) / 2
     return get_param(cfg, key)
 
 
@@ -246,7 +251,7 @@ def compare(scores, budget, cfg, thresholds=None, random_iterations=100):
     return pd.DataFrame(rows), detail, scenarios, random_frame
 
 
-def economic_uncertainty(details, iterations=1000, seed=42, pairs=(("ev", "risk"), ("ev", "risk_positive_ev"), ("segment_offers", "ev"))):
+def economic_uncertainty(details, iterations=1000, seed=42, pairs=(("ev", "risk"), ("ev", "risk_positive_ev"), ("segment_offers", "ev"), ("segment_offers", "risk"))):
     """Paired customer bootstrap of frozen lists using historical labels; not a confidence bound on real profit."""
     reference = details["ev"].sort_values("customer_id")
     if "churn" not in reference:
@@ -387,6 +392,90 @@ def pilot_plan(target, cfg, recommended_share, break_even_rate):
                "decision_rule": "go if the 95% interval of q is above 0 and q >= break-even; stop if q <= 0 or the interval is below break-even; otherwise extend",
                **{k: pilot[k] for k in ["alpha", "power", "holdout_share", "outcome_window_days"]}}
     return pd.DataFrame(rows), summary
+
+
+def draw_assumptions(cfg, draws, seed):
+    """Independent triangular draws (low, base, high) for every register assumption."""
+    rng = np.random.default_rng(seed)
+    out = {}
+    for item in cfg["assumption_register"]:
+        base = float(base_value(cfg, item["parameter"]))
+        out[item["parameter"]] = rng.triangular(min(item["low"], base), base, max(item["high"], base), draws)
+    return pd.DataFrame(out)
+
+
+def reprice_frozen(table, cfg, draws, outcome="expected"):
+    """Net value of a frozen list (same customers, same offers) for every row of drawn assumptions, vectorised.
+    Mirrors apply_overrides + fixed_campaign; `outcome="label"` uses customers' actual churn instead of the probability."""
+    picked = table.loc[table.selected]
+    if picked.empty:
+        return np.zeros(len(draws))
+
+    def drawn(key):
+        return draws[key].to_numpy(float)[:, None] if key in draws else float(base_value(cfg, key))
+
+    p = (picked.churn if outcome == "label" else picked.churn_probability).to_numpy(float)
+    segment = picked.tenure_segment.astype(str).to_numpy()
+    q = np.clip(picked.assumed_save_rate.to_numpy(float) + (drawn("save_rate") - default_offer(cfg)["save_rate"]), 0, 1)
+    offer_cost = picked.offer_cost.to_numpy(float) * drawn("offer_cost_multiplier")
+    spread = drawn("value.tenure_factor_spread")
+    factor = np.where(segment == "new", 1 - spread, np.where(segment == "loyal", 1 + spread, 1.0))
+    months = np.minimum(cfg["value"]["horizon_cap_months"], drawn("value.base_horizon_months") * factor)
+    monthly = (1 + drawn("value.discount_rate_annual")) ** (1 / 12) - 1
+    annuity = np.where(monthly > 0, (1 - (1 + monthly) ** -months) / np.where(monthly > 0, monthly, 1), months)
+    value = picked.MonthlyCharges.to_numpy(float) * drawn("value.margin") * annuity
+    net = p * q * value - offer_cost - drawn("contact_cost")
+    return np.broadcast_to(net, (len(draws), len(picked))).sum(axis=1)
+
+
+def monte_carlo(test, cfg, strategy, plans, reco_budget, thresholds=None):
+    """Joint uncertainty of the assumptions: distribution of net value for frozen lists, and what re-optimising would add."""
+    mc = cfg["monte_carlo"]
+    draws = draw_assumptions(cfg, mc["draws"], cfg["seed"])
+    nets = {name: reprice_frozen(table, cfg, draws) for name, table in plans.items()}
+    nets["recommended (label-based)"] = reprice_frozen(plans["recommended"], cfg, draws, "label")
+    fast = deepcopy(cfg)
+    fast["solver"]["mip_rel_gap"] = mc["mip_rel_gap"]
+    reopt = np.array([run_strategy(test, reco_budget, apply_overrides(fast, draws.iloc[i].to_dict()), strategy, thresholds)[1]["expected_net_value"]
+                      for i in range(min(mc["reoptimise_draws"], len(draws)))])
+
+    def summarise(name, values, kind):
+        loss = values < 0
+        return {"plan": name, "kind": kind, "draws": len(values), "mean": float(values.mean()), "p05": float(np.quantile(values, .05)),
+                "p50": float(np.median(values)), "p95": float(np.quantile(values, .95)), "prob_loss": float(loss.mean()),
+                "prob_loss_se": float(np.sqrt(loss.mean() * (1 - loss.mean()) / len(values))),
+                "mean_loss_if_loss": float(values[loss].mean()) if loss.any() else 0.0}
+
+    rows = [summarise(name, values, "frozen list") for name, values in nets.items()]
+    rows.append(summarise("recommended, re-optimised for each draw", reopt, "re-optimised"))
+    gap = reopt - nets["recommended"][:len(reopt)]
+    rows.append({"plan": "value of knowing the assumptions (re-optimised minus frozen)", "kind": "difference", "draws": len(gap), "mean": float(gap.mean()),
+                 "p05": float(np.quantile(gap, .05)), "p50": float(np.median(gap)), "p95": float(np.quantile(gap, .95))})
+    paired = nets["base budget"] - nets["risk only"]
+    rows.append({"plan": "base-budget list minus risk-only list", "kind": "difference", "draws": len(paired), "mean": float(paired.mean()),
+                 "p05": float(np.quantile(paired, .05)), "p50": float(np.median(paired)), "p95": float(np.quantile(paired, .95)), "prob_gain": float((paired > 0).mean())})
+    drivers = pd.DataFrame([{"parameter": k, "spearman_with_recommended_net": float(pd.Series(draws[k]).corr(pd.Series(nets["recommended"]), method="spearman"))}
+                            for k in draws]).sort_values("spearman_with_recommended_net", key=np.abs, ascending=False)
+    out_draws = draws.assign(**{f"net_{k.replace(' ', '_').replace('(', '').replace(')', '').replace('-', '_')}": v for k, v in nets.items()})
+    return pd.DataFrame(rows), drivers, out_draws
+
+
+def target_profile(reco_table):
+    """Who the recommended list contacts, against those it leaves out and all customers."""
+    frame = reco_table.assign(SeniorCitizen=reco_table.SeniorCitizen.astype(str), tenure_segment=reco_table.tenure_segment.astype(str))
+    picked, rest = frame.loc[frame.selected], frame.loc[~frame.selected]
+    rows = []
+    for attribute in ["Contract", "InternetService", "PaymentMethod", "tenure_segment", "SeniorCitizen"]:
+        for group in sorted(frame[attribute].unique()):
+            rows.append({"attribute": attribute, "group": group, "list_share": float(picked[attribute].eq(group).mean()) if len(picked) else None,
+                         "not_contacted_share": float(rest[attribute].eq(group).mean()), "all_share": float(frame[attribute].eq(group).mean())})
+    summary = {name: {"customers": len(part), "median_monthly_charges": float(part.MonthlyCharges.median()) if len(part) else None,
+                      "mean_tenure": float(part.tenure.mean()) if len(part) else None, "mean_probability": float(part.churn_probability.mean()) if len(part) else None,
+                      "mean_customer_value": float(part.customer_value.mean()) if len(part) else None}
+               for name, part in [("list", picked), ("not_contacted", rest), ("all", frame)]}
+    mix = picked.groupby("offer_id").agg(customers=("customer_id", "size"), cost=("total_cost", "sum"), mean_probability=("churn_probability", "mean"),
+                                         mean_customer_value=("customer_value", "mean")).reset_index().sort_values("customers", ascending=False)
+    return pd.DataFrame(rows), summary, mix
 
 
 def prior_shift(p, target):
@@ -577,6 +666,16 @@ def simulate(run=None):
     save_csv(offer_mix(details["segment_offers"]), run / "segment_offer_mix.csv")
     save_csv(model_profit_check(run, cfg, scores), run / "model_profit_check.csv")
     save_csv(stress_test(test, cfg, strategy, recommendation["recommended_share"], thresholds), run / "stress_test.csv")
+    print("Monte Carlo of the assumptions", flush=True)
+    plans = {"recommended": reco_table, "base budget": details[strategy], "risk only": details["risk"]}
+    mc_summary, mc_drivers, mc_draws = monte_carlo(test, cfg, strategy, plans, reco_budget, thresholds)
+    save_csv(mc_summary, run / "monte_carlo_summary.csv")
+    save_csv(mc_drivers, run / "monte_carlo_drivers.csv")
+    save_csv(mc_draws, run / "monte_carlo_draws.csv")
+    profile, profile_summary, mix = target_profile(reco_table)
+    save_csv(profile, run / "target_profile.csv")
+    write_json(run / "target_profile_summary.json", profile_summary)
+    save_csv(mix, run / "recommended_offer_mix.csv")
     reasons, reason_segments, reason_summary, cltv = churn_reasons(run, cfg, scores, reco_table)
     save_csv(reasons, run / "churn_reasons.csv")
     save_csv(reason_segments, run / "churn_reasons_by_segment.csv")
