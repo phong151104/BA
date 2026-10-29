@@ -1,0 +1,79 @@
+# 3. Customer value, expected value and targeting
+
+**Goal.** Turn probabilities into a decision: a customer value proxy, the expected net value of each offer, and the list that maximises total expected value within a fixed budget, compared with simple rules such as "highest churn risk only".
+
+Numbers in the text were generated for run `{{ run.id }}`.
+
+```python
+import pandas as pd
+from IPython.display import display, Image
+from telco_retention.common import ROOT, latest_run, read_json
+from telco_retention.business import campaign, default_offer, value_customers, offer_options
+from telco_retention.analysis import campaign_budget, run_strategy
+pd.set_option("display.precision", 3)
+run = latest_run()
+cfg = read_json(run / "manifest.json")["config"]
+scores = pd.read_csv(run / "scorecard.csv").query("split == 'test'")
+thresholds = read_json(run / "targeting_thresholds.json")
+budget = campaign_budget(len(scores), cfg)
+print("Run:", run.name, "| test customers:", len(scores), "| budget:", budget)
+```
+
+## Value proxy and expected value, by hand
+
+Value = monthly charges x margin ({{ cfg.value.margin | pct(0) }}) x discounted months (base {{ cfg.value.base_horizon_months }} months x tenure factor, {{ cfg.value.discount_rate_annual | pct(0) }} a year). EV = p x save rate x value - (offer cost + contact cost). The cell recomputes three customers by hand and compares with the package.
+
+```python
+offer = default_offer(cfg)
+valued = value_customers(scores.head(3), cfg)
+options = offer_options(valued, [offer])
+hand = valued.assign(ev_by_hand=valued.churn_probability * offer["save_rate"] * valued.customer_value - (offer["offer_cost"] + offer["contact_cost"]))
+display(hand[["customer_id", "MonthlyCharges", "tenure", "tenure_segment", "discounted_months", "customer_value", "churn_probability", "ev_by_hand"]])
+assert (hand.ev_by_hand.round(9).values == options.expected_net_value.round(9).values).all()
+```
+
+## Same budget, different rules
+
+```python
+comparison = pd.read_csv(run / "strategy_comparison.csv")
+display(comparison[["strategy", "selected_count", "cost", "expected_net_value", "roi", "precision_contacted", "high_risk_high_value_coverage", "label_based_simulated_net"]])
+display(pd.read_csv(run / "economic_uncertainty.csv")[["strategy", "label_based_simulated_net", "lower_95", "upper_95"]])
+display(Image(filename=str(ROOT / "reports/figures/strategy_comparison.png")))
+```
+
+**Interpretation.** With {{ budget.base | usd }}, risk-only targeting has an expected net value of {{ comparison.risk.expected_net_value | usd }} and expected-value targeting with the standard offer {{ comparison.ev.expected_net_value | usd }} ({{ headline.targeting_effect | signed_usd }}). Checked against actual outcomes (paired bootstrap), the targeting gain is {{ uncertainty['ev minus risk'].label_based_simulated_net | usd }} with a 95% interval of {{ uncertainty['ev minus risk'].lower_95 | usd }} to {{ uncertainty['ev minus risk'].upper_95 | usd }}. Risk-only has higher precision ({{ comparison.risk.precision_contacted | pct(0) }}) but reaches only {{ comparison.risk.high_risk_high_value_coverage | pct(0) }} of high-risk, high-value customers.
+
+## Segment-specific offers
+
+```python
+display(pd.read_csv(run / "offer_catalog.csv"))
+decisions = read_json(run / "validation_decisions.json")
+display(pd.DataFrame(decisions["strategy_selection"]["validation"]).T[["selected_count", "cost", "expected_net_value", "roi"]])
+print("Chosen on validation:", decisions["strategy_selection"]["strategy"], "| relative gain:", round(decisions["strategy_selection"]["relative_gain"], 3))
+display(pd.read_csv(run / "segment_offer_mix.csv"))
+```
+
+**Interpretation.** The optimiser (a knapsack solved exactly with HiGHS) chooses at most one eligible offer per customer. On validation, segment offers beat the single offer by {{ decisions.strategy_selection.relative_gain | pct(0) }}, so the recommended rule is **{{ strategy_label | lower }}**. On test the extra expected value is {{ headline.offer_design_effect | usd }}; with actual outcomes it is {{ uncertainty['segment_offers minus ev'].label_based_simulated_net | usd }}, i.e. not distinguishable from zero. The offer-design gain rests on assumed save rates and must be tested.
+
+## Who gets contacted
+
+```python
+display(pd.read_csv(run / "risk_value_matrix.csv"))
+display(Image(filename=str(ROOT / "reports/figures/risk_value.png")))
+target, summary = run_strategy(scores, budget, cfg, decisions["strategy_selection"]["strategy"], thresholds)
+print("Scenario", summary["scenario_id"], "| matches the report:", summary["scenario_id"] == read_json(run / "campaign_scenarios.json")[decisions["strategy_selection"]["strategy"]]["scenario_id"])
+display(target.loc[target.selected].nlargest(10, "expected_net_value")[["customer_id", "churn_probability", "customer_value", "offer_id", "expected_net_value", "decision_detail"]])
+```
+
+## Who the recommended list contacts
+
+```python
+display(pd.read_csv(run / "target_profile.csv").round(3))
+display(read_json(run / "target_profile_summary.json"))
+display(pd.read_csv(run / "recommended_offer_mix.csv").round(2))
+display(Image(filename=str(ROOT / "reports/figures/target_profile.png")))
+```
+
+**Interpretation.** The recommended list is {{ profile.by['InternetService|Fiber optic'].list_share | pct(0) }} fibre and {{ profile.by['Contract|Month-to-month'].list_share | pct(0) }} month-to-month, with a median bill of {{ profile.list.median_monthly_charges | usd }} against {{ profile.all.median_monthly_charges | usd }} for all test customers. Low-risk customers and risky customers with small bills are left out. Because the campaign rides on one segment, the pilot reports fibre and month-to-month customers separately.
+
+**So what.** The customer-level targeting tables (`reports/tables/targeting_recommended.csv` and `targeting_{{ strategy }}.csv`) and the churn scorecard (`reports/tables/scorecard.csv`, plus the [points card](../docs/churn-scorecard.md)) are the operational deliverables; every row carries its formula and scenario ID.

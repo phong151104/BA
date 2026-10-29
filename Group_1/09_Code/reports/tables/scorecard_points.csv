@@ -1,0 +1,49 @@
+﻿characteristic,attribute,lower,upper,representative,raw,points
+tenure,0-3 months,-inf,3.0,1.0,-1.7644721314005096,120
+tenure,4-6 months,3.0,6.0,5.0,-8.822360657002548,113
+tenure,7-12 months,6.0,12.0,9.0,-15.880249182604587,106
+tenure,13-18 months,12.0,18.0,15.0,-26.467081971007644,95
+tenure,19-24 months,18.0,24.0,22.0,-38.81838689081121,83
+tenure,25-36 months,24.0,36.0,30.0,-52.93416394201529,69
+tenure,37-48 months,36.0,48.0,43.0,-75.87230165022191,46
+tenure,49-60 months,48.0,60.0,54.0,-95.28149509562752,26
+tenure,61+ months,60.0,inf,69.0,-121.74857706663516,0
+MonthlyCharges,up to $30,-inf,30.0,20.2,14.017409064855581,0
+MonthlyCharges,$30-45,30.0,45.0,40.2,27.89603190134626,14
+MonthlyCharges,$45-60,45.0,60.0,53.55,37.160012644703784,23
+MonthlyCharges,$60-75,60.0,75.0,69.8,48.43639369935245,34
+MonthlyCharges,$75-90,75.0,90.0,82.05,56.93705018670299,43
+MonthlyCharges,$90-105,90.0,105.0,97.0,67.31132075697977,53
+MonthlyCharges,over $105,105.0,inf,109.55,76.02015658687768,62
+Partner,Yes,,,,0.6490953723047116,1
+Partner,No,,,,0.0,0
+Dependents,Yes,,,,-16.998051075226126,0
+Dependents,No,,,,0.0,17
+PhoneService,Yes,,,,-37.632020702540345,0
+PhoneService,No,,,,0.0,38
+PaperlessBilling,Yes,,,,21.872268865806774,22
+PaperlessBilling,No,,,,0.0,0
+MultipleLines,Yes,,,,14.864685978281058,15
+MultipleLines,No,,,,0.0,0
+OnlineSecurity,Yes,,,,-25.050271546019808,0
+OnlineSecurity,No,,,,0.0,25
+OnlineBackup,Yes,,,,-10.326957627365207,0
+OnlineBackup,No,,,,0.0,10
+DeviceProtection,Yes,,,,-1.1456223366502354,0
+DeviceProtection,No,,,,0.0,1
+TechSupport,Yes,,,,-25.042749598453575,0
+TechSupport,No,,,,0.0,25
+StreamingTV,Yes,,,,5.617108496956439,6
+StreamingTV,No,,,,0.0,0
+StreamingMovies,Yes,,,,9.232977445236214,9
+StreamingMovies,No,,,,0.0,0
+InternetService,DSL,,,,29.656806629838147,30
+InternetService,Fiber optic,,,,61.38501228160687,61
+InternetService,No,,,,0.0,0
+Contract,Month-to-month,,,,74.83156469293702,75
+Contract,One year,,,,33.7482452587245,34
+Contract,Two year,,,,0.0,0
+PaymentMethod,Electronic check,,,,24.596507586764787,25
+PaymentMethod,Mailed check,,,,7.895699155466468,8
+PaymentMethod,Bank transfer (automatic),,,,0.3904578683175938,0
+PaymentMethod,Credit card (automatic),,,,0.0,0

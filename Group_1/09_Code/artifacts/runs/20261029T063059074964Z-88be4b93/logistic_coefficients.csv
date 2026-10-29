@@ -1,0 +1,21 @@
+﻿feature,coefficient
+tenure,-0.7669989983314061
+PhoneService,-0.6642612430471667
+OnlineSecurity,-0.4421746216435545
+TechSupport,-0.44204184806012203
+Dependents,-0.30004093125529996
+OnlineBackup,-0.18228619091894688
+DeviceProtection,-0.020221941399881146
+PaymentMethod_Bank transfer (automatic),0.006892163219624379
+Partner,0.011457500575678231
+StreamingTV,0.09915033534904517
+PaymentMethod_Mailed check,0.13937085593127796
+StreamingMovies,0.1629758105013225
+MultipleLines,0.262383858243685
+MonthlyCharges,0.3714167730821883
+PaperlessBilling,0.38607813861246837
+PaymentMethod_Electronic check,0.4341650115828224
+InternetService_DSL,0.5234868303369079
+Contract_One year,0.595706819025737
+InternetService_Fiber optic,1.083536940122198
+Contract_Month-to-month,1.320888627666473

@@ -1,0 +1,59 @@
+{
+  "thresholds": {
+    "risk": 0.4650208401763361,
+    "value": 345.008069334806,
+    "fitted_on": "validation"
+  },
+  "strategy_selection": {
+    "strategy": "segment_offers",
+    "rule": "segment_offers only if it beats ev by >= 5% on validation",
+    "relative_gain": 0.13179835637287787,
+    "validation_budget": 3500.0,
+    "validation": {
+      "ev": {
+        "selected_count": 140,
+        "cost": 3500.0,
+        "remaining_budget": 0.0,
+        "expected_saved": 17.6609748501222,
+        "expected_retained_value": 5842.293885850013,
+        "expected_net_value": 2342.293885850014,
+        "roi": 0.6692268245285754,
+        "expected_precision": 0.6307491017900786,
+        "precision_contacted": 0.6357142857142857,
+        "label_based_simulated_net": 2247.4549101271336,
+        "high_risk_high_value_count": 55,
+        "high_risk_high_value_coverage": 1.0,
+        "scenario_id": "fda60571daf1",
+        "solver_status": "optimal_sort"
+      },
+      "segment_offers": {
+        "selected_count": 152,
+        "cost": 3499.0,
+        "remaining_budget": 1.0,
+        "expected_saved": 18.05217533812014,
+        "expected_retained_value": 6150.004370147287,
+        "expected_net_value": 2651.004370147287,
+        "roi": 0.7576462904107708,
+        "expected_precision": 0.6260248017738925,
+        "precision_contacted": 0.5986842105263158,
+        "label_based_simulated_net": 2332.9077373663613,
+        "high_risk_high_value_count": 55,
+        "high_risk_high_value_coverage": 1.0,
+        "scenario_id": "6bb3ee6ab646",
+        "solver_status": "optimal"
+      }
+    }
+  },
+  "budget_recommendation": {
+    "strategy": "segment_offers",
+    "population": "validation",
+    "hurdle_marginal_roi": 0.1,
+    "recommended_share": 0.26,
+    "recommended_budget": 9150.0,
+    "expected_net_value": 4060.127834696843,
+    "roi": 0.4437783183623175,
+    "marginal_roi": 0.11207041641622818,
+    "net_maximising_share": 0.32,
+    "net_maximising_value": 4119.0842575037295
+  }
+}

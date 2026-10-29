@@ -1,0 +1,178 @@
+{
+  "built_at_utc": "2026-10-29T07:04:03.752028+00:00",
+  "run_id": "20261029T063931261171Z-88be4b93",
+  "source_commit": "5ba843e4a61d669dad992c6c6ae21089804b2d5f",
+  "uncommitted_changes": false,
+  "documents": [
+    {
+      "file": "01_Final_Report/Final_Report.pdf",
+      "sources": {
+        "reports/final-report.pdf": "64ab2310f8fb5ad0f66470d63b6281d1e89773f23806a5141edc318363a39bba"
+      },
+      "sha256": "64ab2310f8fb5ad0f66470d63b6281d1e89773f23806a5141edc318363a39bba",
+      "pages": 27
+    },
+    {
+      "file": "02_Presentation/Presentation.pptx",
+      "sources": {
+        "reports/presentation/retention-presentation.pptx": "a007985409f0c35443d10689105befa97512ead33b10010347bfb258e399bdb4"
+      },
+      "sha256": "a007985409f0c35443d10689105befa97512ead33b10010347bfb258e399bdb4"
+    },
+    {
+      "file": "02_Presentation/Presentation.pdf",
+      "sources": {
+        "reports/presentation/retention-presentation.pdf": "0a8e657e8a25111f185968a792d82d427795b963c57fb070add92a7cdb405101"
+      },
+      "sha256": "0a8e657e8a25111f185968a792d82d427795b963c57fb070add92a7cdb405101",
+      "pages": 17
+    },
+    {
+      "file": "02_Presentation/Speaker_Script.pdf",
+      "sources": {
+        "reports/presentation/speaker-script.md": "04052ea5fa1e38cdaa58e0675a1c0081273a286290bb5d52b4325cc875d17581"
+      },
+      "sha256": "7fca073b6cab64c06f151213f12f5ce669fcd426ad719f62b71d6a7a5c58a1cf",
+      "pages": 3
+    },
+    {
+      "file": "02_Presentation/Demo_Script.pdf",
+      "sources": {
+        "reports/presentation/demo-script.md": "266da81dad9509b5e44c983c06947a715a75f3685c847c65f96a4d13918a427c"
+      },
+      "sha256": "37f1107f905c10374baff0c7eb8672f7fcd217fbfbb1a6c07081c77b9a4c2c13",
+      "pages": 2
+    },
+    {
+      "file": "03_Executive_Brief/Executive_Brief.pdf",
+      "sources": {
+        "reports/executive-brief.pdf": "f0da3946ada27986f9eac42566cc6d9e855f6502475d46c41fe31bc768ef3d05"
+      },
+      "sha256": "f0da3946ada27986f9eac42566cc6d9e855f6502475d46c41fe31bc768ef3d05",
+      "pages": 2
+    },
+    {
+      "file": "03_Executive_Brief/Executive_Brief.docx",
+      "sources": {
+        "reports/executive-brief.docx": "850a64e922bfd899df3685df2756abf3627e669ad209ea2bb6418d2aa034fb4f"
+      },
+      "sha256": "850a64e922bfd899df3685df2756abf3627e669ad209ea2bb6418d2aa034fb4f"
+    },
+    {
+      "file": "04_Dashboard/dashboard_html/Retention_Dashboard.html",
+      "sources": {
+        "reports/dashboard/retention-dashboard.html": "c7d2bbdaab7f113bc5a3602a42e5ce61a96785d12b67dff75447a661571aeaa8"
+      },
+      "sha256": "c7d2bbdaab7f113bc5a3602a42e5ce61a96785d12b67dff75447a661571aeaa8"
+    },
+    {
+      "file": "04_Dashboard/dashboard_streamlit/Run_Dashboard.bat",
+      "sources": {
+        "scripts/submission/Run_Dashboard.bat": "c928cd9124f5764e749bdb3bf20d4734b929e206d8444163d6ec19441e24e16f"
+      },
+      "sha256": "c928cd9124f5764e749bdb3bf20d4734b929e206d8444163d6ec19441e24e16f"
+    },
+    {
+      "file": "04_Dashboard/dashboard_streamlit/Dashboard_User_Guide.pdf",
+      "sources": {
+        "docs/user-guide.md": "c9661153de588c0d6c65b06be8fbcdc750e314bc26efb811a2b7756d5c8dab2c"
+      },
+      "sha256": "028e0f2cf3f36dae9af03152cd60e14ad1a135877310274c8800b33e0e1b6c26",
+      "pages": 2
+    },
+    {
+      "file": "04_Dashboard/dashboard_streamlit/screenshots/dashboard-assumptions.png",
+      "sources": {
+        "artifacts/qa/dashboard-assumptions.png": "0a3f8a18b2242be65577c7c20db052d8f4081d843a41591548cc19a27fcc0151"
+      },
+      "sha256": "0a3f8a18b2242be65577c7c20db052d8f4081d843a41591548cc19a27fcc0151"
+    },
+    {
+      "file": "04_Dashboard/dashboard_streamlit/screenshots/dashboard-decision.png",
+      "sources": {
+        "artifacts/qa/dashboard-decision.png": "0375bb8cd36af9034af79f5eaea6c80b70e2a2ab254d0a0bea22acd10f42ca65"
+      },
+      "sha256": "0375bb8cd36af9034af79f5eaea6c80b70e2a2ab254d0a0bea22acd10f42ca65"
+    },
+    {
+      "file": "04_Dashboard/dashboard_streamlit/screenshots/dashboard-model.png",
+      "sources": {
+        "artifacts/qa/dashboard-model.png": "580f96dd11641c38c3872416828e18ee6b0870c350db75af2a56b82dd1fb0ef7"
+      },
+      "sha256": "580f96dd11641c38c3872416828e18ee6b0870c350db75af2a56b82dd1fb0ef7"
+    },
+    {
+      "file": "04_Dashboard/dashboard_streamlit/screenshots/dashboard-scorecard.png",
+      "sources": {
+        "artifacts/qa/dashboard-scorecard.png": "c926262097edeb0d73d51f76abe7f1fc174ec0376a9fe7359ebf083e09c58a69"
+      },
+      "sha256": "c926262097edeb0d73d51f76abe7f1fc174ec0376a9fe7359ebf083e09c58a69"
+    },
+    {
+      "file": "04_Dashboard/dashboard_streamlit/screenshots/dashboard-upload.png",
+      "sources": {
+        "artifacts/qa/dashboard-upload.png": "bd930e39a18f7e6e98761f37e5e183dfba0dc89c217ff01cff68d91d2f90d6a1"
+      },
+      "sha256": "bd930e39a18f7e6e98761f37e5e183dfba0dc89c217ff01cff68d91d2f90d6a1"
+    },
+    {
+      "file": "05_Model_Card/Model_Card.pdf",
+      "sources": {
+        "docs/model-card.md": "2147ce76bc503e1eb9bf2ac436db4fb0afe4bd104bd648ae2eaa033d860daa59"
+      },
+      "sha256": "c1f5fc42e7e8cd089b03ae21b44ba3ec99f27900787418350888797039d5c983",
+      "pages": 5
+    },
+    {
+      "file": "06_Data_Dictionary_and_Source_Log/Data_Dictionary.pdf",
+      "sources": {
+        "docs/data-dictionary.md": "03b1f1aa44aaeb50ccfdb28bc0f725db20279e902a713d3a229098d403d8a916"
+      },
+      "sha256": "f310eb2a043acf284021ae0b756d7fa646cc6ccd7c98e7d96c0bfe3b110264cb",
+      "pages": 3
+    },
+    {
+      "file": "06_Data_Dictionary_and_Source_Log/Source_Log_and_Cleaning_Log.pdf",
+      "sources": {
+        "docs/source-log.md": "6f31e8272eafe6028d3829b9b13582b9c4398a529d54cb51742f8455397455b3",
+        "docs/cleaning-log.md": "40767ef48655cd0946aa476deee8722982191fd20eb9c147a90f7eba75c90365"
+      },
+      "sha256": "33bbbc094c6195547b7f7f9cdcd7a58af8ef8dad1a9911773f6b4af4a2568c64",
+      "pages": 3
+    },
+    {
+      "file": "07_Churn_Scorecard_and_Targeting_Table/Churn_Scorecard.pdf",
+      "sources": {
+        "docs/churn-scorecard.md": "196c39e480f0cf501af8b3506b6e00cdfdfec2b6fee305020e791352d45f1ee5"
+      },
+      "sha256": "8432dee5446a1c3ab403417c372780ab800d9af77199355a86e8b56cffaf11f7",
+      "pages": 3
+    },
+    {
+      "file": "07_Churn_Scorecard_and_Targeting_Table/churn_scores_all_customers.csv",
+      "sources": {
+        "reports/tables/scorecard.csv": "239dd7348392f547a096ae7cd020869b7bf92b9d937e359226c80dbe31ee53d2"
+      },
+      "sha256": "239dd7348392f547a096ae7cd020869b7bf92b9d937e359226c80dbe31ee53d2"
+    },
+    {
+      "file": "07_Churn_Scorecard_and_Targeting_Table/customer_targeting_table.csv",
+      "sources": {
+        "reports/tables/targeting_recommended.csv": "607498970a9577bf27821ae95983eead4bb23e799fa5f1c4e850df091ea03178"
+      },
+      "sha256": "607498970a9577bf27821ae95983eead4bb23e799fa5f1c4e850df091ea03178"
+    },
+    {
+      "file": "08_Retention_Playbook/Retention_Playbook.pdf",
+      "sources": {
+        "docs/retention-playbook.md": "4b8443956a0fefa05ac1217c96a6a8260b01ee9199838dbf2837425b5fe6d091"
+      },
+      "sha256": "ef5137d2efb8a7dba12eaaf3bf1a2d5a95aa9b696ad40d5769fda1068db48d57",
+      "pages": 3
+    }
+  ],
+  "code": {
+    "folder": "09_Code",
+    "files": 376
+  }
+}

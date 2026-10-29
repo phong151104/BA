@@ -1,0 +1,21 @@
+﻿term,variable,comparison,coefficient,odds_ratio
+Contract_Month-to-month,Contract,Month-to-month vs Two year,1.2967322020949612,3.657325717631129
+InternetService_Fiber optic,InternetService,Fiber optic vs No,1.0637212047908353,2.897131775949451
+Contract_One year,Contract,One year vs Two year,0.5848125262482607,1.7946545034872552
+InternetService_DSL,InternetService,DSL vs No,0.5139132974970951,1.6718207425093383
+PaymentMethod_Electronic check,PaymentMethod,Electronic check vs Credit card (automatic),0.42622499713468287,1.53146531167892
+PaperlessBilling,PaperlessBilling,Yes vs No,0.37901753741957595,1.4608486550345834
+MultipleLines,MultipleLines,Yes vs No,0.25758537939386167,1.2938022703183898
+StreamingMovies,StreamingMovies,Yes vs No,0.1599953071084762,1.1735053638455128
+PaymentMethod_Mailed check,PaymentMethod,Mailed check vs Credit card (automatic),0.13682204020402808,1.146624077375841
+MonthlyCharges,MonthlyCharges,+10 USD a month,0.12024910361460475,1.1277777501055262
+StreamingTV,StreamingTV,Yes vs No,0.09733707293911668,1.1022318435383545
+Partner,Partner,Yes vs No,0.01124796568068797,1.0113114618910815
+PaymentMethod_Bank transfer (automatic),PaymentMethod,Bank transfer (automatic) vs Credit card (automatic),0.006766119263794663,1.0067890611620929
+DeviceProtection,DeviceProtection,Yes vs No,-0.01985212231589018,0.9803436335344586
+OnlineBackup,OnlineBackup,Yes vs No,-0.17895253907925537,0.8361455826945564
+Dependents,Dependents,Yes vs No,-0.29455377944517336,0.7448638868978591
+tenure,tenure,+12 months,-0.3669116649170582,0.6928708471449562
+TechSupport,TechSupport,Yes vs No,-0.43395778194091994,0.6479396096606475
+OnlineSecurity,OnlineSecurity,Yes vs No,-0.43408812735961627,0.6478551592049209
+PhoneService,PhoneService,Yes vs No,-0.6521132262184833,0.5209437407741025

@@ -1,0 +1,49 @@
+{
+  "browser": "chrome.exe",
+  "run_id": "20261029T063931261171Z-88be4b93",
+  "file": "reports\\dashboard\\retention-dashboard.html",
+  "checked_at_utc": "2026-10-29T06:51:38.285723+00:00",
+  "checks": [
+    {
+      "check": "Decision KPIs equal the Python engine",
+      "passed": true,
+      "detail": "153 / $2,668"
+    },
+    {
+      "check": "Rule comparison lists six rules",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Budget change recomputes the list",
+      "passed": true,
+      "detail": "52"
+    },
+    {
+      "check": "Scenario analysis draws tornado, profit curve and grid",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Model evidence tabs render",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "Template upload is scored",
+      "passed": true,
+      "detail": "20 rows"
+    },
+    {
+      "check": "Uploaded customers drive the Decision page",
+      "passed": true,
+      "detail": ""
+    },
+    {
+      "check": "No script errors",
+      "passed": true,
+      "detail": ""
+    }
+  ],
+  "status": "passed"
+}

@@ -1,0 +1,72 @@
+# 4. Sensitivity, budget size, fairness and pilot design
+
+**Goal.** Test how the recommendation depends on the assumptions (offer cost and save rate above all), choose the campaign size, review fairness and customer experience, and size the pilot that will measure the real save rate.
+
+Numbers in the text were generated for run `{{ run.id }}`.
+
+```python
+import pandas as pd
+from IPython.display import display, Image
+from telco_retention.common import ROOT, latest_run, read_json
+pd.set_option("display.precision", 3)
+run = latest_run()
+print("Run:", run.name)
+```
+
+## One assumption at a time
+
+```python
+display(pd.read_csv(run / "tornado.csv")[["label", "low", "high", "base", "net_low_retarget", "net_high_retarget", "net_low_fixed", "net_high_fixed"]])
+display(Image(filename=str(ROOT / "reports/figures/tornado.png")))
+```
+
+**Interpretation.** {{ tornado[0].label }} and {{ tornado[1].label | lower }} move the result most. *Retarget* re-selects customers under the new assumption; *fixed* keeps today's list. A re-optimised plan cannot go below zero (it would contact nobody), a frozen list can.
+
+## Save rate x offer cost
+
+```python
+sens = pd.read_csv(run / "sensitivity.csv")
+grid = sens.query("axis == 'save_rate x offer_cost'")
+for mode in ["fixed", "retarget"]:
+    display(grid.query("mode == @mode").pivot(index="parameter", columns="cost_multiplier", values="expected_net_value").round(0).rename_axis(f"{mode}: save rate / cost x"))
+display(Image(filename=str(ROOT / "reports/figures/sensitivity_heatmap.png")))
+display(pd.read_csv(run / "scenarios.csv"))
+display(read_json(run / "break_even.json"))
+display(pd.read_csv(run / "monte_carlo_summary.csv").round(3))
+display(pd.read_csv(run / "monte_carlo_drivers.csv").round(3))
+display(Image(filename=str(ROOT / "reports/figures/monte_carlo.png")))
+```
+
+**Interpretation.** Break-even save rate: {{ break_even.break_even_default_save_rate | pct }} for the base-budget list and {{ recommended.break_even.break_even_default_save_rate | pct }} for the larger recommended list; below {{ break_even.minimum_viable_save_rate | pct }} nobody has positive expected value. Re-optimised scenarios (pessimistic / base / optimistic): {{ scenarios.pessimistic.expected_net_value | usd }} / {{ scenarios.base.expected_net_value | usd }} / {{ scenarios.optimistic.expected_net_value | usd }}; a list frozen under pessimistic assumptions would make {{ scenarios.pessimistic.fixed_expected_net_value | usd }}. Drawing every assumption at once from its range ({{ monte_carlo.draws | num }} draws), the frozen recommended list loses money in {{ monte_carlo.by.recommended.prob_loss | pct(0) }} of draws and the base-budget list in {{ monte_carlo.by.base.prob_loss | pct(0) }}; the base-budget list beats the risk-only list in {{ monte_carlo.by.base_vs_risk.prob_gain | pct(0) }} of draws. {{ monte_carlo.drivers[0].label }} and {{ monte_carlo.drivers[1].label | lower }} drive the spread most.
+
+## Budget optimisation across campaign sizes
+
+```python
+curve = pd.read_csv(run / "budget_curve.csv")
+display(curve.query("population == 'validation'")[["budget_share", "selected_count", "cost", "expected_net_value", "marginal_roi"]])
+display(read_json(run / "validation_decisions.json")["budget_recommendation"])
+display(read_json(run / "recommended_campaign.json"))
+display(Image(filename=str(ROOT / "reports/figures/profit_curve.png")))
+```
+
+**Interpretation.** On validation, the largest budget whose last step still earns {{ recommendation.hurdle_marginal_roi | pct(0) }} is the cost of the standard offer for {{ recommendation.recommended_share | pct(0) }} of customers. On test this buys {{ recommended.selected_count }} offers ({{ recommended.contacted_share | pct(0) }} of customers, because the optimiser mixes offers), {{ recommended.cost | usd }} cost and {{ recommended.expected_net_value | usd }} expected net value.
+
+## Fairness and customer experience
+
+```python
+fair = pd.read_csv(run / "fairness.csv")
+display(fair[["strategy", "attribute", "group", "customers", "selection_rate", "ratio_to_reference", "ratio_lower_95", "ratio_upper_95", "risk_adjusted_ratio", "review_flag", "explained_by_risk"]])
+display(Image(filename=str(ROOT / "reports/figures/fairness.png")))
+```
+
+{% set senior = fairness_by[strategy ~ '|SeniorCitizen|1'] %}
+**Interpretation.** Seniors are contacted {{ senior.ratio_to_reference | ratio(2) }} as often as non-seniors; within the same risk decile the ratio is {{ senior.risk_adjusted_ratio | ratio(2) }}. Risk explains most of the gap and value (higher bills) the rest. Neither gender nor age is a model input. Because an offer is both a discount and an intrusion, the gap is flagged for human review each wave rather than corrected mechanically.
+
+## Pilot sizing
+
+```python
+display(read_json(run / "pilot_plan.json"))
+display(pd.read_csv(run / "pilot_power.csv"))
+```
+
+**So what.** One wave of {{ pilot.list_size_per_wave | num }} customers with half held out can detect a save rate of about {{ pilot.minimum_detectable_save_rate_one_wave | pct(0) }} or more, below the recommended list's break-even of {{ pilot.break_even_save_rate | pct }} (the average save rate of its offer mix, assumed {{ pilot.assumed_save_rate | pct }}). If the true save rate is the assumed one, the decision rule says go after one wave {{ pilot.at_assumed.p_go | pct(0) }} of the time. Measuring it is the decisive next step: it replaces the most influential assumption with evidence.

@@ -1,0 +1,155 @@
+# Retention Lab configuration. Every business assumption is a visible parameter here;
+# docs/assumption-register.md explains each value, its source and its tested range.
+seed: 42
+cv_folds: 5
+search_iterations: 12
+bootstrap_iterations: 1000
+random_campaign_iterations: 100
+currency: USD
+assumptions_version: v2
+
+solver:
+  time_limit_seconds: 30
+  mip_rel_gap: 0.0
+
+scorecard:
+  # Points = anchor + PDO / ln 2 x logit(churn probability): higher means riskier; every PDO points doubles the odds.
+  anchor_score: 500
+  pdo: 40
+  odds_ratio_steps: {tenure: 12, MonthlyCharges: 10}
+  # Round-number bands; narrow enough that the card stays within about 1 point of the model's probability.
+  bands:
+    tenure: [3, 6, 12, 18, 24, 36, 48, 60]
+    MonthlyCharges: [30, 45, 60, 75, 90, 105]
+
+segments:
+  # Risk/value cut-offs are quantiles fitted on the validation split, then frozen.
+  high_risk_quantile: 0.75
+  high_value_quantile: 0.75
+
+value:
+  # V = MonthlyCharges x margin x annuity(min(cap, base x tenure factor) months, discount rate)
+  margin: 0.30
+  base_horizon_months: 12
+  horizon_cap_months: 24
+  tenure_factors: {new: 0.75, developing: 1.0, loyal: 1.25}
+  discount_rate_annual: 0.10
+
+campaign:
+  default_offer: standard
+  # Budget = floor(share x customers in scope) x (offer + contact cost of the default offer)
+  budget_share: 0.10
+  max_contact_share: 0.30          # customer-experience cap: never contact more than this share
+  strategy_selection:
+    candidates: [ev, segment_offers]
+    min_relative_gain: 0.05        # catalog must beat the single offer by 5% on validation
+  recommendation:
+    share_grid: {start: 0.0, stop: 0.60, step: 0.02}
+    min_marginal_roi: 0.10         # each extra budget step must return >= 10% net on its cost
+
+offers:
+  # Synthetic offer table (allowed by the brief): costs and save rates are documented team assumptions,
+  # to be replaced by measured values from the pilot. Contact = one outbound retention call + follow-up SMS.
+  - {offer_id: standard, label: One-time $20 bill credit, offer_cost: 20.0, contact_cost: 5.0, save_rate: 0.20, eligibility: {}}
+  - {offer_id: contract_upgrade, label: $35 credit for moving to a 1-year contract, offer_cost: 35.0, contact_cost: 5.0, save_rate: 0.30,
+     eligibility: {Contract: [Month-to-month]}}
+  - {offer_id: service_bundle, label: 6 months free TechSupport + OnlineSecurity, offer_cost: 12.0, contact_cost: 5.0, save_rate: 0.15,
+     eligibility: {InternetService: [DSL, Fiber optic], TechSupport: ["No"]}}
+  - {offer_id: loyalty_reward, label: $10 loyalty reward, offer_cost: 10.0, contact_cost: 5.0, save_rate: 0.10,
+     eligibility: {tenure_segment: [loyal]}}
+
+guardrails:
+  audit_attributes: [gender, SeniorCitizen, tenure_segment, Contract]
+  reference_groups: {gender: Male, SeniorCitizen: "0", tenure_segment: overall, Contract: overall}  # overall = vs the average selection rate
+  selection_ratio_alert: [0.8, 1.25]
+  min_group_size: 50
+
+sensitivity:
+  save_rate: [0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.40]
+  offer_cost_multiplier: [0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+  contact_cost: [1.0, 2.0, 5.0, 8.0, 10.0]
+  value.margin: [0.20, 0.30, 0.40]
+  value.base_horizon_months: [6, 12, 18, 24]
+  value.discount_rate_annual: [0.05, 0.10, 0.15]
+  scenarios:
+    pessimistic: {save_rate: 0.10, offer_cost_multiplier: 1.25, contact_cost: 8.0, value.margin: 0.25, value.base_horizon_months: 9}
+    base: {}
+    optimistic: {save_rate: 0.30, offer_cost_multiplier: 0.75, contact_cost: 2.0, value.margin: 0.40, value.base_horizon_months: 15}
+
+pilot:
+  alpha: 0.05
+  power: 0.80
+  holdout_share: 0.5
+  base_population: 7043
+  outcome_window_days: 90
+  save_rate_grid: [0.05, 0.10, 0.15, 0.20, 0.30]
+
+project:
+  # Team assumptions for the roadmap and the one-off effort, to be confirmed by the owners named in the business case.
+  roadmap:
+    - {phase: Set-up, weeks: 4, owner: "Retention, Legal/DPO, IT", work: "consent and Do-Not-Call checks, data-protection impact assessment, CRM list export, call script and agent training"}
+    - {phase: Pilot wave, weeks: 13, owner: "Call centre, Retention", work: "contact the offered half once; follow both halves for the 90-day outcome window"}
+    - {phase: Read-out, weeks: 2, owner: Retention analytics, work: "save rate with its interval, net value per customer, guardrail metrics; go, extend or stop"}
+    - {phase: Scale or stop, weeks: 4, owner: "Head of Retention, Finance", work: "retrain and recalibrate on own data, replace assumed save rates, roll out the recommended budget"}
+  effort_person_weeks: {analytics: 4, crm_and_it: 2, legal_and_dpo: 1, agent_training: 1}
+  max_extend_waves: 2
+
+monte_carlo:
+  # Joint uncertainty: every register assumption is drawn at once from a triangular distribution (low, base, high),
+  # independently. Frozen lists are repriced for every draw; the plan is re-optimised for the first draws only (slower).
+  draws: 5000
+  reoptimise_draws: 200
+  mip_rel_gap: 0.001         # re-optimised draws accept a 0.1% optimality gap (about 40 times faster)
+
+stress_test:
+  # Prior shift (Saerens et al., 2002): one logit constant moves every probability so the average churn equals a lower level;
+  # the ranking of customers is unchanged. The value horizon is held fixed, which understates value at lower churn.
+  target_churn: [0.15, 0.10, 0.05]
+
+vietnam_scenario:
+  # Illustrative only: the sample's customers priced like a Vietnamese home-fibre operator. Sources: docs/references.md.
+  usd_vnd: 25603             # State Bank of Vietnam central rate, 2026-09-09 [sbv2026]
+  monthly_bill_vnd: 250000   # home fibre; entry packages cost 190,000-195,000 VND a month in 2026 [phongvu2026] (team assumption above entry level)
+  contact_cost_vnd: 500      # one branded SMS; domestic SMS cost 200-500 VND [sentdm2025]
+  # Offer costs keep the same share of the monthly bill as in the sample (team assumption).
+
+extended:
+  # IBM's extended sample of the same 7,043 customers. Only churn reasons and the CLTV index are kept, for description;
+  # they are never model inputs (a reason is known only after a customer has left). IBM's own churn score is not used.
+  url: https://www.kaggle.com/api/v1/datasets/download/yeanzc/telco-customer-churn-ibm-dataset
+  dataset_page: https://www.kaggle.com/datasets/yeanzc/telco-customer-churn-ibm-dataset
+  required: true
+  # IBM's five churn categories, as assigned in its 11.1.3+ sample.
+  reason_categories:
+    Competitor: [Competitor offered higher download speeds, Competitor offered more data, Competitor made better offer, Competitor had better devices]
+    Dissatisfaction: [Network reliability, Product dissatisfaction, Service dissatisfaction, Lack of self-service on Website, Limited range of services,
+                      Poor expertise of phone support, Poor expertise of online support]
+    Attitude: [Attitude of support person, Attitude of service provider]
+    Price: [Price too high, Extra data charges, Lack of affordable download/upload speed, Long distance charges]
+    Other: ["Don't know", Moved, Deceased]
+  # Categories a price or contract offer could plausibly address; the others need service fixes or cannot be saved.
+  offer_addressable_categories: [Price, Competitor]
+
+# One row per business assumption; low/high drive the tornado chart. Sources: docs/references.md.
+assumption_register:
+  - {id: A1, parameter: save_rate, label: Save rate of the standard offer, unit: share, low: 0.10, high: 0.30, sources: [verbraken2013, ascarza2016, ascarza2018],
+     rationale: "Share of would-be churners kept by the offer. Profit-based churn studies use a mean acceptance of 30%; we take 20% because proactive contact can backfire and high-risk customers are not always responsive.",
+     validate_by: Randomised holdout pilot (docs/pilot-design.md)}
+  - {id: A2, parameter: offer_cost_multiplier, label: Offer cost (multiplier on catalog cost), unit: x, low: 0.5, high: 1.5, sources: [verbraken2013, cma2020],
+     rationale: "Standard offer is a one-time $20 credit, about 30% of the $64.76 average monthly bill and about 8% of the average customer value; published loyalty discounts run around 10% of the bill per month.",
+     validate_by: Finance sign-off of the offer budget}
+  - {id: A3, parameter: contact_cost, label: Contact cost per customer (USD), unit: USD, low: 1.0, high: 10.0, sources: [gartner2019, verbraken2013, twilio2026],
+     rationale: "One outbound retention call plus SMS follow-up. Live-agent contacts average US$8.01; profit-metric studies use about 0.5% of customer value; SMS costs cents.",
+     validate_by: Call-centre cost per completed contact}
+  - {id: A4, parameter: value.margin, label: Contribution margin, unit: share, low: 0.20, high: 0.40, sources: [damodaran2026margin, verizon2026, att2026, tmobile2026],
+     rationale: "Share of the monthly bill kept as contribution. US telecom EBITDA margins are 35-42% and gross margins about 60%, so 30% is deliberately conservative.",
+     validate_by: Finance (product P&L)}
+  - {id: A5, parameter: value.base_horizon_months, label: Value horizon (months), unit: months, low: 6, high: 18, sources: [gupta2004],
+     rationale: "Months of margin a saved customer is expected to stay. One contract year, scaled 0.75/1.0/1.25 by tenure, because a saved would-be churner is likely to churn again sooner than an average customer.",
+     validate_by: Survival of pilot customers after 6 and 12 months}
+  - {id: A6, parameter: value.discount_rate_annual, label: Annual discount rate, unit: share, low: 0.05, high: 0.15, sources: [damodaran2026wacc, gupta2004],
+     rationale: "US telecom cost of capital is about 5.4%; customer-valuation studies use 8-16% (average 12%) to reflect that future margin from a customer is less certain than a bond. 10% sits inside that range.",
+     validate_by: Finance hurdle rate}
+  - {id: A7, parameter: value.tenure_factor_spread, label: "Tenure effect on remaining months (new 1-s, loyal 1+s)", unit: share, low: 0.0, high: 0.5, sources: [faderhardie2010, faderhardie2014],
+     rationale: "Retention rises with tenure, so a saved loyal customer is expected to stay longer than a saved new one. The base horizon is scaled by 0.75 for new and 1.25 for loyal customers (s = 25%); 0 means no tenure effect.",
+     validate_by: Survival of pilot customers by tenure segment}

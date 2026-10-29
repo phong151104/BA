@@ -1,0 +1,77 @@
+{
+  "status": "passed",
+  "python": "3.13.17",
+  "run_id": "20261029T063931261171Z-88be4b93",
+  "artifacts": {
+    "required": 48,
+    "sizes": {
+      "random_campaigns.csv": 100,
+      "sensitivity.csv": 114,
+      "tornado.csv": 7,
+      "budget_curve.csv": 186,
+      "scenarios.csv": 3,
+      "stress_test.csv": 8,
+      "monte_carlo_draws.csv": 5000,
+      "monte_carlo_drivers.csv": 7
+    }
+  },
+  "pilot": {
+    "list_size_per_wave": 1620,
+    "arm_size_per_wave": 810,
+    "break_even_save_rate": 0.15550978276039323
+  },
+  "extended_join": {
+    "matched": 7043,
+    "field_agreement": {
+      "Churn": 1.0,
+      "tenure": 1.0,
+      "MonthlyCharges": 1.0,
+      "Contract": 1.0,
+      "InternetService": 1.0,
+      "PaymentMethod": 1.0,
+      "TechSupport": 1.0
+    }
+  },
+  "documents": {
+    "rendered": 17,
+    "drift": []
+  },
+  "links": "no broken relative links",
+  "deliverables": {
+    "brief_words": 794,
+    "brief_pages": 2,
+    "slides": 17,
+    "slides_with_notes": 17,
+    "talk_seconds": 480,
+    "speaker_seconds": {
+      "Kiet": 160,
+      "Hieu": 160,
+      "Dung": 160
+    },
+    "deck_pdf_pages": 17,
+    "pdf_status": "current",
+    "brief_pdf_run_id": "20261029T063931261171Z-88be4b93",
+    "deck_pdf_run_id": "20261029T063931261171Z-88be4b93",
+    "report_pages": 27,
+    "latex_status": "current",
+    "latex_run_id": "20261029T063931261171Z-88be4b93"
+  },
+  "reproducibility": {
+    "compared_with": "20261029T063059074964Z-88be4b93",
+    "current": "20261029T063931261171Z-88be4b93",
+    "metrics_atol": 1e-10,
+    "selected_customers_and_offers_equal": true,
+    "scenario_ids_equal": true,
+    "monte_carlo_stress_scorecard_equal": true
+  },
+  "ui_seconds": {
+    "warmed": [
+      0.35855579999042675,
+      1.034820300003048,
+      1.9275380999897607,
+      1.620990899973549,
+      0.42267420000280254
+    ],
+    "max": 1.9275380999897607
+  }
+}

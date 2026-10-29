@@ -1,0 +1,21 @@
+﻿feature,mean_abs_shap
+Contract_Month-to-month,0.86876756
+tenure,0.48290905
+MonthlyCharges,0.39086154
+InternetService_Fiber optic,0.25548157
+PaymentMethod_Electronic check,0.17307068
+Contract_One year,0.13814706
+OnlineSecurity,0.1292786
+PaperlessBilling,0.12423487
+TechSupport,0.10565296
+StreamingMovies,0.06738308
+MultipleLines,0.06492128
+Dependents,0.06338915
+OnlineBackup,0.05735673
+PhoneService,0.049311828
+InternetService_DSL,0.04691539
+StreamingTV,0.02510728
+DeviceProtection,0.02127182
+PaymentMethod_Mailed check,0.015236426
+Partner,0.013077869
+PaymentMethod_Bank transfer (automatic),0.012169559

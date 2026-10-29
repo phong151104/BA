@@ -1,0 +1,52 @@
+{% set q = data.quality %}
+# Data readiness review
+
+**Question:** is the IBM Telco sample fit to support the retention-targeting decision?
+**Verdict:** **fit for designing and demonstrating the method; not fit, on its own, for sizing a real campaign.** It is complete and clean, but it is a fictional single-snapshot sample with a churn label that does not match a real monthly churn rate, and it contains no campaign or offer-response data.
+
+## 1. Source and provenance
+
+| Item | Finding |
+|---|---|
+| Source | IBM Telco Customer Churn sample, downloaded from {{ data.source.source }} ([dataset page]({{ data.source.dataset_page }})); IBM describes it as a fictional telco serving 7,043 customers in California ([IBM, 2019](references.md#ibm2019)) |
+| Downloaded | {{ data.source.downloaded_at_utc[:19] }} UTC; SHA-256 `{{ data.source.sha256 }}` |
+| Size | {{ data.rows | num }} customers x {{ data.columns }} columns, one row per customer |
+| Licence | Kaggle shows "{{ data.metadata.get('license', 'Data files (c) Original Authors') }}"; the raw file is kept for reproducibility of coursework only |
+| Joins | {{ q.joins }} ([source log](source-log.md#second-source-churn-reasons-joined-for-description-only)) |
+
+## 2. Completeness and validity
+
+| Check | Result |
+|---|---|
+| Duplicate rows removed | {{ q.duplicates_removed }} |
+| Unique customer IDs | {{ q.unique_ids | num }} of {{ q.rows_after | num }} |
+| Blank `TotalCharges` | {{ q.total_charges_missing_before }} rows, all with tenure 0 (new customers) and filled with 0 |
+| Other missing values after cleaning | {{ q.missing_after.values() | sum }} |
+| Domain checks | Every categorical field matches its documented values; numbers finite and non-negative; tenure integer |
+| Consistency checks | "No phone service" / "No internet service" appear if and only if the parent service is absent |
+| Label balance | {{ data.churners | num }} churners ({{ data.churn_rate | pct }}) vs {{ (data.rows - data.churners) | num }} non-churners |
+
+All checks are automated (`telco_retention.data.validate`) and the same checks reject invalid uploaded CSVs in the dashboard.
+
+## 3. Fitness for the decision
+
+| Need | Available? | Consequence |
+|---|---|---|
+| Churn label | Yes, but its window is ambiguous: "within the last month" (Kaggle, IBM base sample) vs "this quarter" (IBM extended sample) | Treat probabilities as relative risk within this sample; recalibrate on own data |
+| Predictors observed before churn | Partly: tenure, contract and charges are a single snapshot; `TotalCharges` is almost exactly tenure x charges and {{ 'was dropped in the feature review' if 'TotalCharges' not in model.features else 'is kept only because the feature review found it useful' }} | Random split only; no time-based validation possible; no leakage of the label itself |
+| Customer value inputs | Monthly charges and tenure; no cost-to-serve or margin. IBM's CLTV index ranks customers differently (Spearman {{ cltv.spearman_value_proxy | num(2) }} with our proxy; it follows tenure, {{ cltv.spearman_tenure | num(2) }}, more than the bill, {{ cltv.spearman_monthly_charges | num(2) }}) | Value is a documented proxy using an assumed margin; the value definition is a real source of uncertainty, tested through margin, horizon and tenure factors |
+| Reasons for leaving | Yes, from the extended sample, for all {{ reasons.churners | num }} churners, recorded after they left | Descriptive only: {{ reasons.addressable_share | pct(0) }} left for price or a competitor's offer, which an offer can address; {{ reasons.service_share | pct(0) }} for staff attitude or dissatisfaction |
+| Offer cost and response | **No** | Synthetic offer table with assumed save rates; causal effect must be measured in a pilot |
+| Representativeness | Fictional, US, home phone + internet, 26.5% churn (real US postpaid churn is about 1% per month) | Results illustrate the method; magnitudes do not transfer |
+| Protected attributes | `gender`, `SeniorCitizen` available | Excluded from the model; used only for the fairness audit |
+
+## 4. Split and leakage controls
+
+Stratified random split, seed {{ cfg.seed }}: train {{ data.splits.train | num }}, validation {{ data.splits.validation | num }}, test {{ data.splits.test | num }}. All preprocessing (imputation, scaling, encoding) is fitted inside cross-validation on train; the model, thresholds, strategy and budget are chosen on validation; test is used only for reporting.
+
+## 5. Actions before real deployment
+
+1. Rebuild the label from the operator's own data with an explicit window (for example, disconnection or port-out within 90 days), and remove involuntary suspensions.
+2. Use time-based validation: train on earlier months, test on later ones.
+3. Add cost-to-serve and margin per plan from Finance.
+4. Record every offer and contact so that the pilot produces the response data this sample lacks.

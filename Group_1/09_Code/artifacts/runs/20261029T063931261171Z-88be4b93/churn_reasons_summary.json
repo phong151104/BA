@@ -1,0 +1,56 @@
+{
+  "churners": 1869,
+  "category_share": {
+    "Competitor": 0.33226324237560195,
+    "Dissatisfaction": 0.24879614767255218,
+    "Attitude": 0.17495987158908508,
+    "Price": 0.13001605136436598,
+    "Other": 0.11396468699839486
+  },
+  "addressable_categories": [
+    "Competitor",
+    "Price"
+  ],
+  "addressable_share": 0.4622792937399679,
+  "service_share": 0.42375601926163725,
+  "moved_or_deceased_share": 0.03156768325307651,
+  "unknown_share": 0.08239700374531835,
+  "on_list_churners": 183,
+  "addressable_share_on_list": 0.4644808743169399,
+  "category_share_on_list": {
+    "Competitor": 0.3333333333333333,
+    "Dissatisfaction": 0.273224043715847,
+    "Attitude": 0.16393442622950818,
+    "Price": 0.13114754098360656,
+    "Other": 0.09836065573770492
+  },
+  "max_segment_gap": 0.03795277417857626,
+  "min_segment_churners": 100,
+  "top_reasons": [
+    {
+      "reason": "Attitude of support person",
+      "churners": 192,
+      "share": 0.10272873194221509
+    },
+    {
+      "reason": "Competitor offered higher download speeds",
+      "churners": 189,
+      "share": 0.10112359550561797
+    },
+    {
+      "reason": "Competitor offered more data",
+      "churners": 162,
+      "share": 0.08667736757624397
+    },
+    {
+      "reason": "Don't know",
+      "churners": 154,
+      "share": 0.08239700374531835
+    },
+    {
+      "reason": "Competitor made better offer",
+      "churners": 140,
+      "share": 0.0749063670411985
+    }
+  ]
+}

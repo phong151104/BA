@@ -1,0 +1,8 @@
+﻿parameter,spearman_with_recommended_net
+value.base_horizon_months,0.5921121538284861
+save_rate,0.5058676330347052
+value.margin,0.42016265789450624
+offer_cost_multiplier,-0.36068734706749384
+contact_cost,-0.13269185676367426
+value.discount_rate_annual,-0.06583338215333527
+value.tenure_factor_spread,-0.005431307353252293

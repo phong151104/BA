@@ -1,0 +1,16 @@
+{
+  "browser": "chrome.exe",
+  "run_id": "20261029T063931261171Z-88be4b93",
+  "checked_at_utc": "2026-10-29T06:52:02.307371+00:00",
+  "checks": [
+    "decision page: five KPIs, recommendation, who gets an offer, risk x value chart and action list",
+    "budget 0 and restore update the KPIs",
+    "campaign ZIP contains the list, the assumptions and the report scenario ID",
+    "custom budget survives navigation; live loss probability shown",
+    "assumptions page: loss probability, tornado, scenarios, profit curve, marginal ROI, grid and stress test",
+    "model page: deployed model metrics, odds ratios, points scorecard and separate challenger SHAP",
+    "valid CSV scored without warnings; a known ID is disclosed",
+    "contradictory and invalid CSVs rejected with errors"
+  ],
+  "status": "passed"
+}

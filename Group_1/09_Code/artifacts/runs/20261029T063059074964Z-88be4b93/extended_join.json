@@ -1,0 +1,20 @@
+{
+  "joined_on": "customerID = CustomerID",
+  "base_rows": 7043,
+  "matched": 7043,
+  "field_agreement": {
+    "Churn": 1.0,
+    "tenure": 1.0,
+    "MonthlyCharges": 1.0,
+    "Contract": 1.0,
+    "InternetService": 1.0,
+    "PaymentMethod": 1.0,
+    "TechSupport": 1.0
+  },
+  "kept_fields": [
+    "Churn Reason",
+    "CLTV"
+  ],
+  "dropped_fields": "Churn Score, location and all other columns",
+  "accepted": true
+}

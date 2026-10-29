@@ -1,0 +1,9 @@
+{
+  "customers": 7043,
+  "spearman_value_proxy": 0.17546055217949763,
+  "spearman_tenure": 0.3670388093719401,
+  "spearman_monthly_charges": 0.107943620612153,
+  "top_quartile_overlap": 0.3439273552780931,
+  "mean_cltv_churners": 4149.414660246121,
+  "mean_cltv_stayers": 4490.921337456513
+}

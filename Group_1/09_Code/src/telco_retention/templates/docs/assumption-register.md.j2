@@ -1,0 +1,58 @@
+{% set offer_why = {
+ "standard": "Simple, unconditional credit any customer can receive. About 30% of the $64.76 average monthly bill, inside the published range of 0.1-0.9 months of fees [lemmens2020, neslin2006].",
+ "contract_upgrade": "Month-to-month customers churn about four times as often as one-year customers in the training data. A larger credit tied to a 12-month commitment is assumed to keep more would-be churners; the observed churn gap is an association, so the save rate stays an assumption to test.",
+ "service_bundle": "Internet customers without TechSupport churn far more often than those with it. A free bundle costs the operator little (marginal cost of the service), with a lower assumed save rate.",
+ "loyalty_reward": "Small recognition for customers with more than 24 months of tenure, so that loyal customers are not systematically excluded from offers (the 'loyalty penalty' concern [cma2020]). Low assumed save rate."} %}
+# Assumption register
+
+Every number below is a visible parameter in `configs/default.yaml` (version `{{ cfg.assumptions_version }}`), shown in the dashboard's assumption strip, and varied in the sensitivity analysis. **None of them is estimated from the data**, because the data contain no retention campaign. Sources are listed in [references.md](references.md).
+
+## Core economic assumptions (tornado inputs)
+
+| ID | Assumption | Base | Tested range | Sources | Validated by |
+|---|---|---:|---|---|---|
+{% for r in register %}{% set t = tornado | selectattr('parameter', 'equalto', r.parameter) | first %}
+| {{ r.id }} | {{ r.label }} | {{ t.base_text }}{{ " (" ~ (default_offer.offer_cost | usd) ~ " standard offer)" if r.parameter == 'offer_cost_multiplier' }} | {{ t.low_text }} to {{ t.high_text }} | {% for s in r.sources %}[{{ s }}](references.md#{{ s }}){{ ", " if not loop.last }}{% endfor %} | {{ r.validate_by }} |
+{% endfor %}
+
+### Rationale
+
+{% for r in register %}
+- **{{ r.id }}. {{ r.label }}.** {{ r.rationale }}
+{% endfor %}
+
+**Effect on the decision:** the tornado chart ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)) shows {{ tornado[0].label | lower }} and {{ tornado[1].label | lower }} move the expected net value most. The break-even save rate is **{{ recommended.break_even.break_even_default_save_rate | pct }}** for the recommended list and {{ break_even.break_even_default_save_rate | pct }} for the smaller base-budget list: below it a frozen list loses money, and below {{ break_even.minimum_viable_save_rate | pct }} no customer is worth contacting. Drawing all assumptions at once from their ranges, the recommended list loses money in {{ monte_carlo.by.recommended.prob_loss | pct(0) }} of {{ monte_carlo.draws | num }} draws ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)).
+
+## Offer catalog
+
+Synthetic offer table created by the team, as permitted by the brief. Eligibility rules turn it into segment-specific policies; the optimiser chooses at most one offer per customer.
+
+| Offer | Description | Offer cost | Contact cost | Assumed save rate | Eligible customers |
+|---|---|---:|---:|---:|---|
+{% for o in offers %}
+| `{{ o.offer_id }}` | {{ o.label }} | {{ o.offer_cost | usd }} | {{ o.contact_cost | usd }} | {{ o.save_rate | pct(0) }} | {{ o.eligibility }} |
+{% endfor %}
+
+{% for o in offers %}
+- **`{{ o.offer_id }}`**: {{ offer_why.get(o.offer_id, "Team assumption.") }}
+{% endfor %}
+
+All save rates are assumptions, deliberately at or below the 30% convention of profit-based churn studies [[verbeke2012](references.md#verbeke2012), [verbraken2013](references.md#verbraken2013)], because field experiments show offers can be ineffective or even raise churn for high-risk customers [[ascarza2018](references.md#ascarza2018), [ascarza2016](references.md#ascarza2016)]. Each offer is a separate arm in the pilot.
+
+## Design parameters (policy choices, not estimates)
+
+| Parameter | Value | Why |
+|---|---|---|
+| Default budget | {{ cfg.campaign.budget_share | pct(0) }} of customers x standard offer ({{ budget.base | usd }} for {{ budget.n_test | num }} customers) | The business question fixes a budget; the team set it as a share of customers so a manager can scale it with the customer base. It is a starting point, not a recommendation |
+| Contact cap | {{ cfg.campaign.max_contact_share | pct(0) }} of customers per wave | Customer-experience guardrail against over-contacting |
+| Strategy selection | Segment offers only if they beat the single offer by >= {{ cfg.campaign.strategy_selection.min_relative_gain | pct(0) }} on validation | Prefer the simpler policy unless the gain is material |
+| Budget recommendation | Largest budget whose last step earns >= {{ cfg.campaign.recommendation.min_marginal_roi | pct(0) }} marginal ROI, chosen on validation | A management minimum return on marketing spend; time value is already in the discounted customer value, so the hurdle only stops spending where the next dollar barely pays |
+| Value horizon cap | {{ cfg.value.horizon_cap_months }} months | Upper bound on remaining months whatever the horizon and factors |
+| Tenure factors | new {{ cfg.value.tenure_factors.new }}, developing {{ cfg.value.tenure_factors.developing }}, loyal {{ cfg.value.tenure_factors.loyal }} | Retention rises with tenure [faderhardie2010]; the factors themselves are a team assumption |
+| Risk / value cut-offs | {{ cfg.segments.high_risk_quantile | pct(0) }} percentiles on validation (risk {{ thresholds.risk | num(3) }}, value {{ thresholds.value | usd }}) | Defines the high-risk/high-value segment used in coverage |
+| Fairness review band | selection-rate ratio outside {{ cfg.guardrails.selection_ratio_alert[0] }}-{{ cfg.guardrails.selection_ratio_alert[1] }}, group >= {{ cfg.guardrails.min_group_size }} customers | Four-fifths screen used as an analogy [cfr1607] |
+| Pilot | alpha {{ cfg.pilot.alpha }}, power {{ cfg.pilot.power | pct(0) }}, {{ cfg.pilot.holdout_share | pct(0) }} holdout, {{ cfg.pilot.outcome_window_days }}-day outcome | Standard two-arm test design [kohavi2020] |
+
+## Change control
+
+Change values only in `configs/default.yaml`, then run `python -m telco_retention run-all`. The run manifest stores the full configuration, so every report, figure and dashboard default can be traced to the assumptions it used. Replace assumptions with measured values as soon as the pilot produces them (owner named in the first table).

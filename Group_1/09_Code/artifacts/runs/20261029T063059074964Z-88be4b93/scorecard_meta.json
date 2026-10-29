@@ -1,0 +1,15 @@
+{
+  "available": true,
+  "anchor_score": 500,
+  "pdo": 40,
+  "base_points": 133,
+  "factor": 57.70780163555854,
+  "population": "test",
+  "mean_abs_probability_gap": 0.009809285317869789,
+  "max_abs_probability_gap": 0.06359521044849087,
+  "validation_mean_abs_probability_gap": 0.010413648641731093,
+  "card_roc_auc": 0.8307732051977577,
+  "model_roc_auc": 0.8297514789842155,
+  "score_min": 195.0,
+  "score_max": 597.0
+}
