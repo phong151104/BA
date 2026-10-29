@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/data-readiness-review.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/data-readiness-review.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Data readiness review
 
 **Question:** is the IBM Telco sample fit to support the retention-targeting decision?

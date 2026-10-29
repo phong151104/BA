@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/assumption-register.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/assumption-register.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Assumption register
 
 Every number below is a visible parameter in `configs/default.yaml` (version `v2`), shown in the dashboard's assumption strip, and varied in the sensitivity analysis. **None of them is estimated from the data**, because the data contain no retention campaign. Sources are listed in [references.md](references.md).
@@ -25,7 +25,7 @@ Every number below is a visible parameter in `configs/default.yaml` (version `v2
 - **A6. Annual discount rate.** US telecom cost of capital is about 5.4%; customer-valuation studies use 8-16% (average 12%) to reflect that future margin from a customer is less certain than a bond. 10% sits inside that range.
 - **A7. Tenure effect on remaining months (new 1-s, loyal 1+s).** Retention rises with tenure, so a saved loyal customer is expected to stay longer than a saved new one. The base horizon is scaled by 0.75 for new and 1.25 for loyal customers (s = 25%); 0 means no tenure effect.
 
-**Effect on the decision:** the tornado chart ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)) shows save rate of the standard offer and value horizon (months) move the expected net value most. The break-even save rate is **13.8%** for the recommended list and 11.3% for the smaller base-budget list: below it a frozen list loses money, and below 8.5% no customer is worth contacting. Drawing all assumptions at once from their ranges, the recommended list loses money in 17% of 5,000 draws ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)).
+**Effect on the decision:** the tornado chart ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)) shows save rate of the standard offer and value horizon (months) move the expected net value most. The break-even save rate is **13.8%** for the recommended list and 11.3% for the smaller base-budget list: below it a frozen list loses money, and below 7.7% no customer is worth contacting. Drawing all assumptions at once from their ranges, the recommended list loses money in 17% of 5,000 draws ([analysis report](../reports/analysis-report.md#7-how-robust-is-the-answer)).
 
 ## Offer catalog
 

@@ -1,7 +1,7 @@
-<!-- Generated from src/telco_retention/templates/presentation/demo-script.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/presentation/demo-script.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Dashboard demo script (5 minutes)
 
-**Before the session:** run `.\.venv\Scripts\python.exe -m streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true` and open http://127.0.0.1:8501. Keep the browser at 100% zoom. Expected default values come from run `20261010T155849068129Z-88be4b93`.
+**Before the session:** run `.\.venv\Scripts\python.exe -m streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true` and open http://127.0.0.1:8501. Keep the browser at 100% zoom. Expected default values come from run `20261029T034118630540Z-88be4b93`.
 
 | Time | Page / action | What to say | What the audience should see |
 |---|---|---|---|

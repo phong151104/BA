@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/reports/executive-brief.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/reports/executive-brief.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Executive brief: profit-aware retention targeting
 
 **To:** Head of Customer Retention | **From:** Retention analytics team | **Decision requested:** approve a 90-day retention pilot
@@ -9,7 +9,7 @@
 
 1. **Target by expected value, not by risk alone.** Make an offer only where churn risk x customer value x the offer's *save rate* (the share of would-be leavers it keeps) exceeds its cost. Here that means **fibre customers on month-to-month contracts with high bills**: 100% of the recommended list have fibre and 97% a monthly contract, with a median bill of $89 against $70 overall. Low-risk and low-bill customers are left out.
 2. **Match the offer to the segment:** $35 credit for moving to a 1-year contract (150), 6 months free TechSupport + OnlineSecurity (150), One-time $20 bill credit (24).
-3. **Test before scaling:** one randomised pilot wave of 1,620 customers, half held out, and scale up only if the measured save rate clears that list's **13.8% break-even**.
+3. **Test before scaling:** one randomised pilot wave of 1,620 customers, half held out, and scale up only if its offers' measured save rate clears the **15.6% break-even**.
 
 ## Why: the same budget returns more
 
@@ -35,7 +35,7 @@ Each extra budget step returns less (figure). Keeping only steps that still retu
 ## How sure are we?
 
 - **Who to target is robust.** The model ranks churners well (ROC-AUC 0.83) and its probabilities are within 1.9 points of observed churn. With all assumptions drawn at once, expected-value targeting beats risk-only in 100% of draws.
-- **How much an offer saves is not.** Lists break even at a save rate of 11.3% (base budget) and 13.8% (recommended); we assume 20%. Only 46% of churners left for price or a competitor's offer, so 20% means keeping 43% of those an offer can reach.
+- **How much an offer saves is not.** Lists break even at a standard-offer save rate of 11.3% (base budget) and 13.8% (recommended); we assume 20%. Only 46% of churners left for price or a competitor's offer, so 20% means keeping 43% of those an offer can reach.
 - **Downside:** the recommended list loses money in 17% of draws, and in the worst 5% it loses more than $12,217 across the base; the smaller base-budget list loses in 9%.
 
 ## Risks and guardrails
@@ -49,4 +49,4 @@ Each extra budget step returns less (figure). Keeping only steps that still retu
 
 1. **Approve one pilot wave:** 810 customers offered, 810 held out; offer and contact cost about $22,875, expected net value of the offered half $10,363, worst case (no one saved) -$22,875.
 2. **Name owners:** Retention (offers), Call centre (capacity), Finance (margin, offer cost), Legal/DPO (consent, DPIA).
-3. **Agree the rule now:** after 90 days, **go** if the effect is statistically significant and at least 13.8%; **stop** if clearly below; otherwise extend, at most 2 more waves. At a true save rate of 20% the rule says go 95% of the time. Decision about 19 weeks after approval.
+3. **Agree the rule now:** after 90 days, **go** if the effect is statistically significant and at least 15.6%; **stop** if clearly below; otherwise extend, at most 2 more waves. At the assumed 22.6% the rule says go 97% of the time. Decision about 19 weeks after approval.

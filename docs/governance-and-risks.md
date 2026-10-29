@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/governance-and-risks.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/governance-and-risks.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Governance, monitoring and risk register
 
 ## 1. Roles (RACI)
@@ -22,7 +22,7 @@ R = responsible, A = accountable, C = consulted, I = informed.
 | Input drift | Population stability index (PSI) per feature vs training data | Monthly | PSI > 0.2 on any key feature | Investigate; retrain if confirmed |
 | Calibration | ECE and calibration slope on newly labelled customers | Monthly | ECE > 0.05 or slope outside 0.8-1.2 | Recalibrate; review value logic |
 | Ranking | PR-AUC vs base churn rate | Quarterly | PR-AUC falls below 2x the churn rate | Retrain and re-select model |
-| Campaign | Measured save rate by offer, realised net value | Every wave | Measured save rate at or below 0, or 95% interval below break-even (13.8% for the recommended list) | Stop or redesign offers |
+| Campaign | Measured save rate by offer, realised net value | Every wave | Measured save rate at or below 0, or 95% interval below break-even (15.6% for the recommended list) | Stop or redesign offers |
 | Fairness | Selection-rate ratios with intervals | Every wave | Ratio outside 0.8-1.25 and not explained by risk | Review before launch |
 | Experience | Complaints, opt-outs, DNC registrations per 1,000 contacts | Every wave | 2x the normal rate | Pause wave; review script and frequency |
 | Reproducibility | Run manifest, code and data hashes, scenario ID on every list | Every run | Mismatch | Block release |
@@ -43,7 +43,7 @@ The sample company is fictional and US-based; these are the rules a Vietnamese o
 
 | # | Risk | Likelihood | Impact | Mitigation | Owner |
 |---|---|---|---|---|---|
-| R1 | True save rate below break-even (11.3% base list, 13.8% recommended list), so the campaign loses money; with all assumptions uncertain the recommended list loses in 17% of draws | Medium | High | Randomised pilot with go/extend/stop rule and at most 2 extensions; budget in tranches | Retention lead |
+| R1 | True save rate below break-even (standard offer 11.3% for the base list, 13.8% for the recommended list), so the campaign loses money; with all assumptions uncertain the recommended list loses in 17% of draws | Medium | High | Randomised pilot with go/extend/stop rule and at most 2 extensions; budget in tranches | Retention lead |
 | R2 | Contact raises churn for some customers (backfire) | Low-medium | High | Holdout comparison by risk decile; stop rule; soft script | Retention lead |
 | R3 | Sample data do not represent the operator's customers (churn level, prepaid market); at 15% average churn only 7% of customers are worth the standard offer | High | High | Retrain and recalibrate on own data; time-based validation; cheaper offers and SMS contact | Analytics || R4 | Value proxy wrong (margin, horizon) | Medium | Medium | Finance validation; tornado shows impact; update register | Finance |
 | R5 | Model drift after launch | Medium | Medium | Monthly PSI and calibration monitoring; retraining triggers | Analytics |

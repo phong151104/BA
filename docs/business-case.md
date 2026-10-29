@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/business-case.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/business-case.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Business case and problem statement
 
 ## The decision
@@ -56,7 +56,7 @@ The analysis compares all five on the same customers and budget. On validation d
 | Precision among contacted | Share of contacted customers who churn (labels) or mean predicted probability (no labels) | Read with value: high precision on low-value customers is not the goal |
 | High-risk/high-value coverage | Share of customers above both 75th percentiles (validation) that are contacted | As close to 100% as the budget allows |
 | Model quality | PR-AUC, ROC-AUC, Brier, calibration slope/ECE on untouched test data | PR-AUC well above the 0.27 random baseline; ECE below 0.05 |
-| Pilot outcome | Measured save rate = 1 - churn(offered) / churn(holdout) | Effect significant (95% interval above 0) and measured save rate at least the recommended list's break-even, 13.8% ([pilot design](pilot-design.md)) |
+| Pilot outcome | Measured save rate = 1 - churn(offered) / churn(holdout) | Effect significant (95% interval above 0) and measured save rate at least the recommended list's break-even, 15.6% ([pilot design](pilot-design.md)) |
 
 ## Roadmap
 

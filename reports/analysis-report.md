@@ -1,7 +1,7 @@
-<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Analysis report: profit-aware churn and retention targeting
 
-Run `20261010T155849068129Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
+Run `20261029T034118630540Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
 
 ## 1. Summary
 
@@ -10,7 +10,7 @@ Run `20261010T155849068129Z-88be4b93` · every number below is generated from th
 - **Who:** the recommended list is 100% fibre and 97% month-to-month customers with a median bill of $89 ($70 overall); low-risk customers and risky customers with small bills get no offer.
 - **Impact (test split, same $3,500 budget):** expected value + segment offers $2,668 vs $1,301 for risk-only targeting, **+$1,368** ($1,039 from targeting, $328 from offer design); valued with actual churn +$1,077 (95% interval $229 to $2,002).
 - **Budget:** $6.49 per customer in the base (enough for the standard offer to 26% of customers; validation rule) buys 324 offers on test (23% of customers) for $9,150 and $4,145 expected net value.
-- **Main risk:** the save rate is assumed. Break-even 11.3% for the base-budget list and 13.8% for the recommended list, vs assumed 20%; with all assumptions uncertain the recommended list loses money in 17% of draws. A randomised pilot measures the save rate before scale-up.
+- **Main risk:** the save rate is assumed. Break-even 11.3% for the base-budget list and 13.8% for the recommended list (standard-offer save rate), vs assumed 20%; with all assumptions uncertain the recommended list loses money in 17% of draws. A randomised pilot measures the save rate before scale-up.
 - **Outside the sample:** at 15% average churn only 7% of customers would be worth the standard offer; only 46% of churners left for reasons an offer can address.
 
 ## 2. Business question and decision
@@ -144,7 +144,7 @@ The challenger XGBoost model is explained with SHAP; its leading features (Contr
 | --- | --- | --- | ---: | ---: | ---: | ---: |
 | Save rate of the standard offer | 10% | 30% | $458 | $6,359 | -$469 | $5,806 |
 | Value horizon (months) | 6 months | 18 months | $89 | $5,522 | -$336 | $5,522 |
-| Offer cost (multiplier on catalog cost) | x0.5 | x1.5 | $6,062 | $1,198 | $4,036 | $1,301 |
+| Offer cost (multiplier on catalog cost) | x0.5 | x1.5 | $6,061 | $1,198 | $4,036 | $1,301 |
 | Contribution margin | 20% | 40% | $614 | $4,724 | $612 | $4,724 |
 | Contact cost per customer (USD) | $1 | $10 | $3,843 | $1,852 | $3,280 | $1,903 |
 | Annual discount rate | 5% | 15% | $2,836 | $2,513 | $2,836 | $2,513 |
@@ -164,7 +164,7 @@ The challenger XGBoost model is explained with SHAP; its leading features (Contr
 | Base | assumptions as registered | 153 | $2,668 | $2,668 |
 | Optimistic | save rate 30%, offer cost x0.75, contact cost $2, margin 40%, value horizon 15 months | 312 | $19,084 | $12,958 |
 
-**Break-even.** The base-budget list breaks even at a standard-offer save rate of **11.3%** (all offers scaled proportionally) or at offer costs 1.98x today's; the larger recommended list (section 8) breaks even at **13.8%**, because its extra customers have lower expected value; below a save rate of 8.5%, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
+**Break-even.** The base-budget list breaks even at a standard-offer save rate of **11.3%** (all offers scaled proportionally) or at offer costs 1.98x today's; the larger recommended list (section 8) breaks even at **13.8%**, because its extra customers have lower expected value (measured as the average save rate of its offer mix, which is what the pilot observes: 15.6% against an assumed 22.6%); below a save rate of 7.7%, no customer has positive EV and the right decision is no campaign. These ranges are scenarios, not confidence intervals.
 
 **All assumptions uncertain at once (Monte Carlo).** Each of the 5,000 draws picks every register assumption from a triangular distribution over its tested range (most likely at the base value), independently, and reprices the frozen lists:
 
@@ -224,7 +224,7 @@ The sample's 26.5% churn is far above real operators'. To show what that does to
 | Sample company (USD) | 15% | 105 | 7% | $519 | 25% | 447 |
 | Sample company (USD) | 10% | 25 | 2% | $63 | 15% | 523 |
 | Sample company (USD) | 5% | 0 | 0% | $0 | 4% | n/a |
-| Vietnam-like prices | 27% | 423 | 30% | $948 | 54% | 304 |
+| Vietnam-like prices | 27% | 463 | 33% | $948 | 54% | 304 |
 | Vietnam-like prices | 15% | 247 | 18% | $205 | 33% | 525 |
 | Vietnam-like prices | 10% | 98 | 7% | $48 | 23% | 689 |
 | Vietnam-like prices | 5% | 5 | 0% | $0 | 12% | 916 |
@@ -239,7 +239,7 @@ The sample's 26.5% churn is far above real operators'. To show what that does to
 ## 11. Recommendations and next steps
 
 1. Adopt expected-value targeting (expected value + segment offers) for the next wave, with the recommended budget ($6.49 per customer in the base).
-2. Run it as a randomised pilot: 1,620 customers, half held out, 90-day outcome ([pilot design](../docs/pilot-design.md)); go if the offer effect is significant and the measured save rate is at least the list's break-even of 13.8% (probability of go 95% if the true save rate is 20%).
+2. Run it as a randomised pilot: 1,620 customers, half held out, 90-day outcome ([pilot design](../docs/pilot-design.md)); go if the offer effect is significant and the measured save rate of its offer mix is at least the list's break-even of 15.6% (probability of go 97% if it equals the assumed 22.6%).
 3. Replace assumed save rates, margin and costs with measured values; re-run the pipeline.
 4. Retrain on own data with time-based validation; after several waves, move to uplift targeting.
 5. Operate under the controls in [governance and risks](../docs/governance-and-risks.md) and the [retention playbook](../docs/retention-playbook.md).

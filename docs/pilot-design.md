@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/pilot-design.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/pilot-design.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Pilot design: measuring the real save rate
 
 The data contain no randomised campaign, so the save rate behind every expected value is an assumption (20% for the standard offer). The literature shows why it must be measured, not assumed: risk is not responsiveness [[ascarza2018](references.md#ascarza2018)], and proactive contact can even raise churn [[ascarza2016](references.md#ascarza2016)]. This pilot turns the recommendation into a controlled experiment [[kohavi2020](references.md#kohavi2020)].
@@ -7,13 +7,13 @@ The data contain no randomised campaign, so the save rate behind every expected 
 
 - **H1:** among customers selected by the recommended rule, receiving the offer lowers 90-day churn compared with not receiving it.
 - **Decision metric:** measured save rate q = 1 - churn(offered) / churn(holdout).
-- **Break-even of the pilot list:** the recommended list pays for itself if q is at least **13.8%** (all offers' save rates scaled proportionally). The smaller base-budget list breaks even at 11.3%.
+- **Break-even of the pilot list:** the recommended list pays for itself if q is at least **15.6%** (all offers' save rates scaled proportionally); q is the average save rate of the list's offer mix, assumed to be 22.6%. Expressed as the standard offer's save rate, the recommended list breaks even at 13.8% and the smaller base-budget list at 11.3%.
 - **Decision rule, agreed before the pilot starts:**
 
 | Result after the wave | Decision |
 |---|---|
-| 95% interval of q entirely above 0 **and** measured q at least 13.8% | **Go:** scale to the recommended budget |
-| Measured q at or below 0, or the whole 95% interval below 13.8% | **Stop:** redesign offers and targeting |
+| 95% interval of q entirely above 0 **and** measured q at least 15.6% | **Go:** scale to the recommended budget |
+| Measured q at or below 0, or the whole 95% interval below 15.6% | **Stop:** redesign offers and targeting |
 | Anything else | **Extend:** run one more wave and pool the data; at most 2 extensions, then stop |
 
 The significance test (is there any effect?) is what the sample size below is powered for; the break-even condition (is the effect large enough to pay?) protects the budget. Section 3 shows how often this rule says go, extend or stop for different true save rates.
@@ -38,19 +38,20 @@ Two-sided two-proportion test, alpha 0.05, power 80%, equal arms. Expected holdo
 
 | True save rate | Churn offered | Customers per arm for 80% power | Waves of 810 per arm | Go after one wave | Extend | Stop |
 |---:|---:|---:|---:|---:|---:|---:|
-| 5.0% | 56.9% | 4,255 | 6 | 1% | 39% | 60% |
-| 10.0% | 53.9% | 1,073 | 2 | 17% | 70% | 14% |
-| 13.8% (break-even) | 51.6% | 570 | 1 | 50% | 48% | 2% |
-| 15.0% | 50.9% | 480 | 1 | 63% | 36% | 1% |
-| 20.0% | 47.9% | 271 | 1 | 95% | 5% | 0% |
+| 5.0% | 56.9% | 4,255 | 6 | 0% | 22% | 77% |
+| 10.0% | 53.9% | 1,073 | 2 | 7% | 65% | 28% |
+| 15.0% | 50.9% | 480 | 1 | 45% | 53% | 3% |
+| 15.6% (break-even) | 50.6% | 447 | 1 | 50% | 48% | 2% |
+| 20.0% | 47.9% | 271 | 1 | 88% | 12% | 0% |
+| 22.6% | 46.3% | 213 | 1 | 97% | 3% | 0% |
 | 30.0% | 41.9% | 121 | 1 | 100% | 0% | 0% |
 
 The last three columns simulate the decision rule 20,000 times per row with binomial churn in each arm (seed 42).
 
-- To detect a save rate equal to the break-even (13.8%) needs about **569 customers per arm**; one wave provides 810.
+- To detect a save rate equal to the break-even (15.6%) needs about **447 customers per arm**; one wave provides 810.
 - With one wave, the smallest detectable save rate is about **11.5%**.
-- Detecting the assumed 20% needs 271 per arm.
-- If the true save rate equals the assumed 20%, the rule says go after one wave 95% of the time. At break-even the chance is about even (50%); then the expected gain from scaling is close to zero either way, so a wrong go costs little.
+- Detecting the assumed 22.6% needs 213 per arm.
+- If the true save rate equals the assumed 22.6%, the rule says go after one wave 97% of the time. At break-even the chance is about even (50%); then the expected gain from scaling is close to zero either way, so a wrong go costs little.
 - Per-offer sub-arms are smaller; offer-level comparisons may need two to three waves, so the first decision is about the list rule as a whole.
 - **Real churn is lower than the sample's.** At 15% average churn the list churns less and about 447 customers per arm are needed to detect the assumed save rate ([analysis report](../reports/analysis-report.md#outside-the-sample-lower-churn-and-vietnamese-prices)); size the real pilot from the operator's own churn rate.
 

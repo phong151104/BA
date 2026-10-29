@@ -1,18 +1,29 @@
 {
-  "run_id": "20261010T155849068129Z-88be4b93",
-  "created_at_utc": "2026-10-10T16:02:03.206232+00:00",
-  "brief_words": 796,
-  "slides": 14,
-  "slides_with_notes": 14,
+  "run_id": "20261029T034118630540Z-88be4b93",
+  "created_at_utc": "2026-10-29T04:02:25.912516+00:00",
+  "brief_words": 794,
+  "slides": 16,
+  "slides_with_notes": 16,
+  "talk_seconds": 480,
+  "speaker_seconds": {
+    "Kiet": 160,
+    "Hieu": 160,
+    "Dung": 160
+  },
   "deck_lint": [],
   "pdf_status": "current",
+  "latex_status": "current",
   "brief_pages": 2,
-  "deck_pdf_pages": 14,
-  "pdf_run_id": "20261010T155849068129Z-88be4b93",
+  "deck_pdf_pages": 16,
+  "pdf_run_id": "20261029T034118630540Z-88be4b93",
+  "report_pages": 27,
+  "latex_run_id": "20261029T034118630540Z-88be4b93",
   "sha256": {
-    "reports/executive-brief.docx": "475704cab95323f04bdcaaaa0fa10dfa1e382fd92eb5ba261d7cba69f09a0f7a",
-    "reports/executive-brief.pdf": "fbb521618c0605d110d0427b7275dc8ef2c33ba8bb7197ff3eec185b4fcd981e",
-    "reports/presentation/retention-deck.pptx": "bb25992b1bcfd090e601dbd77748f6509d67aecd0192d01a4334879ef7105908",
-    "reports/presentation/retention-deck.pdf": "08a1d3026e7fd08bb4e1cbe9455c6f80ed075ac983f3289378428103771c6c55"
+    "reports/executive-brief.docx": "bb6532749d51cbb9b7b1ab55154ee22f7cc5db581421bd3e15a3f89c7e156da1",
+    "reports/executive-brief.pdf": "dda3e0807c2bdba30c7a9ec24a7d68da5753656c32236c43cda3420935a2c3dc",
+    "reports/presentation/retention-presentation.pptx": "a69b09ad29e0464d130c2e4a91edb0514a1b08f1203c6b041b0e9b4d8fdc503b",
+    "reports/presentation/retention-presentation.pdf": "864a26c1afa2cd0736bc1bc250352db9c9d61e881a0e94c5898ef4f29b3e9bf6",
+    "reports/presentation/speaker-script.md": "29b599ee68544e65dfbba458043692d3fc54cc59a11ba534e1ab8c08aa8a078c",
+    "reports/final-report.pdf": "d8ea910a050d9727c22a37307afdc7cb286ebcd924356d8545825dbb8af26749"
   }
 }

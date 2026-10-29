@@ -1,0 +1,29 @@
+{
+  "strategy": "segment_offers",
+  "budget_share": 0.26,
+  "budget": 9150.0,
+  "selected_count": 324,
+  "cost": 9150.0,
+  "remaining_budget": 0.0,
+  "expected_saved": 43.83673848887302,
+  "expected_retained_value": 13295.399853261513,
+  "expected_net_value": 4145.399853261513,
+  "roi": 0.45304916429087577,
+  "expected_precision": 0.5987633378055841,
+  "precision_contacted": 0.5648148148148148,
+  "label_based_simulated_net": 3377.0883710275048,
+  "high_risk_high_value_count": 57,
+  "high_risk_high_value_coverage": 1.0,
+  "scenario_id": "56f776cb462c",
+  "solver_status": "optimal",
+  "contacted_share": 0.22995031937544358,
+  "break_even": {
+    "selected_count": 324,
+    "save_rate_multiplier": 0.6882079592179697,
+    "break_even_default_save_rate": 0.13764159184359395,
+    "mix_save_rate": 0.22596335987904503,
+    "break_even_mix_save_rate": 0.15550978276039323,
+    "offer_cost_multiplier": 1.5505179087996697,
+    "break_even_default_offer_cost": 31.010358175993396
+  }
+}

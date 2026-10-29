@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/deployment-vietnam.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/deployment-vietnam.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Deploying the method at a Vietnamese operator
 
 Every number elsewhere in this package belongs to the IBM sample company: a fictional US telco, priced in USD. This note asks what changes if a Vietnamese operator adopts the method. No customer-level churn data from Vietnamese operators are public, so it combines public market facts with a stress test of the sample; it is a planning aid, not a forecast.
@@ -19,7 +19,7 @@ The same 1,409 test customers were priced like a Vietnamese home-fibre operator:
 
 | Average churn | Worth an offer (sample prices) | Worth an offer (Vietnam-like) | Affordable offer for the best 10%, share of a bill (Vietnam-like) | Pilot customers per arm (Vietnam-like) |
 |---|---:|---:|---:|---:|
-| 27% (sample) | 26% | 30% | 54% | 304 |
+| 27% (sample) | 26% | 33% | 54% | 304 |
 | 15% | 7% | 18% | 33% | 525 |
 | 10% | 2% | 7% | 23% | 689 |
 | 5% | 0% | 0% | 12% | 916 |

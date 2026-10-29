@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/model-card.md.j2 for run 20261010T155849068129Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/model-card.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
 # Model and analysis card
 
 Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.md#mitchell2019)].
@@ -7,12 +7,12 @@ Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.m
 
 | Item | Value |
 |---|---|
-| Name / version | Retention Lab churn scorer, run `20261010T155849068129Z-88be4b93` |
+| Name / version | Retention Lab churn scorer, run `20261029T034118630540Z-88be4b93` |
 | Deployed model | Calibrated Logistic Regression (sigmoid / Platt scaling on out-of-fold predictions) |
 | Challengers | Random Forest and XGBoost (gradient boosting), each raw and calibrated; prior-only baseline |
 | Decision layer | Expected-value targeting with a fixed budget and offer optimisation (`telco_retention.business`) |
 | Owner | Retention analytics team; business owner: Head of Customer Retention |
-| Created | 2026-10-10T15:59:11 UTC, Python 3.13.9; code and dependency hashes in the run manifest |
+| Created | 2026-10-29T03:42:47 UTC, Python 3.13.17; code and dependency hashes in the run manifest |
 
 ## 2. Intended use
 
@@ -33,7 +33,7 @@ Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.m
 - **Categories, coded against their lowest-churn level:** InternetService (reference: No), Contract (reference: Two year), PaymentMethod (reference: Credit card (automatic)).
 - **Excluded:** `customerID` and `Churn`; `gender` and `SeniorCitizen` are used only in the fairness audit. All transformations are fitted inside training folds.
 
-**Feature review (week 2).** The first design one-hot coded every level of every field next to derived copies (month-to-month flag, automatic-payment flag, add-on count). Its 48 columns had rank 24, so the logistic coefficients could not be read one by one. Candidate sets were compared with 5-fold cross-validated logistic regression on train only. Rule fixed in advance: Full-rank sets only; cross-validated AP within one standard error of the best; then the fewest encoded columns.
+**Feature review (week 2).** The first design one-hot coded every level of every field next to derived copies (month-to-month flag, automatic-payment flag, add-on count). Its 48 columns had rank 24, so the logistic coefficients could not be read one by one. Candidate sets were compared with 5-fold cross-validated logistic regression on train only. Rule fixed in advance: Full-rank sets only; cross-validated AP within one standard error of the best full-rank candidate; then the fewest encoded columns.
 
 | Feature set | CV PR-AUC | SE | Columns | Rank | Eligible | Chosen |
 | --- | ---: | ---: | ---: | ---: | --- | --- |
