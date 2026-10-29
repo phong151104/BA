@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/retention-playbook.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/retention-playbook.md.j2 for run 20261029T073854762519Z-88be4b93. Edit the template, not this file. -->
 # Retention playbook
 
 How to run one retention wave with the recommended rule: who to contact, with which offer, through which channel, at what budget, and how to know whether it worked.

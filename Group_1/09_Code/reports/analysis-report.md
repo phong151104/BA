@@ -1,7 +1,7 @@
-<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261029T073854762519Z-88be4b93. Edit the template, not this file. -->
 # Analysis report: profit-aware churn and retention targeting
 
-Run `20261029T063931261171Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
+Run `20261029T073854762519Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
 
 ## 1. Summary
 

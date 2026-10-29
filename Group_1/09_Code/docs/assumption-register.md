@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/assumption-register.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/assumption-register.md.j2 for run 20261029T073854762519Z-88be4b93. Edit the template, not this file. -->
 # Assumption register
 
 Every number below is a visible parameter in `configs/default.yaml` (version `v2`), shown in the dashboard's assumption strip, and varied in the sensitivity analysis. **None of them is estimated from the data**, because the data contain no retention campaign. Sources are listed in [references.md](references.md).

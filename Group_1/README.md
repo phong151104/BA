@@ -35,7 +35,7 @@ Capstone project, Topic 7, Introduction to Business Analytics (Assoc. Prof. Nguy
 
 ### Presentation
 
-The [slides](02_Presentation/Presentation.pptx) are also available as a [PDF](02_Presentation/Presentation.pdf). The talk lasts 8 minutes and is given by Kiệt, Hiếu and Dũng; Phong then gives the live demo. The [speaker script](02_Presentation/Speaker_Script.pdf) has the same text as the slide notes, and the [demo script](02_Presentation/Demo_Script.pdf) has the timed steps for the demo.
+The [slides](02_Presentation/Presentation.pptx) are also available as a [PDF](02_Presentation/Presentation.pdf). The talk lasts 8 minutes and is given by Phong, Hiếu and Dũng; Kiệt then gives the live demo. The [speaker script](02_Presentation/Speaker_Script.pdf) has the same text as the slide notes, and the [demo script](02_Presentation/Demo_Script.pdf) has the timed steps for the demo.
 
 ## Open the dashboard
 

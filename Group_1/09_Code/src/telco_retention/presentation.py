@@ -23,8 +23,8 @@ FIGURES = ROOT / "reports/figures"
 NAVY, RED, CARD, INK, MUTED, WHITE = (RGBColor.from_string(c) for c in ["0B2E63", "BE1E2D", "EEF2F8", "1F2937", "6B7280", "FFFFFF"])
 FONT = "Calibri"
 MASTERS = {"title": 0, "outline": 1, "content": 2, "thanks": 3, "closing": 4}
-SPEAKERS = ["Kiet", "Hieu", "Dung"]  # timed talk; Phong runs the live demo after it
-DEMO_SPEAKER = "Phong"
+SPEAKERS = ["Phong", "Hieu", "Dung"]  # timed talk; Kiet runs the live demo after it
+DEMO_SPEAKER = "Kiet"
 TALK_SECONDS = 480
 SECTIONS = [("Business problem", "Decision, data, risk versus value"),
             ("Model and decision rule", "Calibrated churn model, expected value, optimiser"),
@@ -231,21 +231,21 @@ def build_presentation(facts, out_path, script_path=None):
     deck = Deck()
 
     # 1. Title
-    s = deck.slide("title", "Title", "Kiet", 15,
+    s = deck.slide("title", "Title", "Phong", 15,
                    "Good morning, Professor, and everyone. We are Group 1, presenting Topic 7: profit-aware telecom churn and retention targeting. "
-                   "Hieu, Dung and I will present, and Phong will demo our dashboard at the end.")
+                   f"Hieu, Dung and I will present, and {DEMO_SPEAKER} will demo our dashboard at the end.")
     s.shapes.add_picture(str(LOGO), Inches(0.5), Inches(0.45), height=Inches(0.95))
     text(s, 0.76, 2.15, 9.0, 1.45, ["Profit-Aware Telecom Churn", "& Retention Targeting"], size=36, color=NAVY, bold=True, space_after=0)
     text(s, 0.76, 3.7, 9.0, 0.42, ["Introduction to Business Analytics · Capstone Topic 7 · Assoc. Prof. Nguyen Binh Minh"], size=14, color=INK)
     text(s, 0.76, 4.2, 5.6, 1.7, [[("Group 1", {"bold": True, "color": NAVY})], *[f"{t['name']} · {t['student_id']}" for t in TEAM]], size=15, space_after=1)
 
     # 2. Outline
-    deck.outline("Kiet", 10, "We follow CRISP-DM: the business problem and the data, then the model and the decision rule, "
+    deck.outline("Phong", 10, "We follow CRISP-DM: the business problem and the data, then the model and the decision rule, "
                              "then results and robustness, and finally our recommendation.")
 
     # 3. The decision
     var_scaled = f["value_at_risk"]["expected_scaled"]
-    s = deck.slide("content", "The Decision: Who Gets a Retention Offer?", "Kiet", 50,
+    s = deck.slide("content", "The Decision: Who Gets a Retention Offer?", "Phong", 50,
                    f"In our sample company {pct(f['data']['churn_rate'])} of customers left, which puts about {usd(var_scaled)} "
                    "of twelve-month margin at risk. The retention team has a fixed budget, and today it calls the customers with the highest churn risk. "
                    "But every offer costs money, and a risky customer with a small bill may not be worth saving. So our question is: with a limited budget, "
@@ -269,7 +269,7 @@ def build_presentation(facts, out_path, script_path=None):
 
     # 4. Data and validation design
     quality = f["data"]["quality"]
-    s = deck.slide("content", "Data and Validation Design", "Kiet", 45,
+    s = deck.slide("content", "Data and Validation Design", "Phong", 45,
                    f"We use the IBM Telco Customer Churn sample from Kaggle: {num(f['data']['rows'])} customers of a fictional US operator. "
                    "The unit of analysis is the customer, the target is churn, and the decision is whether to make an offer, and which one, within the budget. "
                    f"Quality checks found no duplicates and only {quality['total_charges_filled_zero']} blank total charges, all for brand-new customers, which we set to zero. "
@@ -293,7 +293,7 @@ def build_presentation(facts, out_path, script_path=None):
     # 5. Risk is not value
     hrlv, hrhv = quad["hrlv"], quad["hrhv"]
     eda = f["eda"]
-    s = deck.slide("content", "Key Insight: Churn Risk Is Not Customer Value", "Kiet", 40,
+    s = deck.slide("content", "Key Insight: Churn Risk Is Not Customer Value", "Phong", 40,
                    "The exploratory analysis gave us our key insight. Churn is highest for month-to-month contracts, new customers, fibre internet and electronic-check payers. "
                    f"But risk and value only partly overlap. The high-risk, low-value group holds {pct(hrlv['value_at_risk_share'], 0)} of the value at risk, "
                    f"yet each of these customers is worth little. Only {hrhv['customers']} test customers are both high-risk and high-value, and today's risk-only rule "
@@ -308,7 +308,7 @@ def build_presentation(facts, out_path, script_path=None):
                                   "Associations, not causes"], size=14, bullets=True, space_after=4)
 
     # 6. Outline: model and decision rule
-    deck.outline("Hieu", 5, "Thank you, Kiet. I will start with the churn model.", active=1)
+    deck.outline("Hieu", 5, f"Thank you, {SPEAKERS[0]}. I will start with the churn model.", active=1)
 
     # 7. Churn model
     test = {row["model"]: row for row in m["test"]}

@@ -1,69 +1,69 @@
 {
-  "built_at_utc": "2026-10-29T07:04:03.752028+00:00",
-  "run_id": "20261029T063931261171Z-88be4b93",
-  "source_commit": "5ba843e4a61d669dad992c6c6ae21089804b2d5f",
+  "built_at_utc": "2026-10-29T08:06:44.387041+00:00",
+  "run_id": "20261029T073854762519Z-88be4b93",
+  "source_commit": "584317c31a77b6e40eee1e17a57777eafd5fd730",
   "uncommitted_changes": false,
   "documents": [
     {
       "file": "01_Final_Report/Final_Report.pdf",
       "sources": {
-        "reports/final-report.pdf": "64ab2310f8fb5ad0f66470d63b6281d1e89773f23806a5141edc318363a39bba"
+        "reports/final-report.pdf": "83e594fad369a653cb468348e7b5c5fc901dde3c536cbbeee7390dad4f046268"
       },
-      "sha256": "64ab2310f8fb5ad0f66470d63b6281d1e89773f23806a5141edc318363a39bba",
+      "sha256": "83e594fad369a653cb468348e7b5c5fc901dde3c536cbbeee7390dad4f046268",
       "pages": 27
     },
     {
       "file": "02_Presentation/Presentation.pptx",
       "sources": {
-        "reports/presentation/retention-presentation.pptx": "a007985409f0c35443d10689105befa97512ead33b10010347bfb258e399bdb4"
+        "reports/presentation/retention-presentation.pptx": "3af611ac2d0c04b45464a0aaf495ea0018557b71af6e5e15b94c7063e296b55d"
       },
-      "sha256": "a007985409f0c35443d10689105befa97512ead33b10010347bfb258e399bdb4"
+      "sha256": "3af611ac2d0c04b45464a0aaf495ea0018557b71af6e5e15b94c7063e296b55d"
     },
     {
       "file": "02_Presentation/Presentation.pdf",
       "sources": {
-        "reports/presentation/retention-presentation.pdf": "0a8e657e8a25111f185968a792d82d427795b963c57fb070add92a7cdb405101"
+        "reports/presentation/retention-presentation.pdf": "0bf32dcf9aa3174d37b93b058b58f7a3fa7a492f40fed6405782f3c3c4e4efff"
       },
-      "sha256": "0a8e657e8a25111f185968a792d82d427795b963c57fb070add92a7cdb405101",
+      "sha256": "0bf32dcf9aa3174d37b93b058b58f7a3fa7a492f40fed6405782f3c3c4e4efff",
       "pages": 17
     },
     {
       "file": "02_Presentation/Speaker_Script.pdf",
       "sources": {
-        "reports/presentation/speaker-script.md": "04052ea5fa1e38cdaa58e0675a1c0081273a286290bb5d52b4325cc875d17581"
+        "reports/presentation/speaker-script.md": "9f06782cbb7a90b315c1baed6746826d944fb154030d76f1bf12d12714e98bde"
       },
-      "sha256": "7fca073b6cab64c06f151213f12f5ce669fcd426ad719f62b71d6a7a5c58a1cf",
+      "sha256": "93d3bc176f8e36fb19c7399593624b3679faf08b72fb38b285de0962b4d8a6b2",
       "pages": 3
     },
     {
       "file": "02_Presentation/Demo_Script.pdf",
       "sources": {
-        "reports/presentation/demo-script.md": "266da81dad9509b5e44c983c06947a715a75f3685c847c65f96a4d13918a427c"
+        "reports/presentation/demo-script.md": "c556ccdb99b8a33675f9eb67a742c30bd50c23742dd9b24537537d8bd76cad90"
       },
-      "sha256": "37f1107f905c10374baff0c7eb8672f7fcd217fbfbb1a6c07081c77b9a4c2c13",
+      "sha256": "195b75cead41343608b3208d1fa9772ed73af9f5725cd4ad4ae2b3d985930d80",
       "pages": 2
     },
     {
       "file": "03_Executive_Brief/Executive_Brief.pdf",
       "sources": {
-        "reports/executive-brief.pdf": "f0da3946ada27986f9eac42566cc6d9e855f6502475d46c41fe31bc768ef3d05"
+        "reports/executive-brief.pdf": "834a1e4733ebc1169648015daf9d357be8ab32351ba22e7eb0fa47d8971f4f38"
       },
-      "sha256": "f0da3946ada27986f9eac42566cc6d9e855f6502475d46c41fe31bc768ef3d05",
+      "sha256": "834a1e4733ebc1169648015daf9d357be8ab32351ba22e7eb0fa47d8971f4f38",
       "pages": 2
     },
     {
       "file": "03_Executive_Brief/Executive_Brief.docx",
       "sources": {
-        "reports/executive-brief.docx": "850a64e922bfd899df3685df2756abf3627e669ad209ea2bb6418d2aa034fb4f"
+        "reports/executive-brief.docx": "54ebbda8fa1c634fb542996446588dedab788b155d044bf23c9f42e00dade2f9"
       },
-      "sha256": "850a64e922bfd899df3685df2756abf3627e669ad209ea2bb6418d2aa034fb4f"
+      "sha256": "54ebbda8fa1c634fb542996446588dedab788b155d044bf23c9f42e00dade2f9"
     },
     {
       "file": "04_Dashboard/dashboard_html/Retention_Dashboard.html",
       "sources": {
-        "reports/dashboard/retention-dashboard.html": "c7d2bbdaab7f113bc5a3602a42e5ce61a96785d12b67dff75447a661571aeaa8"
+        "reports/dashboard/retention-dashboard.html": "7350cbe6c94ecd28bb1af4571c0f76b6452ab188af89e9f79df719cc7d08087d"
       },
-      "sha256": "c7d2bbdaab7f113bc5a3602a42e5ce61a96785d12b67dff75447a661571aeaa8"
+      "sha256": "7350cbe6c94ecd28bb1af4571c0f76b6452ab188af89e9f79df719cc7d08087d"
     },
     {
       "file": "04_Dashboard/dashboard_streamlit/Run_Dashboard.bat",
@@ -77,15 +77,15 @@
       "sources": {
         "docs/user-guide.md": "c9661153de588c0d6c65b06be8fbcdc750e314bc26efb811a2b7756d5c8dab2c"
       },
-      "sha256": "028e0f2cf3f36dae9af03152cd60e14ad1a135877310274c8800b33e0e1b6c26",
+      "sha256": "ebcb71aeb530a7deb4e278567bdd6218bba4542ffececd48a7ec2845012806c5",
       "pages": 2
     },
     {
       "file": "04_Dashboard/dashboard_streamlit/screenshots/dashboard-assumptions.png",
       "sources": {
-        "artifacts/qa/dashboard-assumptions.png": "0a3f8a18b2242be65577c7c20db052d8f4081d843a41591548cc19a27fcc0151"
+        "artifacts/qa/dashboard-assumptions.png": "fd2c10066cfc45c445b88cec306509437d8f03c8d5ea58b02259f50b7c00bfbf"
       },
-      "sha256": "0a3f8a18b2242be65577c7c20db052d8f4081d843a41591548cc19a27fcc0151"
+      "sha256": "fd2c10066cfc45c445b88cec306509437d8f03c8d5ea58b02259f50b7c00bfbf"
     },
     {
       "file": "04_Dashboard/dashboard_streamlit/screenshots/dashboard-decision.png",
@@ -118,56 +118,56 @@
     {
       "file": "05_Model_Card/Model_Card.pdf",
       "sources": {
-        "docs/model-card.md": "2147ce76bc503e1eb9bf2ac436db4fb0afe4bd104bd648ae2eaa033d860daa59"
+        "docs/model-card.md": "4674d2f370e25b14c9bdba6d883780d0ef6d19f7db3fe6cf3b5bfdb1fa55edde"
       },
-      "sha256": "c1f5fc42e7e8cd089b03ae21b44ba3ec99f27900787418350888797039d5c983",
+      "sha256": "30aadba225ef9266f4319c9b00cd9386df73f28fc16766475831b8b177c962d8",
       "pages": 5
     },
     {
       "file": "06_Data_Dictionary_and_Source_Log/Data_Dictionary.pdf",
       "sources": {
-        "docs/data-dictionary.md": "03b1f1aa44aaeb50ccfdb28bc0f725db20279e902a713d3a229098d403d8a916"
+        "docs/data-dictionary.md": "38333f7f4b4d5379c16aec7968b37d83322a50a9d4778321f79062a18b860224"
       },
-      "sha256": "f310eb2a043acf284021ae0b756d7fa646cc6ccd7c98e7d96c0bfe3b110264cb",
+      "sha256": "1e69431b00788ba79ce76b237f45832b28f4c7a9e1035780f8086d220827ce33",
       "pages": 3
     },
     {
       "file": "06_Data_Dictionary_and_Source_Log/Source_Log_and_Cleaning_Log.pdf",
       "sources": {
-        "docs/source-log.md": "6f31e8272eafe6028d3829b9b13582b9c4398a529d54cb51742f8455397455b3",
-        "docs/cleaning-log.md": "40767ef48655cd0946aa476deee8722982191fd20eb9c147a90f7eba75c90365"
+        "docs/source-log.md": "8a23be04cff138fa74be63652dc6187cd6cd0ed3222b1e3ca81fe0afc78fa36e",
+        "docs/cleaning-log.md": "1735f8aa670671aeb9bb7c138cbb4892183528ed17784b8863efb9ec0a5bb690"
       },
-      "sha256": "33bbbc094c6195547b7f7f9cdcd7a58af8ef8dad1a9911773f6b4af4a2568c64",
+      "sha256": "a9c28db73acce96b7bb2197a0c0b3e0287d8b162de4b35f810f3953324db541e",
       "pages": 3
     },
     {
       "file": "07_Churn_Scorecard_and_Targeting_Table/Churn_Scorecard.pdf",
       "sources": {
-        "docs/churn-scorecard.md": "196c39e480f0cf501af8b3506b6e00cdfdfec2b6fee305020e791352d45f1ee5"
+        "docs/churn-scorecard.md": "a82d3535d17065e51a9e2120dfd03bdb68f6ce6c811e649e6f21be1d0e21dcc2"
       },
-      "sha256": "8432dee5446a1c3ab403417c372780ab800d9af77199355a86e8b56cffaf11f7",
+      "sha256": "ad96a66ca88b38cc45434eef94d294c35ae970e0ccfd138caba4326b5de3de1f",
       "pages": 3
     },
     {
       "file": "07_Churn_Scorecard_and_Targeting_Table/churn_scores_all_customers.csv",
       "sources": {
-        "reports/tables/scorecard.csv": "239dd7348392f547a096ae7cd020869b7bf92b9d937e359226c80dbe31ee53d2"
+        "reports/tables/scorecard.csv": "d398ca7812d9c83a39126f030b98b81fb928a60af0b453c950a533c080766ebb"
       },
-      "sha256": "239dd7348392f547a096ae7cd020869b7bf92b9d937e359226c80dbe31ee53d2"
+      "sha256": "d398ca7812d9c83a39126f030b98b81fb928a60af0b453c950a533c080766ebb"
     },
     {
       "file": "07_Churn_Scorecard_and_Targeting_Table/customer_targeting_table.csv",
       "sources": {
-        "reports/tables/targeting_recommended.csv": "607498970a9577bf27821ae95983eead4bb23e799fa5f1c4e850df091ea03178"
+        "reports/tables/targeting_recommended.csv": "24e0f2ae80860e6f34f0b6f921694c3f15f18fbf1f385ee457d9527b9f623758"
       },
-      "sha256": "607498970a9577bf27821ae95983eead4bb23e799fa5f1c4e850df091ea03178"
+      "sha256": "24e0f2ae80860e6f34f0b6f921694c3f15f18fbf1f385ee457d9527b9f623758"
     },
     {
       "file": "08_Retention_Playbook/Retention_Playbook.pdf",
       "sources": {
-        "docs/retention-playbook.md": "4b8443956a0fefa05ac1217c96a6a8260b01ee9199838dbf2837425b5fe6d091"
+        "docs/retention-playbook.md": "a151389a7611005f7f536953cb8d7e847a3c360862fae6ff95df6a60adf40f8b"
       },
-      "sha256": "ef5137d2efb8a7dba12eaaf3bf1a2d5a95aa9b696ad40d5769fda1068db48d57",
+      "sha256": "665bac51b971410a3e63e84969f139ed1f10ca6efe19e0f1a082f4b6c008555a",
       "pages": 3
     }
   ],
