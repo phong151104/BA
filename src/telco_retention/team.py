@@ -7,7 +7,7 @@ TEAM = [
     {"name": "Nguyen Trung Hieu", "student_id": "20261059M", "email": "Hieu.NT261059M@sis.hust.edu.vn",
      "contribution": "Decision engine, robustness and Monte Carlo analysis, dashboard redesign, business documents"},
     {"name": "Bui Tien Dung", "student_id": "20261204M", "email": "Dung.BT261204M@sis.hust.edu.vn",
-     "contribution": "Presentation slides and speaker script; review and quality assurance of code and report"},
+     "contribution": "Presentation slides and executive brief; review and quality assurance of code and report"},
     {"name": "Pham Hung Phong", "student_id": "20261061M", "email": "phong.ph261061m@sis.hust.edu.vn",
      "contribution": "Data pipeline, churn models and first version of the dashboard"},
 ]

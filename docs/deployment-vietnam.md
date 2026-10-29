@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/deployment-vietnam.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/deployment-vietnam.md.j2 for run 20261029T073854762519Z-88be4b93. Edit the template, not this file. -->
 # Deploying the method at a Vietnamese operator
 
 Every number elsewhere in this package belongs to the IBM sample company: a fictional US telco, priced in USD. This note asks what changes if a Vietnamese operator adopts the method. No customer-level churn data from Vietnamese operators are public, so it combines public market facts with a stress test of the sample; it is a planning aid, not a forecast.

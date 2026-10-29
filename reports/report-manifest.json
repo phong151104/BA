@@ -1,6 +1,6 @@
 {
-  "run_id": "20261029T063931261171Z-88be4b93",
-  "generated_at_utc": "2026-10-29T06:45:11.675628+00:00",
+  "run_id": "20261029T073854762519Z-88be4b93",
+  "generated_at_utc": "2026-10-29T07:46:50.562023+00:00",
   "strategy": "segment_offers",
   "scenario_id": "e0347326ca4d",
   "documents": [
@@ -24,7 +24,7 @@
   ],
   "figure_count": 17,
   "executive_brief_words": 808,
-  "facts_sha256": "aa2c1ad1773bfa2df703981b55f5da7293ace5981e609237357d43791956a3f2",
+  "facts_sha256": "2d93f6907207127d6bd5f030a0d2ac8c844cf6ae15924291cbc12c74f94dce20",
   "template_sha256": {
     "docs/assumption-register.md.j2": "16852b10eae14ba04516a153ffc8a0223c7fba246c887461a29e0d997f787228",
     "docs/business-case.md.j2": "7fd35a7e827aacb825833bfa8bd430aa544fd66cea07c29ed99d72ea8c1b5c6f",

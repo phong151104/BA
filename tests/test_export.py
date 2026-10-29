@@ -83,7 +83,7 @@ def test_deck_follows_changed_facts(facts, tmp_path):
 
 
 def test_lint_flags_timing_and_pace():
-    script = [{"slide": 1, "speaker": "Kiet", "seconds": 300, "text": "word " * 900},
+    script = [{"slide": 1, "speaker": "Phong", "seconds": 300, "text": "word " * 900},
               {"slide": 2, "speaker": "Hieu", "seconds": 40, "text": ""},
               {"slide": 3, "speaker": "Dung", "seconds": 0, "text": "Thanks."}]
     problems = lint(script)

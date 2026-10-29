@@ -6,8 +6,8 @@ Final release checks on 2026-10-29, Windows 11, Python 3.13.17, environment inst
 
 | Run | Role |
 |---|---|
-| `20261029T063059074964Z-88be4b93` | Run A: first complete `run-all --pdf require --latex require` with the final code and configuration |
-| `20261029T063931261171Z-88be4b93` | Run B: second complete `run-all --pdf require --latex require`, current (`artifacts/latest.json`); all reports use it |
+| `20261029T072510814499Z-88be4b93` | Run A: first complete `run-all --pdf require --latex require` with the final code and configuration |
+| `20261029T073854762519Z-88be4b93` | Run B: second complete `run-all --pdf require --latex require`, current (`artifacts/latest.json`); all reports use it |
 
 Earlier development runs were pruned with `python -m telco_retention prune --keep 2`; they remain in git history.
 
@@ -16,12 +16,12 @@ Earlier development runs were pruned with `python -m telco_retention prune --kee
 | Check | Command | Result |
 |---|---|---|
 | Dependencies | `pip check` | No broken requirements |
-| Automated tests | `pytest -q --junitxml artifacts/qa/pytest.xml` | **135 passed**, 0 failed, 0 errors (192 s) |
+| Automated tests | `pytest -q --junitxml artifacts/qa/pytest.xml` | **135 passed**, 0 failed, 0 errors (227 s) |
 | Notebooks | `scripts/verify_notebooks.py` | 4/4 committed notebooks executed for run B with no errors; re-executed copies in `artifacts/qa/notebooks/` ([notebooks.json](../artifacts/qa/notebooks.json)) |
 | Release | `scripts/verify_release.py` | Passed ([release.json](../artifacts/qa/release.json)): 48 required artifacts, sizes derived from configuration (including 5,000 Monte Carlo draws and 8 stress-test rows), only registered figures in `reports/figures`, pilot sized from the recommended list and tested against its break-even, extended-data join accepted for all 7,043 customers with no context field among the model inputs, code hashes unchanged since training, 17 documents identical to a fresh render of the templates (line endings ignored), no broken relative links | Also checks the final report's LaTeX source against a fresh render, that every submission file is recorded with its hash and matches it, the actual page counts of the PDFs, the deck's talk length, that the HTML dashboard embeds the current run, and that the pilot uses the recommended list's break-even on the scale it measures.
 | Reproducibility | part of `verify_release.py` | Run A vs run B: test metrics equal (absolute tolerance 1e-10), identical selected customers and offers for both expected-value strategies, identical scenario IDs, and equal Monte Carlo summary, stress test, points card and model money check |
 | Submission files | `python -m telco_retention export --pdf require --latex require` | Executive brief 794 words, **2 pages** as PDF (Word); presentation on the HUST template **17 slides, all with the speaker script in the notes**, an 8:00 talk split 2:40 / 2:40 / 2:40 between three speakers plus a live demo, lint clean, PDF 17 pages (PowerPoint); final report **27 pages** (pdflatex); single-file HTML dashboard; all made from run B, and each PDF records that run ([deliverables manifest](../reports/deliverables-manifest.json)) |
-| Dashboard (headless) | part of `verify_release.py` | Warmed recalculation after a budget change: max 1.9 s |
+| Dashboard (headless) | part of `verify_release.py` | Warmed recalculation after a budget change: max 2.1 s |
 | Dashboard (browser) | `scripts/browser_qa.py` with Chrome | Passed 8 checks ([browser.json](../artifacts/qa/browser.json)): Decision page with five KPIs, recommendation, who gets an offer and the action list; budget 0 and restore; ZIP export with list, assumptions and the report's scenario ID; custom budget survives navigation and the live chance of a loss is shown; scenario analysis and stress test computed; model page with odds ratios, points card and separate challenger SHAP; template upload scored without warnings and a known ID disclosed; contradictory and invalid CSVs rejected |
 | HTML dashboard (browser) | `scripts/html_dashboard_qa.py` with Chrome, file opened from disk | Passed 8 checks ([html-dashboard.json](../artifacts/qa/html-dashboard.json)): Decision KPIs equal the Python engine (153 offers, $2,668); six rules compared; a budget change recomputes the list; tornado, profit curve and grid drawn; model evidence tabs; template upload scored (20 rows) and used on the Decision page; no script errors |
 | Visual review | full-page screenshots and rendered PDF pages | Brief, deck slides and the three dashboard pages inspected. Fixed during review: Markdown italics and links shown raw in the DOCX, numbered lists continuing across sections, clipped action-list columns, hidden tenure chip, histogram tails piled at the edges, overlapping log-scale tick labels |

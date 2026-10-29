@@ -1,7 +1,7 @@
 {
   "run": {
-    "id": "20261029T063931261171Z-88be4b93",
-    "created_at": "2026-10-29T06:40:28.158731+00:00",
+    "id": "20261029T073854762519Z-88be4b93",
+    "created_at": "2026-10-29T07:40:08.982556+00:00",
     "python": "3.13.17",
     "source_sha256": "88be4b93fbe0cc83421af1c503794c97c342eca914c1576db7c276e61d61358a"
   },
@@ -1911,7 +1911,7 @@
           "model__C": 1
         },
         "cv_average_precision": 0.6613690870433591,
-        "seconds": 8.253695999999763
+        "seconds": 8.148616699996637
       },
       "random_forest": {
         "params": {
@@ -1921,7 +1921,7 @@
           "model__class_weight": null
         },
         "cv_average_precision": 0.6683438407291493,
-        "seconds": 35.469397599983495
+        "seconds": 43.554003700002795
       },
       "xgboost": {
         "params": {
@@ -1933,7 +1933,7 @@
           "model__colsample_bytree": 1.0
         },
         "cv_average_precision": 0.6734522062332676,
-        "seconds": 7.849193700007163
+        "seconds": 13.678172399988398
       }
     },
     "feature_design": {
@@ -2110,7 +2110,7 @@
         "f1": 0.6423927178153446,
         "ece": 0.0329898531096383,
         "calibration_slope": 1.280786953239799,
-        "calibration_intercept": -0.0164965533757895
+        "calibration_intercept": -0.0164965533757893
       },
       {
         "model": "random_forest",
@@ -2226,7 +2226,7 @@
         "recall": 0.5935828877005348,
         "f1": 0.592,
         "ece": 0.0449316837047197,
-        "calibration_slope": 0.9103295669525782,
+        "calibration_slope": 0.9103295669525784,
         "calibration_intercept": -0.0327814713316491
       },
       {
@@ -2993,7 +2993,7 @@
         "model": "random_forest",
         "budget": 3500.0,
         "selected_count": 140,
-        "expected_net_value": 2406.877725595882,
+        "expected_net_value": 2406.8777255958817,
         "label_based_net": 1591.2764945466135,
         "precision_contacted": 0.6142857142857143
       },
@@ -10472,41 +10472,41 @@
     "min_value": 208.33333333333334
   },
   "sources": {
-    "comparison": "artifacts/runs/20261029T063931261171Z-88be4b93/strategy_comparison.csv",
-    "uncertainty": "artifacts/runs/20261029T063931261171Z-88be4b93/economic_uncertainty.csv",
-    "recommendation": "artifacts/runs/20261029T063931261171Z-88be4b93/validation_decisions.json",
-    "recommended": "artifacts/runs/20261029T063931261171Z-88be4b93/recommended_campaign.json",
-    "curve": "artifacts/runs/20261029T063931261171Z-88be4b93/budget_curve.csv",
-    "break_even": "artifacts/runs/20261029T063931261171Z-88be4b93/break_even.json",
-    "tornado": "artifacts/runs/20261029T063931261171Z-88be4b93/tornado.csv",
-    "scenarios": "artifacts/runs/20261029T063931261171Z-88be4b93/scenarios.csv",
-    "sensitivity": "artifacts/runs/20261029T063931261171Z-88be4b93/sensitivity.csv",
-    "matrix": "artifacts/runs/20261029T063931261171Z-88be4b93/risk_value_matrix.csv",
-    "threshold_rules": "artifacts/runs/20261029T063931261171Z-88be4b93/threshold_business.csv",
-    "fairness": "artifacts/runs/20261029T063931261171Z-88be4b93/fairness.csv",
-    "pilot": "artifacts/runs/20261029T063931261171Z-88be4b93/pilot_plan.json",
-    "pilot_power": "artifacts/runs/20261029T063931261171Z-88be4b93/pilot_power.csv",
-    "model.test": "artifacts/runs/20261029T063931261171Z-88be4b93/test_metrics.csv",
-    "model.validation": "artifacts/runs/20261029T063931261171Z-88be4b93/validation_metrics.csv",
-    "model.intervals": "artifacts/runs/20261029T063931261171Z-88be4b93/bootstrap_intervals.csv",
-    "model.gains": "artifacts/runs/20261029T063931261171Z-88be4b93/gains_test.csv",
-    "eda": "artifacts/runs/20261029T063931261171Z-88be4b93/eda_segments.csv",
-    "data.quality": "artifacts/runs/20261029T063931261171Z-88be4b93/data_quality.json",
-    "data.source": "artifacts/runs/20261029T063931261171Z-88be4b93/dataset_source.json",
-    "cfg": "artifacts/runs/20261029T063931261171Z-88be4b93/manifest.json",
-    "offers": "artifacts/runs/20261029T063931261171Z-88be4b93/offer_catalog.csv",
-    "offer_mix": "artifacts/runs/20261029T063931261171Z-88be4b93/segment_offer_mix.csv",
-    "model.feature_design": "artifacts/runs/20261029T063931261171Z-88be4b93/feature_ablation.csv",
-    "model.odds_ratios": "artifacts/runs/20261029T063931261171Z-88be4b93/odds_ratios.csv",
-    "model.scorecard": "artifacts/runs/20261029T063931261171Z-88be4b93/scorecard_points.csv",
-    "model.error_profiles": "artifacts/runs/20261029T063931261171Z-88be4b93/error_profiles.csv",
-    "model.segment_errors": "artifacts/runs/20261029T063931261171Z-88be4b93/segment_errors.csv",
-    "model.profit_check": "artifacts/runs/20261029T063931261171Z-88be4b93/model_profit_check.csv",
-    "reasons": "artifacts/runs/20261029T063931261171Z-88be4b93/churn_reasons_summary.json",
-    "reasons.by_reason": "artifacts/runs/20261029T063931261171Z-88be4b93/churn_reasons.csv",
-    "reasons.segments": "artifacts/runs/20261029T063931261171Z-88be4b93/churn_reasons_by_segment.csv",
-    "cltv": "artifacts/runs/20261029T063931261171Z-88be4b93/cltv_check.json",
-    "extended.join": "artifacts/runs/20261029T063931261171Z-88be4b93/extended_join.json",
-    "stress": "artifacts/runs/20261029T063931261171Z-88be4b93/stress_test.csv"
+    "comparison": "artifacts/runs/20261029T073854762519Z-88be4b93/strategy_comparison.csv",
+    "uncertainty": "artifacts/runs/20261029T073854762519Z-88be4b93/economic_uncertainty.csv",
+    "recommendation": "artifacts/runs/20261029T073854762519Z-88be4b93/validation_decisions.json",
+    "recommended": "artifacts/runs/20261029T073854762519Z-88be4b93/recommended_campaign.json",
+    "curve": "artifacts/runs/20261029T073854762519Z-88be4b93/budget_curve.csv",
+    "break_even": "artifacts/runs/20261029T073854762519Z-88be4b93/break_even.json",
+    "tornado": "artifacts/runs/20261029T073854762519Z-88be4b93/tornado.csv",
+    "scenarios": "artifacts/runs/20261029T073854762519Z-88be4b93/scenarios.csv",
+    "sensitivity": "artifacts/runs/20261029T073854762519Z-88be4b93/sensitivity.csv",
+    "matrix": "artifacts/runs/20261029T073854762519Z-88be4b93/risk_value_matrix.csv",
+    "threshold_rules": "artifacts/runs/20261029T073854762519Z-88be4b93/threshold_business.csv",
+    "fairness": "artifacts/runs/20261029T073854762519Z-88be4b93/fairness.csv",
+    "pilot": "artifacts/runs/20261029T073854762519Z-88be4b93/pilot_plan.json",
+    "pilot_power": "artifacts/runs/20261029T073854762519Z-88be4b93/pilot_power.csv",
+    "model.test": "artifacts/runs/20261029T073854762519Z-88be4b93/test_metrics.csv",
+    "model.validation": "artifacts/runs/20261029T073854762519Z-88be4b93/validation_metrics.csv",
+    "model.intervals": "artifacts/runs/20261029T073854762519Z-88be4b93/bootstrap_intervals.csv",
+    "model.gains": "artifacts/runs/20261029T073854762519Z-88be4b93/gains_test.csv",
+    "eda": "artifacts/runs/20261029T073854762519Z-88be4b93/eda_segments.csv",
+    "data.quality": "artifacts/runs/20261029T073854762519Z-88be4b93/data_quality.json",
+    "data.source": "artifacts/runs/20261029T073854762519Z-88be4b93/dataset_source.json",
+    "cfg": "artifacts/runs/20261029T073854762519Z-88be4b93/manifest.json",
+    "offers": "artifacts/runs/20261029T073854762519Z-88be4b93/offer_catalog.csv",
+    "offer_mix": "artifacts/runs/20261029T073854762519Z-88be4b93/segment_offer_mix.csv",
+    "model.feature_design": "artifacts/runs/20261029T073854762519Z-88be4b93/feature_ablation.csv",
+    "model.odds_ratios": "artifacts/runs/20261029T073854762519Z-88be4b93/odds_ratios.csv",
+    "model.scorecard": "artifacts/runs/20261029T073854762519Z-88be4b93/scorecard_points.csv",
+    "model.error_profiles": "artifacts/runs/20261029T073854762519Z-88be4b93/error_profiles.csv",
+    "model.segment_errors": "artifacts/runs/20261029T073854762519Z-88be4b93/segment_errors.csv",
+    "model.profit_check": "artifacts/runs/20261029T073854762519Z-88be4b93/model_profit_check.csv",
+    "reasons": "artifacts/runs/20261029T073854762519Z-88be4b93/churn_reasons_summary.json",
+    "reasons.by_reason": "artifacts/runs/20261029T073854762519Z-88be4b93/churn_reasons.csv",
+    "reasons.segments": "artifacts/runs/20261029T073854762519Z-88be4b93/churn_reasons_by_segment.csv",
+    "cltv": "artifacts/runs/20261029T073854762519Z-88be4b93/cltv_check.json",
+    "extended.join": "artifacts/runs/20261029T073854762519Z-88be4b93/extended_join.json",
+    "stress": "artifacts/runs/20261029T073854762519Z-88be4b93/stress_test.csv"
   }
 }

@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/model-card.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/model-card.md.j2 for run 20261029T073854762519Z-88be4b93. Edit the template, not this file. -->
 # Model and analysis card
 
 Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.md#mitchell2019)].
@@ -7,12 +7,12 @@ Structure follows *Model Cards for Model Reporting* [[mitchell2019](references.m
 
 | Item | Value |
 |---|---|
-| Name / version | Retention Lab churn scorer, run `20261029T063931261171Z-88be4b93` |
+| Name / version | Retention Lab churn scorer, run `20261029T073854762519Z-88be4b93` |
 | Deployed model | Calibrated Logistic Regression (sigmoid / Platt scaling on out-of-fold predictions) |
 | Challengers | Random Forest and XGBoost (gradient boosting), each raw and calibrated; prior-only baseline |
 | Decision layer | Expected-value targeting with a fixed budget and offer optimisation (`telco_retention.business`) |
 | Owner | Retention analytics team; business owner: Head of Customer Retention |
-| Created | 2026-10-29T06:40:28 UTC, Python 3.13.17; code and dependency hashes in the run manifest |
+| Created | 2026-10-29T07:40:08 UTC, Python 3.13.17; code and dependency hashes in the run manifest |
 
 ## 2. Intended use
 
