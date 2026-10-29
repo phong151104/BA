@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/reports/executive-brief.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/reports/executive-brief.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
 # Executive brief: profit-aware retention targeting
 
 **To:** Head of Customer Retention | **From:** Retention analytics team | **Decision requested:** approve a 90-day retention pilot

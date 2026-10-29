@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/pilot-design.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/pilot-design.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
 # Pilot design: measuring the real save rate
 
 The data contain no randomised campaign, so the save rate behind every expected value is an assumption (20% for the standard offer). The literature shows why it must be measured, not assumed: risk is not responsiveness [[ascarza2018](references.md#ascarza2018)], and proactive contact can even raise churn [[ascarza2016](references.md#ascarza2016)]. This pilot turns the recommendation into a controlled experiment [[kohavi2020](references.md#kohavi2020)].

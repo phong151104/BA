@@ -179,6 +179,20 @@ def test_break_even_with_an_offer_catalog_is_on_the_pilot_scale():
     assert not ((options.churn_probability * options.assumed_save_rate * factor * options.customer_value - options.total_cost) > 0).any()
 
 
+def test_break_even_has_no_standard_scale_when_the_standard_offer_saves_nobody():
+    cfg = cfg_small()
+    default_offer(cfg)["save_rate"] = 0.0
+    data = sample()
+    target, _ = campaign(data, 400, cfg, offers=cfg["offers"])
+    assert target.selected.any()
+    be = break_even(target, cfg, offer_options(value_customers(data, cfg), cfg["offers"]))
+    # The other offers still break even on the pilot's scale; no multiple of a zero save rate does.
+    assert be["break_even_mix_save_rate"] > 0
+    assert be["break_even_default_save_rate"] is None and be["minimum_viable_save_rate"] is None
+    alone, _ = campaign(data, 400, cfg)
+    assert break_even(alone, cfg, offer_options(value_customers(data, cfg), [default_offer(cfg)]))["minimum_viable_save_rate"] is None
+
+
 def test_vectorised_repricing_matches_fixed_campaign():
     cfg = cfg_small()
     data = sample()

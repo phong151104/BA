@@ -1,7 +1,7 @@
-<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/reports/analysis-report.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
 # Analysis report: profit-aware churn and retention targeting
 
-Run `20261029T034118630540Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
+Run `20261029T063931261171Z-88be4b93` · every number below is generated from this run's artifacts ([facts.json](facts.json) maps each to its source file) · all money in USD of the sample company · expected values are scenarios under stated assumptions, not realised profit.
 
 ## 1. Summary
 
@@ -144,7 +144,7 @@ The challenger XGBoost model is explained with SHAP; its leading features (Contr
 | --- | --- | --- | ---: | ---: | ---: | ---: |
 | Save rate of the standard offer | 10% | 30% | $458 | $6,359 | -$469 | $5,806 |
 | Value horizon (months) | 6 months | 18 months | $89 | $5,522 | -$336 | $5,522 |
-| Offer cost (multiplier on catalog cost) | x0.5 | x1.5 | $6,061 | $1,198 | $4,036 | $1,301 |
+| Offer cost (multiplier on catalog cost) | x0.5 | x1.5 | $6,062 | $1,198 | $4,036 | $1,301 |
 | Contribution margin | 20% | 40% | $614 | $4,724 | $612 | $4,724 |
 | Contact cost per customer (USD) | $1 | $10 | $3,843 | $1,852 | $3,280 | $1,903 |
 | Annual discount rate | 5% | 15% | $2,836 | $2,513 | $2,836 | $2,513 |

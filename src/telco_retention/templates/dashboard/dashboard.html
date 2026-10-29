@@ -1,0 +1,69 @@
+<!doctype html>
+<!--HEADER-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Retention Lab</title>
+<style>
+:root { --bg:#f9f9f7; --panel:#fcfcfb; --side:#f1f0ec; --ink:#0b0b0b; --text:#52514e; --muted:#898781; --line:rgba(11,11,11,.10);
+        --blue:#2a78d6; --orange:#eb6834; --aqua:#1baf7a; --grey:#b9b8b2; --red:#d03b3b; --ok:#e7f4ec; --okline:#1baf7a; --warn:#fdf3e1; --info:#e8f0fb; }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif; }
+#layout { display:flex; min-height:100vh; }
+#sidebar { width:260px; flex:none; background:var(--side); padding:22px 18px; border-right:1px solid var(--line); position:sticky; top:0; height:100vh; overflow:auto; }
+#sidebar h2 { margin:0; font-size:20px; } #sidebar .sub { color:var(--text); font-size:13px; margin:2px 0 18px; }
+#sidebar .nav button { display:block; width:100%; text-align:left; border:0; background:none; padding:8px 10px; border-radius:8px; font:inherit; color:var(--ink); cursor:pointer; }
+#sidebar .nav button.active { background:#fff; font-weight:600; box-shadow:0 0 0 1px var(--line); }
+#sidebar label { display:block; margin-top:18px; font-size:13px; color:var(--text); }
+#sidebar select { width:100%; margin-top:4px; }
+#sidebar .note { font-size:12px; color:var(--muted); margin-top:14px; } #sidebar hr { border:0; border-top:1px solid var(--line); margin:16px 0; }
+main { flex:1; min-width:0; padding:28px 36px 60px; max-width:1480px; }
+.hero h2 { margin:0 0 4px; font-size:26px; } .hero p { color:var(--text); margin:0 0 16px; font-size:15px; }
+h3 { margin:28px 0 10px; font-size:19px; }
+.row { display:grid; gap:14px; margin-bottom:12px; } .row.c2 { grid-template-columns:1fr 1fr; } .row.c3 { grid-template-columns:2fr 1fr 1fr; } .row.c4 { grid-template-columns:repeat(4,1fr); } .row.c5 { grid-template-columns:repeat(5,1fr); }
+.row.split { grid-template-columns:1fr 1.25fr; }
+.field label { display:block; font-size:13px; color:var(--text); margin-bottom:4px; }
+.field input[type=number], .field select, .field input[type=text] { width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:8px; background:#fff; font:inherit; }
+.field input[type=range] { width:100%; } .field .val { float:right; font-weight:600; color:var(--ink); }
+.field .hint { font-size:12px; color:var(--muted); }
+.checks label { display:inline-flex; align-items:center; gap:4px; margin-right:14px; font-size:13px; }
+.strip { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:8px 14px; margin:2px 0 14px; font-size:13px; color:var(--text); line-height:1.6; }
+.strip b { color:var(--ink); font-weight:600; }
+.metric { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+.metric .label { font-size:13px; color:var(--text); } .metric .value { font-size:28px; font-weight:600; margin:2px 0; }
+.metric .delta { font-size:13px; color:var(--muted); } .metric .delta.up { color:#0f8a4c; } .metric .delta.down { color:var(--red); }
+.box { border-radius:10px; padding:12px 16px; margin:12px 0; } .box.ok { background:var(--ok); border-left:4px solid var(--okline); }
+.box.warn { background:var(--warn); border-left:4px solid var(--orange); } .box.info { background:var(--info); border-left:4px solid var(--blue); }
+.caption { color:var(--muted); font-size:12.5px; margin:6px 0 10px; }
+table.data { width:100%; border-collapse:collapse; background:#fff; border:1px solid var(--line); border-radius:10px; font-size:13px; }
+table.data th { text-align:left; font-weight:600; color:var(--text); background:#f5f4f1; padding:7px 10px; border-bottom:1px solid var(--line); position:sticky; top:0; }
+table.data td { padding:6px 10px; border-bottom:1px solid #efeeea; vertical-align:top; } table.data td.num, table.data th.num { text-align:right; white-space:nowrap; }
+.scroll { max-height:440px; overflow:auto; border-radius:10px; }
+.chart { background:#fff; border:1px solid var(--line); border-radius:12px; padding:6px; margin:10px 0; min-height:200px; }
+details { background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin:12px 0; }
+details summary { cursor:pointer; font-weight:600; }
+button.primary, button.secondary { font:inherit; border-radius:8px; padding:8px 14px; cursor:pointer; margin:6px 8px 6px 0; }
+button.primary { background:var(--blue); color:#fff; border:1px solid var(--blue); } button.secondary { background:#fff; color:var(--ink); border:1px solid var(--line); }
+button:disabled { opacity:.6; cursor:wait; }
+.tabs { display:flex; gap:4px; border-bottom:1px solid var(--line); margin:4px 0 14px; flex-wrap:wrap; }
+.tabs button { border:0; background:none; padding:9px 14px; font:inherit; cursor:pointer; color:var(--text); border-bottom:2px solid transparent; }
+.tabs button.active { color:var(--ink); border-bottom-color:var(--blue); font-weight:600; }
+.radio label { margin-right:16px; font-size:13px; }
+.errors td { color:var(--red); }
+.offer-row { display:grid; grid-template-columns:2fr 1fr 1fr; gap:14px; align-items:end; margin:8px 0; }
+.offer-row .name { font-weight:600; } .offer-row .rule { font-size:12.5px; color:var(--text); font-weight:400; }
+@media (max-width: 1000px) { #layout { display:block; } #sidebar { width:auto; height:auto; position:static; } .row.c4, .row.c5, .row.c3, .row.split, .row.c2 { grid-template-columns:1fr 1fr; } main { padding:18px 16px; } }
+</style>
+</head>
+<body>
+<div id="layout">
+  <aside id="sidebar"></aside>
+  <main id="main"><p>Loading the dashboard...</p></main>
+</div>
+<script>/*@PLOTLY@*/</script>
+<script>const DATA = /*@DATA@*/;</script>
+<script>/*@ENGINE@*/</script>
+<script>/*@APP@*/</script>
+</body>
+</html>

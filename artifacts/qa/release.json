@@ -1,7 +1,7 @@
 {
   "status": "passed",
   "python": "3.13.17",
-  "run_id": "20261029T034118630540Z-88be4b93",
+  "run_id": "20261029T063931261171Z-88be4b93",
   "artifacts": {
     "required": 48,
     "sizes": {
@@ -40,24 +40,25 @@
   "deliverables": {
     "brief_words": 794,
     "brief_pages": 2,
-    "slides": 16,
-    "slides_with_notes": 16,
+    "slides": 17,
+    "slides_with_notes": 17,
     "talk_seconds": 480,
     "speaker_seconds": {
       "Kiet": 160,
       "Hieu": 160,
       "Dung": 160
     },
-    "deck_pdf_pages": 16,
+    "deck_pdf_pages": 17,
     "pdf_status": "current",
-    "pdf_run_id": "20261029T034118630540Z-88be4b93",
+    "brief_pdf_run_id": "20261029T063931261171Z-88be4b93",
+    "deck_pdf_run_id": "20261029T063931261171Z-88be4b93",
     "report_pages": 27,
     "latex_status": "current",
-    "latex_run_id": "20261029T034118630540Z-88be4b93"
+    "latex_run_id": "20261029T063931261171Z-88be4b93"
   },
   "reproducibility": {
-    "compared_with": "20261029T032914596074Z-88be4b93",
-    "current": "20261029T034118630540Z-88be4b93",
+    "compared_with": "20261029T063059074964Z-88be4b93",
+    "current": "20261029T063931261171Z-88be4b93",
     "metrics_atol": 1e-10,
     "selected_customers_and_offers_equal": true,
     "scenario_ids_equal": true,
@@ -65,12 +66,12 @@
   },
   "ui_seconds": {
     "warmed": [
-      0.9039302000019234,
-      1.9881588999996893,
-      2.2576495000103023,
-      1.8787231000023894,
-      0.7704756000021007
+      0.35855579999042675,
+      1.034820300003048,
+      1.9275380999897607,
+      1.620990899973549,
+      0.42267420000280254
     ],
-    "max": 2.2576495000103023
+    "max": 1.9275380999897607
   }
 }

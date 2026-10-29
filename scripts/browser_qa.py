@@ -1,6 +1,7 @@
-"""Headless Chrome/Edge check of the running dashboard (start it first on http://127.0.0.1:8501)."""
+"""Headless Chrome/Edge check of the running dashboard (start it first on http://127.0.0.1:8501, or pass its URL)."""
 import json
 import shutil
+import sys
 import zipfile
 from pathlib import Path
 import pandas as pd
@@ -58,7 +59,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch(executable_path=str(executable), headless=True)
     # A tall window lets each screenshot hold the whole page (Streamlit scrolls inside its own container).
     page = browser.new_page(viewport={"width": 1440, "height": 4200})
-    page.goto("http://127.0.0.1:8501", wait_until="domcontentloaded")
+    page.goto(sys.argv[1] if len(sys.argv) > 1 else "http://127.0.0.1:8501", wait_until="domcontentloaded")
     page.get_by_text("Which customers should get a retention offer?", exact=True).wait_for(timeout=90000)
     settle(page, tables=2, charts=1)
     page.locator('[data-testid="stDataFrame"]').last.wait_for(timeout=60000)

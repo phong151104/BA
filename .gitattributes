@@ -1,2 +1,5 @@
 # Preserve exact file bytes across platforms for dataset and run checksums.
 * -text
+# The submission folder is a copy built by scripts/build_submission.py: collapsed in diffs and left out of language statistics.
+Group_1/** linguist-generated
+Group_1/README.md -linguist-generated

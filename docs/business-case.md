@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/business-case.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/business-case.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
 # Business case and problem statement
 
 ## The decision

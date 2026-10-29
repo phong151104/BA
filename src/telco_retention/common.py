@@ -79,12 +79,30 @@ def latest_run():
     return ROOT / "artifacts/runs" / read_json(pointer)["run_id"]
 
 
+def _is_link(path):
+    """Symbolic links and Windows junctions point outside the tree: they are removed, never followed."""
+    return os.path.islink(path) or os.path.isjunction(path)
+
+
 def remove_tree(path):
-    """shutil.rmtree that also removes read-only entries (Windows marks synced and customised folders read-only)."""
-    def clear_and_retry(func, target, _exc):
-        os.chmod(target, stat.S_IWRITE)
-        func(target)
-    shutil.rmtree(path, onexc=clear_and_retry)
+    """shutil.rmtree for trees with read-only entries: Windows marks synced and customised folders read-only, and on POSIX
+    a folder without write or read permission blocks deleting what it holds. Permissions change only inside the tree."""
+    def open_up(target):
+        # Add owner permissions without dropping the others. Best effort: an entry that cannot be changed or has gone is
+        # left to rmtree, which reports whatever it cannot delete.
+        try:
+            if _is_link(target):
+                return
+            if os.path.isdir(target):
+                os.chmod(target, stat.S_IMODE(os.stat(target).st_mode) | stat.S_IRWXU)
+                for entry in os.scandir(target):
+                    open_up(entry.path)
+            elif os.name == "nt":  # Windows will not delete a read-only file; POSIX only needs the folder's permission
+                os.chmod(target, stat.S_IMODE(os.stat(target).st_mode) | stat.S_IWRITE)
+        except OSError:
+            pass
+    open_up(path)
+    shutil.rmtree(path)
 
 
 def prune_runs(keep=2):

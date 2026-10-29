@@ -59,7 +59,7 @@
 % ---------------------------------------------------------------- cover
 \begin{titlepage}
 \centering
-\includegraphics[height=2.6cm]{hust-logo.png}\par
+\includegraphics[height=2.6cm]{soict-logo.png}\par
 \vspace{1.6cm}
 {\large\sffamily\bfseries\color{hustblue} INTRODUCTION TO BUSINESS ANALYTICS\par}
 \vspace{2pt}
@@ -77,10 +77,9 @@
 \toprule
 \textbf{No.} & \textbf{Member} & \textbf{Student ID} & \textbf{Email} \\
 \midrule
-1 & Pham Tuan Kiet & 20252751M & kiet.pt252751m@sis.hust.edu.vn \\
-2 & Nguyen Trung Hieu & 20261059M & Hieu.NT261059M@sis.hust.edu.vn \\
-3 & Bui Tien Dung & 20261204M & Dung.BT261204M@sis.hust.edu.vn \\
-4 & Pham Hung Phong & 20261061M & phong.ph261061m@sis.hust.edu.vn \\
+<% for t in team %>
+<< loop.index >> & << t.name >> & << t.student_id >> & << t.email >> \\
+<% endfor %>
 \bottomrule
 \end{tabular}\par
 \vspace{1.1cm}
@@ -859,10 +858,9 @@ A third party can rerun the analysis & Appendix A \\
 \toprule
 \textbf{Member} & \textbf{Student ID} & \textbf{Main contributions} \\
 \midrule
-Pham Tuan Kiet & 20252751M & Code review and reproducibility check; final report and presentation slides \\
-Nguyen Trung Hieu & 20261059M & Decision engine, robustness and Monte Carlo analysis, dashboard redesign, business documents \\
-Bui Tien Dung & 20261204M & Review and quality assurance of code, report and slides \\
-Pham Hung Phong & 20261061M & Data pipeline, churn models and first version of the dashboard \\
+<% for t in team %>
+<< t.name >> & << t.student_id >> & << t.contribution >> \\
+<% endfor %>
 \bottomrule
 \end{tabularx}
 \end{table}

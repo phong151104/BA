@@ -13,10 +13,11 @@ from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.oxml.ns import qn
 from pptx.util import Emu, Inches, Pt
 from .common import ROOT
+from .team import TEAM
 from .templating import TEMPLATES, num, pct, usd
 
-TEMPLATE = TEMPLATES / "presentation/hust-template.pptx"  # HUST seminar template with its slides removed; masters only
-LOGO = TEMPLATES / "presentation/hust-logo.png"
+TEMPLATE = TEMPLATES / "presentation/hust-template.pptx"  # HUST seminar template with its slides removed; masters only (SoICT logo in the content footer)
+LOGO = TEMPLATES / "soict-logo.png"  # HUST SoICT logo, also on the report cover
 DASHBOARD = ROOT / "artifacts/qa/dashboard-decision.png"
 FIGURES = ROOT / "reports/figures"
 NAVY, RED, CARD, INK, MUTED, WHITE = (RGBColor.from_string(c) for c in ["0B2E63", "BE1E2D", "EEF2F8", "1F2937", "6B7280", "FFFFFF"])
@@ -233,11 +234,10 @@ def build_presentation(facts, out_path, script_path=None):
     s = deck.slide("title", "Title", "Kiet", 15,
                    "Good morning, Professor, and everyone. We are Group 1, presenting Topic 7: profit-aware telecom churn and retention targeting. "
                    "Hieu, Dung and I will present, and Phong will demo our dashboard at the end.")
-    s.shapes.add_picture(str(LOGO), Inches(0.43), Inches(0.3), Inches(3.47), Inches(1.26))
+    s.shapes.add_picture(str(LOGO), Inches(0.5), Inches(0.45), height=Inches(0.95))
     text(s, 0.76, 2.15, 9.0, 1.45, ["Profit-Aware Telecom Churn", "& Retention Targeting"], size=36, color=NAVY, bold=True, space_after=0)
     text(s, 0.76, 3.7, 9.0, 0.42, ["Introduction to Business Analytics · Capstone Topic 7 · Assoc. Prof. Nguyen Binh Minh"], size=14, color=INK)
-    text(s, 0.76, 4.2, 5.6, 1.7, [[("Group 1", {"bold": True, "color": NAVY})], "Pham Tuan Kiet · 20252751M", "Nguyen Trung Hieu · 20261059M",
-                                  "Bui Tien Dung · 20261204M", "Pham Hung Phong · 20261061M"], size=15, space_after=1)
+    text(s, 0.76, 4.2, 5.6, 1.7, [[("Group 1", {"bold": True, "color": NAVY})], *[f"{t['name']} · {t['student_id']}" for t in TEAM]], size=15, space_after=1)
 
     # 2. Outline
     deck.outline("Kiet", 10, "We follow CRISP-DM: the business problem and the data, then the model and the decision rule, "
@@ -447,7 +447,7 @@ def build_presentation(facts, out_path, script_path=None):
                                   "the hurdle stops earlier, where extra steps barely pay"], size=14, bullets=True, space_after=4)
 
     # 12. How sure are we
-    s = deck.slide("content", "How Sure Are We?", "Dung", 55,
+    s = deck.slide("content", "How Sure Are We?", "Dung", 50,
                    f"How sure are we? We varied every assumption one at a time, and then all of them at once in {num(f['monte_carlo']['draws'])} Monte Carlo draws. "
                    f"In {share(mc['base_vs_risk']['prob_gain'])} of the draws, expected-value targeting beats the risk-only rule: who to target is robust. "
                    f"How much an offer saves is not. The recommended list breaks even if the standard offer saves {pct(rbe_standard)} of would-be leavers, while we assumed {pct(q, 0)}, "
@@ -471,7 +471,7 @@ def build_presentation(facts, out_path, script_path=None):
 
     # 13. Recommendation: pilot
     roadmap = f["cfg"]["project"]["roadmap"]
-    s = deck.slide("content", "Recommendation: A Randomised Pilot Before Scaling", "Dung", 55,
+    s = deck.slide("content", "Recommendation: A Randomised Pilot Before Scaling", "Dung", 50,
                    "So our recommendation to the Head of Retention is to adopt expected-value targeting with segment offers, but to launch it as a randomised pilot. "
                    f"One wave of {num(pilot['list_size_per_wave'])} customers from the recommended list is split at random: half receive the offer, half are held out. "
                    f"After {pilot['outcome_window_days']} days we measure the real save rate of this offer mix, which we assume to be {pct(q_mix)}. "
@@ -511,12 +511,19 @@ def build_presentation(facts, out_path, script_path=None):
                                         ("Model evidence", "Performance, points scorecard, SHAP challenger, score an uploaded customer file")]):
         card(s, 8.2, 1.4 + i * 1.7, 4.65, 1.5, [[(head_, {"size": 18, "bold": True, "color": NAVY})], body], size=14, align=PP_ALIGN.LEFT, space_after=3)
 
-    # 15. Thank you
+    # 15. Team contributions
+    s = deck.slide("content", "Team Contributions", "Dung", 10,
+                   "Who did what: Kiet led the project and the report, Hieu the decision engine, Phong the data and models, and I these slides.")
+    table(s, 0.5, 1.45, [2.9, 1.75, 7.7], [["Member", "Student ID", "Main contributions"], *[[t["name"], t["student_id"], t["contribution"]] for t in TEAM]],
+          row_h=0.95, size=15, text_columns=3)
+    caption(s, 0.5, 6.4, 12.35, f"{DEMO_SPEAKER} runs the live demo; {', '.join(SPEAKERS[:-1])} and {SPEAKERS[-1]} give the talk. The same table is in the final report.")
+
+    # 16. Thank you
     s = deck.slide("thanks", "Thank you", "Dung", 5, "Thank you for your attention. We are happy to take your questions.")
     text(s, 6.3, 3.0, 6.6, 1.1, ["THANK YOU !"], size=60, color=RGBColor.from_string("C00000"), bold=True)
     text(s, 6.35, 4.15, 6.5, 0.6, ["Questions and discussion"], size=24, color=NAVY)
 
-    # 16. Closing cover
+    # 17. Closing cover
     deck.slide("closing", "Closing", None, 0, "Closing slide: leave it on screen during questions.")
 
     deck.save(out_path)

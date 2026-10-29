@@ -1,7 +1,9 @@
 import copy
+import os
+import stat
 import pytest
 from jinja2 import UndefinedError
-from telco_retention.common import latest_run
+from telco_retention.common import latest_run, remove_tree
 from telco_retention.facts import build_facts
 from telco_retention.notebooks import to_notebook
 from telco_retention.templating import DOCUMENTS, render, render_documents
@@ -10,6 +12,21 @@ from telco_retention.templating import DOCUMENTS, render, render_documents
 @pytest.fixture(scope="module")
 def facts():
     return build_facts(latest_run())
+
+
+def test_output_folders_are_removed_even_when_read_only(tmp_path):
+    folder = tmp_path / "tables" / "old"
+    (folder / "hidden").mkdir(parents=True)
+    (folder / "table.csv").write_text("a\n1\n", encoding="utf-8")
+    (folder / "hidden" / "notes.txt").write_text("x", encoding="utf-8")
+    # Read-only file and folders: the attribute on Windows, no write permission on POSIX (where the folder blocks deleting the file).
+    for path in [folder / "table.csv", folder, folder.parent]:
+        os.chmod(path, stat.S_IREAD | (stat.S_IEXEC if path.is_dir() else 0))
+    os.chmod(folder / "hidden", stat.S_IEXEC)  # POSIX: a folder whose entries cannot even be listed
+    outside = stat.S_IMODE(os.stat(tmp_path).st_mode)
+    remove_tree(tmp_path / "tables")
+    assert not (tmp_path / "tables").exists()
+    assert stat.S_IMODE(os.stat(tmp_path).st_mode) == outside  # nothing outside the tree changes
 
 
 def test_every_template_renders(facts, tmp_path):

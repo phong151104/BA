@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/docs/cleaning-log.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/docs/cleaning-log.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
 # Cleaning log
 
 | Step | Decision | Rows affected |

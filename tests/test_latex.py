@@ -1,10 +1,13 @@
 import copy
 import re
+import subprocess
 import pytest
 from jinja2 import UndefinedError
+from telco_retention import latex
 from telco_retention.common import latest_run
 from telco_retention.facts import build_facts
-from telco_retention.latex import FILTERS, LATEX_DOCUMENTS, escape, render, render_latex, tex_rows
+from telco_retention.latex import FILTERS, LATEX_DIR, LATEX_DOCUMENTS, LOGO, LatexError, compile_latex, escape, render, render_latex, tex_rows
+from telco_retention.team import TEAM
 
 
 @pytest.fixture(scope="module")
@@ -36,6 +39,8 @@ def test_report_renders_completely(facts, tmp_path):
     assert len(written) == len(LATEX_DOCUMENTS)
     text = written[0].read_text(encoding="utf-8")
     assert text.startswith("% Generated from") and facts["run"]["id"] in text.splitlines()[0]
+    assert f"{{{LOGO.name}}}" in text and (tmp_path / LATEX_DIR / "images" / LOGO.name).exists()
+    assert all(t["email"] in text and escape(t["contribution"]) in text for t in TEAM)  # cover and team table
     assert "<<" not in text and "<%" not in text and "None" not in text
     for env in ["document", "table", "figure", "tabularx", "itemize", "enumerate"]:
         assert text.count(rf"\begin{{{env}}}") == text.count(rf"\end{{{env}}}"), env
@@ -52,3 +57,11 @@ def test_report_follows_the_facts(facts):
     del broken["pilot"]
     with pytest.raises(UndefinedError):
         render("latex/report.tex.j2", broken)
+
+
+def test_compile_fails_when_references_never_settle(tmp_path, monkeypatch):
+    (tmp_path / LATEX_DIR).mkdir(parents=True)
+    unsettled = subprocess.CompletedProcess([], 0, stdout="LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.", stderr="")
+    monkeypatch.setattr(latex.subprocess, "run", lambda *args, **kwargs: unsettled)
+    with pytest.raises(LatexError, match="still changing"):
+        compile_latex(tmp_path, engine="pdflatex")

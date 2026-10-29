@@ -10,6 +10,8 @@ import pandas as pd
 from streamlit.testing.v1 import AppTest
 from telco_retention.common import ROOT, digest, latest_run, read_json, write_json
 from telco_retention.analysis import share_grid
+from telco_retention.export import pdf_page_count
+from telco_retention.html_dashboard import HTML_DASHBOARD
 from telco_retention.facts import build_facts
 from telco_retention.figures import FIGURES
 from telco_retention.templating import DOCUMENTS, render_documents
@@ -91,14 +93,25 @@ assert deliverables["run_id"] == run.name
 assert deliverables["brief_pages"] <= 2, deliverables
 assert deliverables["slides_with_notes"] == deliverables["slides"] and not deliverables["deck_lint"], deliverables["deck_lint"]
 assert deliverables["talk_seconds"] == TALK_SECONDS, deliverables["talk_seconds"]
-if deliverables.get("pdf_status") == "current":
-    assert deliverables["deck_pdf_pages"] == deliverables["slides"], (deliverables["deck_pdf_pages"], deliverables["slides"])
+assert deliverables.get("deck_pdf_pages") == deliverables["slides"], (deliverables.get("deck_pdf_pages"), deliverables["slides"])
 assert deliverables.get("report_pages") and (ROOT / LATEX_DOCUMENTS["latex/report.tex.j2"][1]).exists(), "Final report PDF missing: run export with pdflatex installed"
+# Every submission file exists and is the exported one: unchanged since export, and each PDF really has the pages the manifest records.
+pdfs = {"brief_pages": "reports/executive-brief.pdf", "deck_pdf_pages": "reports/presentation/retention-presentation.pdf", "report_pages": LATEX_DOCUMENTS["latex/report.tex.j2"][1]}
+expected = ["reports/executive-brief.docx", "reports/presentation/retention-presentation.pptx", "reports/presentation/speaker-script.md", HTML_DASHBOARD, *pdfs.values()]
+unrecorded = [p for p in expected if p not in deliverables["sha256"]]
+assert not unrecorded, f"Submission files missing or not described by the export: {unrecorded}"
+changed = [p for p, h in deliverables["sha256"].items() if not (ROOT / p).exists() or digest((ROOT / p).read_bytes()) != h]
+assert not changed, f"Submission files changed since export: {changed}"
+assert f"for run {run.name}." in (ROOT / HTML_DASHBOARD).read_text(encoding="utf-8")[:500], "The HTML dashboard embeds another run"
+for key, pdf in pdfs.items():
+    assert key in deliverables, f"{pdf}: page count not recorded (its run is unknown); export again with Word, PowerPoint and pdflatex"
+    assert pdf_page_count(ROOT / pdf) == deliverables[key], (pdf, key, deliverables[key])
 checks["deliverables"] = {k: deliverables.get(k) for k in ["brief_words", "brief_pages", "slides", "slides_with_notes", "talk_seconds", "speaker_seconds", "deck_pdf_pages",
-                                                         "pdf_status", "pdf_run_id", "report_pages", "latex_status", "latex_run_id"]}
+                                                         "pdf_status", "brief_pdf_run_id", "deck_pdf_run_id", "report_pages", "latex_status", "latex_run_id"]}
 if deliverables.get("pdf_status") != "current":
     # Without Word/PowerPoint the PDFs cannot be rebuilt; the committed ones are kept and reported.
-    print(f"NOTE PDFs were not rebuilt here ({deliverables.get('pdf_status')}); they come from run {deliverables.get('pdf_run_id')}")
+    print(f"NOTE PDFs were not all rebuilt here ({deliverables.get('pdf_status')}); the brief comes from run {deliverables.get('brief_pdf_run_id')}, "
+          f"the deck from run {deliverables.get('deck_pdf_run_id')}")
 if deliverables.get("latex_status") != "current":
     print(f"NOTE the final report PDF was not rebuilt here ({deliverables.get('latex_status')}); it comes from run {deliverables.get('latex_run_id')}")
 

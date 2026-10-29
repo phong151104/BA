@@ -8,6 +8,7 @@ from pathlib import Path
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 from markupsafe import Markup
 from .common import ROOT
+from .team import TEAM
 from . import templating as md
 
 LATEX_DIR = "reports/latex"
@@ -16,6 +17,7 @@ LATEX_DOCUMENTS = {
     "latex/report.tex.j2": ("report.tex", "reports/final-report.pdf"),
 }
 MAX_PASSES = 4  # pdflatex reruns until cross-references and the table of contents settle
+LOGO = md.TEMPLATES / "soict-logo.png"  # cover logo (HUST SoICT), shared with the slides
 
 _SPECIAL = {"\\": r"\textbackslash{}", "&": r"\&", "%": r"\%", "$": r"\$", "#": r"\#", "_": r"\_",
             "{": r"\{", "}": r"\}", "~": r"\textasciitilde{}", "^": r"\textasciicircum{}"}
@@ -77,16 +79,16 @@ ENV.filters.update(FILTERS, tex_rows=tex_rows)
 
 
 def render(template, ctx):
-    return ENV.get_template(template).render(**ctx)
+    return ENV.get_template(template).render(**ctx, team=TEAM)
 
 
 def render_latex(ctx, root=ROOT):
     """Write every LaTeX source, the cover logo and the dashboard picture to reports/latex."""
-    from .presentation import DASHBOARD, LOGO, crop_dashboard
+    from .presentation import DASHBOARD, crop_dashboard
     folder = Path(root) / LATEX_DIR
     images = folder / "images"
     images.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(LOGO, images / "hust-logo.png")
+    shutil.copyfile(LOGO, images / LOGO.name)
     shot = images / "dashboard-decision.png"
     if DASHBOARD.exists():  # the report shows the top of the browser-QA screenshot when one exists
         shot.write_bytes(crop_dashboard(DASHBOARD).getvalue())
@@ -124,6 +126,8 @@ def compile_latex(root=ROOT, engine=None, timeout=600):
             # The outline and table of contents are read on the next pass, which pdflatex does not always announce.
             if attempt >= 1 and "Rerun to get" not in result.stdout and "Rerun LaTeX" not in result.stdout:
                 break
+        else:
+            raise LatexError(f"{source}: cross-references still changing after {MAX_PASSES} pdflatex passes")
         target = root / pdf
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(build / Path(source).with_suffix(".pdf").name, target)

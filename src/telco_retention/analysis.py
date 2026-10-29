@@ -133,6 +133,7 @@ def break_even(target, cfg, population_options=None):
     Reported two ways: as the standard offer's save rate, and as the list's mix save rate (churn-weighted mean of
     its offers' save rates), which is what a pilot measures as 1 - churn(offered) / churn(holdout). With population
     options, also the standard-offer save rate below which no customer-offer pair has positive EV.
+    A standard offer that saves nobody has no scale to express a break-even on, so those values are None.
     """
     picked = target.loc[target.selected]
     q_standard = default_offer(cfg)["save_rate"]
@@ -144,15 +145,17 @@ def break_even(target, cfg, population_options=None):
         multiplier = cost / pqv if pqv > 0 else None
         mix = pq / p if p > 0 else None
         out.update({"save_rate_multiplier": multiplier,
-                    "break_even_default_save_rate": q_standard * multiplier if multiplier is not None else None,
+                    "break_even_default_save_rate": q_standard * multiplier if multiplier is not None and q_standard > 0 else None,
                     "mix_save_rate": mix,
                     "break_even_mix_save_rate": mix * multiplier if multiplier is not None and mix is not None else None,
                     "offer_cost_multiplier": (pqv - contact) / offer_cost if offer_cost > 0 else None,
                     "break_even_default_offer_cost": default_offer(cfg)["offer_cost"] * (pqv - contact) / offer_cost if offer_cost > 0 else None})
     if population_options is not None:
         # Each option breaks even at its own save rate; expressed on the standard offer's scale so every offer counts.
-        scaled = population_options.break_even_save_rate * q_standard / population_options.assumed_save_rate
-        out["minimum_viable_save_rate"] = float(scaled.min())
+        rates = population_options.assumed_save_rate
+        # Ratio of save rates first, so tiny rates cannot underflow; an offer that saves nobody never breaks even.
+        scaled = (q_standard / rates * population_options.break_even_save_rate).where(rates > 0)
+        out["minimum_viable_save_rate"] = float(scaled.min()) if q_standard > 0 and scaled.notna().any() else None
     return out
 
 

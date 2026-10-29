@@ -1,9 +1,9 @@
 {
-  "run_id": "20261029T034118630540Z-88be4b93",
-  "created_at_utc": "2026-10-29T04:02:25.912516+00:00",
+  "run_id": "20261029T063931261171Z-88be4b93",
+  "created_at_utc": "2026-10-29T06:45:13.195628+00:00",
   "brief_words": 794,
-  "slides": 16,
-  "slides_with_notes": 16,
+  "slides": 17,
+  "slides_with_notes": 17,
   "talk_seconds": 480,
   "speaker_seconds": {
     "Kiet": 160,
@@ -11,19 +11,21 @@
     "Dung": 160
   },
   "deck_lint": [],
-  "pdf_status": "current",
   "latex_status": "current",
   "brief_pages": 2,
-  "deck_pdf_pages": 16,
-  "pdf_run_id": "20261029T034118630540Z-88be4b93",
+  "brief_pdf_run_id": "20261029T063931261171Z-88be4b93",
+  "deck_pdf_pages": 17,
+  "deck_pdf_run_id": "20261029T063931261171Z-88be4b93",
+  "pdf_status": "current",
   "report_pages": 27,
-  "latex_run_id": "20261029T034118630540Z-88be4b93",
+  "latex_run_id": "20261029T063931261171Z-88be4b93",
   "sha256": {
-    "reports/executive-brief.docx": "bb6532749d51cbb9b7b1ab55154ee22f7cc5db581421bd3e15a3f89c7e156da1",
-    "reports/executive-brief.pdf": "dda3e0807c2bdba30c7a9ec24a7d68da5753656c32236c43cda3420935a2c3dc",
-    "reports/presentation/retention-presentation.pptx": "a69b09ad29e0464d130c2e4a91edb0514a1b08f1203c6b041b0e9b4d8fdc503b",
-    "reports/presentation/retention-presentation.pdf": "864a26c1afa2cd0736bc1bc250352db9c9d61e881a0e94c5898ef4f29b3e9bf6",
-    "reports/presentation/speaker-script.md": "29b599ee68544e65dfbba458043692d3fc54cc59a11ba534e1ab8c08aa8a078c",
-    "reports/final-report.pdf": "d8ea910a050d9727c22a37307afdc7cb286ebcd924356d8545825dbb8af26749"
+    "reports/executive-brief.docx": "850a64e922bfd899df3685df2756abf3627e669ad209ea2bb6418d2aa034fb4f",
+    "reports/executive-brief.pdf": "f0da3946ada27986f9eac42566cc6d9e855f6502475d46c41fe31bc768ef3d05",
+    "reports/presentation/retention-presentation.pptx": "a007985409f0c35443d10689105befa97512ead33b10010347bfb258e399bdb4",
+    "reports/presentation/retention-presentation.pdf": "0a8e657e8a25111f185968a792d82d427795b963c57fb070add92a7cdb405101",
+    "reports/presentation/speaker-script.md": "04052ea5fa1e38cdaa58e0675a1c0081273a286290bb5d52b4325cc875d17581",
+    "reports/final-report.pdf": "64ab2310f8fb5ad0f66470d63b6281d1e89773f23806a5141edc318363a39bba",
+    "reports/dashboard/retention-dashboard.html": "c7d2bbdaab7f113bc5a3602a42e5ce61a96785d12b67dff75447a661571aeaa8"
   }
 }

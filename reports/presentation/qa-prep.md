@@ -1,4 +1,4 @@
-<!-- Generated from src/telco_retention/templates/presentation/qa-prep.md.j2 for run 20261029T034118630540Z-88be4b93. Edit the template, not this file. -->
+<!-- Generated from src/telco_retention/templates/presentation/qa-prep.md.j2 for run 20261029T063931261171Z-88be4b93. Edit the template, not this file. -->
 # Questions to expect, and short answers
 
 **1. Is this causal? Do your offers actually reduce churn?**

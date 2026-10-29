@@ -4,8 +4,25 @@
 
 **Submission package**
 - Final report: a full written report (CRISP-DM structure, Decision-Options-Criteria framing, KPI tree, data quality scorecard, leakage audit, model, decision rule with the optimisation model, results, robustness, fairness, dashboard and pilot, limitations, references, submission checklist, team contributions) rendered from the run's facts as LaTeX and compiled to `reports/final-report.pdf`.
-- Presentation rebuilt on the HUST seminar template: 16 slides drawn from the facts, with each speaker's script, speaker and timing in the notes; an 8-minute talk shared by three speakers, followed by a live dashboard demo. A rehearsal copy is written to `reports/presentation/speaker-script.md`. Replaces the generic 14-slide deck and its Markdown outline.
+- Presentation rebuilt on the HUST seminar template: 17 slides drawn from the facts (including the team's contributions, from the same list as the report), with each speaker's script, speaker and timing in the notes; an 8-minute talk shared by three speakers, followed by a live dashboard demo. A rehearsal copy is written to `reports/presentation/speaker-script.md`. Replaces the generic 14-slide deck and its Markdown outline.
 - `export` compiles the report (`--latex auto|require|skip`) and records report pages, slide count, talk length and per-speaker time in the deliverables manifest; the release check verifies them and that the LaTeX source matches a fresh render.
+- `scripts/build_submission.py` builds `Group_1/`, the folder handed in. It holds the final report, the presentation with its scripts, the executive brief, model card, data dictionary, source and cleaning log, churn scorecard, retention playbook, the dashboard guide and screenshots, the scorecard and targeting tables, and a copy of the repository. Markdown documents are converted to PDF with Word, and `--check` lists anything that is out of date.
+- The report cover, the title slide and the footer of the content slides use the HUST SoICT logo instead of the old university logo.
+- Single-file HTML dashboard (`reports/dashboard/retention-dashboard.html`), built by `export`. It has the Streamlit dashboard's three pages and opens in any browser without Python, a server or an internet connection.
+  - It embeds the run's test-customer scores, model evidence and the deployed model's linear form.
+  - It recomputes campaigns, the rule comparison, break-even, the chance of a loss and the scenario analysis in the browser. The budget optimiser is an exact dynamic programme, where the pipeline uses an integer programme.
+  - It scores uploaded CSVs in the browser.
+  - Node-based tests check it gives the same lists, explanations and numbers as the Python engine. `scripts/html_dashboard_qa.py` checks it in Chrome or Edge.
+- `run_dashboard.bat` starts the Streamlit dashboard with a double-click. On first use it creates the environment.
+
+**Fixes from code review**
+- The pilot measures the save rate of the recommended offer mix, so its go line is now that list's break-even on the same scale: 15.6% against an assumed 22.6%. Before, it was the standard offer's 13.8%. The minimum viable save rate now counts every offer in the catalogue.
+- The stress test counts the customers worth an offer without applying the contact cap.
+- If the standard offer's save rate is zero, break-even values on its scale are left undefined instead of showing 0%.
+- `export` records which run each PDF comes from. A PDF kept from an earlier export is described only while it is still that exact file. `export` also refuses a brief or report source rendered for another run, and fails when pdflatex's cross-references do not settle.
+- The release check requires every submission file and verifies their hashes and actual page counts.
+- Read-only output folders are deleted on Windows and on macOS/Linux; permissions change only inside the folder being deleted.
+- Odds ratios work with category names that contain `_`.
 
 ## 2.1.0
 

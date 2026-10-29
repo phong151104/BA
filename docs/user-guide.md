@@ -8,7 +8,20 @@ From the project folder on Windows (no need to activate the environment or chang
 .\.venv\Scripts\python.exe -m streamlit run app/Home.py --server.address 127.0.0.1 --server.headless true --browser.gatherUsageStats false
 ```
 
-Open http://127.0.0.1:8501. The dashboard reads the latest pipeline run; it never retrains.
+Open http://127.0.0.1:8501. The dashboard reads the latest pipeline run; it never retrains. On Windows, double-clicking `run_dashboard.bat` in the project folder does the same. On first use it also creates the environment, which needs Python 3.13 and an internet connection.
+
+## Single-file edition (HTML)
+
+The same dashboard also comes as one file: `reports/dashboard/retention-dashboard.html`, which is `04_Dashboard/dashboard_html/Retention_Dashboard.html` in the submission folder.
+
+- **Opening it.** Double-click the file to open it in Chrome, Edge or Firefox. It needs no Python, no server and no internet connection.
+- **What it contains.** It embeds the results of the pipeline run named in its sidebar: the scores of the held-out test customers, the model evidence and the deployed model.
+- **What it computes.** It computes every campaign, KPI, rule comparison, break-even, chance of a loss and scenario analysis in the browser, with the same rules as the pipeline. `tests/test_html_dashboard.py` checks that it produces the same lists and numbers.
+- **How it differs from the Streamlit dashboard:**
+  - The chance of a loss uses the browser's own random draws, so it can differ by about a percentage point.
+  - There is no scenario ID.
+  - The export is a set of CSV and JSON files instead of a ZIP.
+- **Scoring new customers.** An uploaded CSV is scored in the browser by the same model, and nothing is sent anywhere.
 
 ## Layout
 
