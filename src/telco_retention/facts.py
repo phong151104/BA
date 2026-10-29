@@ -107,6 +107,7 @@ def build_facts(run):
         row["key"] = QUADRANT_KEYS[row["quadrant"]]
     fairness = csv("fairness.csv")
     pilot, power = read_json(run / "pilot_plan.json"), records(csv("pilot_power.csv"))
+    at_assumed = next((r for r in power if r.get("is_assumed")), None) or next((r for r in power if abs(r["assumed_save_rate"] - offer["save_rate"]) < 1e-9), None)
     units = {item["parameter"]: item["unit"] for item in cfg["assumption_register"]}
     tornado_rows = records(tornado)
     for row in tornado_rows:
@@ -211,8 +212,9 @@ def build_facts(run):
                   # The offered half is itself a campaign; the held-out half forgoes the same expected value (the price of learning).
                   "wave_expected_net": pilot["arm_size_per_wave"] * (recommended["expected_net_value"] / recommended["selected_count"]) if recommended["selected_count"] else None,
                   "weeks_to_decision": sum(p["weeks"] for p in cfg["project"]["roadmap"][:3]),
-                  "required_per_arm_at_base": next((r["customers_per_arm"] for r in power if abs(r["assumed_save_rate"] - offer["save_rate"]) < 1e-9), None),
-                  "at_assumed": next((r for r in power if abs(r["assumed_save_rate"] - offer["save_rate"]) < 1e-9), None),
+                  # The pilot measures the list's mix save rate; older runs only had the standard offer's rate in the grid.
+                  "required_per_arm_at_base": at_assumed["customers_per_arm"] if at_assumed else None,
+                  "at_assumed": at_assumed,
                   "at_break_even": next((r for r in power if r["is_break_even"]), None)},
         "pilot_power": power,
         "schema": [{"field": c, "domain": "; ".join(DOMAINS[c]) if c in DOMAINS else ("non-negative number" if c in NUMERIC else "unique, non-empty text"),

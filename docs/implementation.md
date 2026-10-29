@@ -12,7 +12,7 @@ raw CSV (checksum) -> validate/clean -> stratified 60/20/20 split -> features
        test: strategy comparison, uncertainty, risk x value matrix, break-even, tornado,
              scenarios, sensitivity grid, profit curve, fairness audit, pilot sizing,
              model choice in money, churn reasons, stress test, Monte Carlo, target profile
-  -> facts.json -> figures, Markdown documents, notebooks -> DOCX/PDF brief, PPTX deck
+  -> facts.json -> figures, Markdown documents, LaTeX report, notebooks -> DOCX/PDF brief, PPTX deck with speaker script, PDF report
 ```
 
 | Module | Responsibility |
@@ -26,8 +26,10 @@ raw CSV (checksum) -> validate/clean -> stratified 60/20/20 split -> features
 | `templating.py` + `templates/` | Jinja2 templates (StrictUndefined) for every document that quotes a number |
 | `figures.py` | Report figures with a fixed, colour-blind-checked palette |
 | `notebooks.py` | Narrative notebooks generated from templates and executed in place |
-| `export.py` | Executive brief DOCX/PDF (Word) and slide deck PPTX/PDF (PowerPoint), page and slide checks |
-| `reporting.py` | Orchestrates figures, tables, facts, documents and notebooks for one run |
+| `presentation.py` | Presentation on the HUST template (`templates/presentation/hust-template.pptx`): slides drawn from the facts, speaker script with speaker and timing in the notes, rehearsal script, timing and pace lint |
+| `latex.py` + `templates/latex/` | Final report as LaTeX (Jinja2 with `<< >>` / `<% %>` delimiters and LaTeX escaping), compiled with pdflatex |
+| `export.py` | Executive brief DOCX/PDF (Word), presentation PPTX/PDF (PowerPoint) and the final report PDF (pdflatex); page, slide and timing checks |
+| `reporting.py` | Orchestrates figures, tables, facts, documents, the LaTeX source and notebooks for one run |
 | `app/Home.py` | Streamlit dashboard; calls the same package functions, never re-implements formulas |
 
 ## Validation boundaries

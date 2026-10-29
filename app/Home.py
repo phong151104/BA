@@ -355,12 +355,13 @@ if stats["selected_count"] == 0:
 # ---- Decision ---------------------------------------------------------------------------------------------
 if page == "Decision":
     metric_cards(stats, baseline, labelled)
-    options = offer_options(value_customers(population, cfg), [default_offer(cfg)])
+    options = offer_options(value_customers(population, cfg), offers)
     be = break_even(target, cfg, options)
     if stats["selected_count"]:
         st.success(md(f"**Recommended action:** offer **{stats['selected_count']:,} customers** a retention offer for **{usd(stats['cost'])}**. Expected net value **{usd(stats['expected_net_value'])}** "
                       f"(ROI {pct(stats['roi'], 0)}), **{usd(stats['expected_net_value'] - baseline['expected_net_value'])} more** than spending the same budget on the highest-risk customers. "
-                      f"The list pays off only if the offer keeps at least **{pct(be.get('break_even_default_save_rate'))}** of would-be churners, so test it in a pilot before scaling."))
+                      f"The list pays off only if its offers keep at least **{pct(be.get('break_even_mix_save_rate'))}** of would-be churners on average "
+                      f"(assumed {pct(be.get('mix_save_rate'))}), so test it in a pilot before scaling."))
 
     st.subheader("Who gets an offer, and who does not")
     picked, rest = target.loc[target.selected], target.loc[~target.selected]
@@ -434,14 +435,15 @@ if page == "Decision":
 
 # ---- Assumptions & sensitivity ------------------------------------------------------------------------------
 if page == "Assumptions & sensitivity":
-    options = offer_options(value_customers(population, cfg), [default_offer(cfg)])
+    options = offer_options(value_customers(population, cfg), offers)
     be = break_even(target, cfg, options)
     nets = live_monte_carlo(target, cfg, int(cfg["seed"])) if stats["selected_count"] else np.zeros(LIVE_DRAWS)
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Expected net value", usd(stats["expected_net_value"]), f"{stats['selected_count']:,} customers contacted", delta_color="off", delta_arrow="off")
-    c2.metric("Break-even save rate (this list)", pct(be.get("break_even_default_save_rate")), help="Standard-offer save rate at which this frozen list's expected net value is zero.")
+    c2.metric("Break-even save rate (this list)", pct(be.get("break_even_mix_save_rate")),
+              help="Average save rate of this list's offers (what a pilot measures) at which its expected net value is zero; the standard offer alone would need " + pct(be.get("break_even_default_save_rate")) + ". Assumed: " + pct(be.get("mix_save_rate")) + ".")
     c3.metric("Chance this list loses money", pct(float((nets < 0).mean()), 0), help=f"{LIVE_DRAWS:,} draws: every register assumption drawn at once from a triangular distribution over its tested range, centred on the values set above.")
-    c4.metric("Minimum viable save rate", pct(be.get("minimum_viable_save_rate")), help="Below this save rate no customer has positive expected value: the best decision is no campaign.")
+    c4.metric("Minimum viable save rate", pct(be.get("minimum_viable_save_rate")), help="Standard-offer save rate (other offers scaled in proportion) below which no customer has positive expected value: the best decision is no campaign.")
     if stats["selected_count"]:
         fig = px.histogram(pd.DataFrame({"net": nets}), x="net", nbins=60, color_discrete_sequence=[BLUE], title="Net value of this list when every assumption is uncertain",
                            labels={"net": "Expected net value of the frozen list (USD)"})

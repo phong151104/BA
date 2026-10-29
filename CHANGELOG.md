@@ -1,5 +1,12 @@
 # Change log
 
+## 2.2.0
+
+**Submission package**
+- Final report: a full written report (CRISP-DM structure, Decision-Options-Criteria framing, KPI tree, data quality scorecard, leakage audit, model, decision rule with the optimisation model, results, robustness, fairness, dashboard and pilot, limitations, references, submission checklist, team contributions) rendered from the run's facts as LaTeX and compiled to `reports/final-report.pdf`.
+- Presentation rebuilt on the HUST seminar template: 16 slides drawn from the facts, with each speaker's script, speaker and timing in the notes; an 8-minute talk shared by three speakers, followed by a live dashboard demo. A rehearsal copy is written to `reports/presentation/speaker-script.md`. Replaces the generic 14-slide deck and its Markdown outline.
+- `export` compiles the report (`--latex auto|require|skip`) and records report pages, slide count, talk length and per-speaker time in the deliverables manifest; the release check verifies them and that the LaTeX source matches a fresh render.
+
 ## 2.1.0
 
 **Business answer**

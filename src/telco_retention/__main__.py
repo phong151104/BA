@@ -9,6 +9,7 @@ def main():
     parser.add_argument("--input", type=Path)
     parser.add_argument("--output", type=Path, default=Path("artifacts/upload_scores.csv"))
     parser.add_argument("--pdf", choices=["auto", "require", "skip"], default="auto", help="PDF conversion for export (needs Microsoft Word/PowerPoint)")
+    parser.add_argument("--latex", choices=["auto", "require", "skip"], default="auto", help="Final report PDF for export (needs pdflatex: TeX Live or MiKTeX)")
     parser.add_argument("--keep", type=int, default=2, help="Runs to keep for prune")
     args = parser.parse_args()
     from .data import download, prepare, parse_upload
@@ -30,7 +31,7 @@ def main():
         print(report())
     elif args.command == "export":
         from .export import export
-        print(export(pdf=args.pdf))
+        print(export(pdf=args.pdf, latex=args.latex))
     elif args.command == "prune":
         from .common import prune_runs
         print("Removed:", prune_runs(args.keep))
@@ -50,7 +51,7 @@ def main():
         evaluate(run)
         simulate(run)
         report(run)
-        print(export(run, pdf=args.pdf))
+        print(export(run, pdf=args.pdf, latex=args.latex))
         print(f"Complete: {run}")
 
 

@@ -8,7 +8,7 @@ import pandas as pd
 from scipy.optimize import brentq
 from scipy.stats import norm
 from .common import config, get_param, latest_run, read_json, save_csv, set_param, write_json
-from .business import campaign, default_offer, fixed_campaign, value_customers
+from .business import campaign, default_offer, fixed_campaign, offer_options, value_customers
 from .data import tenure_segment
 
 COMPARED = ["none", "risk", "risk_positive_ev", "value", "ev", "segment_offers"]
@@ -128,19 +128,31 @@ def threshold_business(scores, cfg, threshold, budget):
 
 
 def break_even(target, cfg, population_options=None):
-    """Break-even assumptions for a frozen list; with no list, the save rate below which nobody is worth contacting."""
+    """Break-even assumptions for a frozen list, with every offer's save rate scaled by the same factor.
+
+    Reported two ways: as the standard offer's save rate, and as the list's mix save rate (churn-weighted mean of
+    its offers' save rates), which is what a pilot measures as 1 - churn(offered) / churn(holdout). With population
+    options, also the standard-offer save rate below which no customer-offer pair has positive EV.
+    """
     picked = target.loc[target.selected]
+    q_standard = default_offer(cfg)["save_rate"]
     out = {"selected_count": len(picked)}
     if len(picked):
         pqv = float((picked.churn_probability * picked.assumed_save_rate * picked.customer_value).sum())
+        p, pq = float(picked.churn_probability.sum()), float((picked.churn_probability * picked.assumed_save_rate).sum())
         cost, offer_cost, contact = float(picked.total_cost.sum()), float(picked.offer_cost.sum()), float(picked.contact_cost.sum())
         multiplier = cost / pqv if pqv > 0 else None
+        mix = pq / p if p > 0 else None
         out.update({"save_rate_multiplier": multiplier,
-                    "break_even_default_save_rate": default_offer(cfg)["save_rate"] * multiplier if multiplier is not None else None,
+                    "break_even_default_save_rate": q_standard * multiplier if multiplier is not None else None,
+                    "mix_save_rate": mix,
+                    "break_even_mix_save_rate": mix * multiplier if multiplier is not None and mix is not None else None,
                     "offer_cost_multiplier": (pqv - contact) / offer_cost if offer_cost > 0 else None,
                     "break_even_default_offer_cost": default_offer(cfg)["offer_cost"] * (pqv - contact) / offer_cost if offer_cost > 0 else None})
     if population_options is not None:
-        out["minimum_viable_save_rate"] = float(population_options.break_even_save_rate.min())
+        # Each option breaks even at its own save rate; expressed on the standard offer's scale so every offer counts.
+        scaled = population_options.break_even_save_rate * q_standard / population_options.assumed_save_rate
+        out["minimum_viable_save_rate"] = float(scaled.min())
     return out
 
 
@@ -365,8 +377,11 @@ def pilot_decision(p_control, save_rate, arm, break_even_rate, alpha=0.05, draws
     return {"p_go": float(go.mean()), "p_extend": float((~go & ~stop).mean()), "p_stop": float(stop.mean())}
 
 
-def pilot_plan(target, cfg, recommended_share, break_even_rate):
-    """Pilot on the recommended list scaled to the customer base; sample sizes and the go/stop rule's error rates."""
+def pilot_plan(target, cfg, recommended_share, break_even_rate, assumed_rate=None):
+    """Pilot on the recommended list scaled to the customer base; sample sizes and the go/stop rule's error rates.
+
+    Rates are on the scale the pilot measures: the list's mix save rate, 1 - churn(offered) / churn(holdout).
+    """
     pilot = cfg["pilot"]
     picked = target.loc[target.selected]
     p_control = float(picked.churn_probability.mean())
@@ -375,9 +390,10 @@ def pilot_plan(target, cfg, recommended_share, break_even_rate):
     arm = int(np.floor(list_size * pilot["holdout_share"]))
     rows = []
     marks = {round(break_even_rate, 4)} if break_even_rate is not None else set()
-    for q in sorted(set(pilot["save_rate_grid"]) | marks):
+    assumed = {round(assumed_rate, 4)} if assumed_rate is not None else set()
+    for q in sorted(set(pilot["save_rate_grid"]) | marks | assumed):
         n = pilot_sample_size(p_control, q, pilot["alpha"], pilot["power"])
-        rows.append({"assumed_save_rate": q, "is_break_even": q in marks, "control_churn": p_control, "treated_churn": p_control * (1 - q),
+        rows.append({"assumed_save_rate": q, "is_break_even": q in marks, "is_assumed": q in assumed, "control_churn": p_control, "treated_churn": p_control * (1 - q),
                      "customers_per_arm": n, "total_customers": 2 * n, "arm_size_per_wave": arm,
                      "waves_needed": int(np.ceil(n / arm)) if arm > 0 and np.isfinite(n) else None,
                      **(pilot_decision(p_control, q, arm, break_even_rate, pilot["alpha"], seed=cfg["seed"]) if arm > 0 and marks else {})})
@@ -386,10 +402,11 @@ def pilot_plan(target, cfg, recommended_share, break_even_rate):
         mde = float(brentq(lambda q: pilot_sample_size(p_control, q, pilot["alpha"], pilot["power"]) - arm, 1e-4, 0.999))
     summary = {"control_churn_expected": p_control, "observed_churn_test_list": float(picked.churn.mean()) if "churn" in picked and len(picked) else None,
                "recommended_share": recommended_share, "contacted_share": contacted_share, "base_population": pilot["base_population"],
-               "list_size_per_wave": list_size, "arm_size_per_wave": arm, "break_even_save_rate": break_even_rate,
+               "list_size_per_wave": list_size, "arm_size_per_wave": arm, "break_even_save_rate": break_even_rate, "assumed_save_rate": assumed_rate,
                "per_arm_break_even": pilot_sample_size(p_control, break_even_rate, pilot["alpha"], pilot["power"]) if marks else None,
                "minimum_detectable_save_rate_one_wave": mde,
-               "decision_rule": "go if the 95% interval of q is above 0 and q >= break-even; stop if q <= 0 or the interval is below break-even; otherwise extend",
+               "decision_rule": "go if the 95% interval of q is above 0 and q >= break-even; stop if q <= 0 or the interval is below break-even; otherwise extend "
+                                "(q = 1 - churn(offered) / churn(holdout), the list's mix save rate)",
                **{k: pilot[k] for k in ["alpha", "power", "holdout_share", "outcome_window_days"]}}
     return pd.DataFrame(rows), summary
 
@@ -514,13 +531,16 @@ def stress_test(test, cfg, strategy, recommended_share, thresholds=None):
             unlimited = len(scores) * max(o["offer_cost"] + o["contact_cost"] for o in settings["offers"])
             table, stats = run_strategy(scores, unlimited, settings, strategy, thresholds)
             picked = table.loc[table.selected]
+            # Worth an offer = some eligible offer has positive EV; the campaign figures in the row still respect the contact cap.
+            options = offer_options(value_customers(scores, settings), strategy_offers(settings, strategy))
+            worth = int(options.loc[options.expected_net_value.gt(0)].customer_id.nunique())
             _, reco = run_strategy(scores, campaign_budget(len(scores), settings, recommended_share), settings, strategy, thresholds)
             valued = value_customers(scores, settings)
             headroom = valued.churn_probability * offer["save_rate"] * valued.customer_value - offer["contact_cost"]
             list_churn = float(picked.churn_probability.mean()) if len(picked) else None
             rows.append({"economy": economy, "bill_multiplier": scale, "mean_monthly_bill": float(scores.MonthlyCharges.mean()),
                          "target_churn": target, "mean_probability": float(scores.churn_probability.mean()), "logit_shift": shift,
-                         "positive_ev_customers": stats["selected_count"], "positive_ev_share": stats["selected_count"] / len(scores),
+                         "positive_ev_customers": worth, "positive_ev_share": worth / len(scores), "contacted_no_budget_limit": stats["selected_count"],
                          "net_no_budget_limit": stats["expected_net_value"], "cost_no_budget_limit": stats["cost"], "roi_no_budget_limit": stats["roi"],
                          "contacted_at_recommended_share": reco["selected_count"], "net_at_recommended_share": reco["expected_net_value"],
                          "standard_offer_cost": offer["offer_cost"], "contact_cost": offer["contact_cost"],
@@ -644,8 +664,7 @@ def simulate(run=None):
     save_csv(risk_value_matrix(details, thresholds), run / "risk_value_matrix.csv")
     rules, p_star = threshold_business(test, cfg, manifest["threshold"], budget)
     save_csv(rules, run / "threshold_business.csv")
-    from .business import offer_options
-    population_options = offer_options(value_customers(test, cfg), [default_offer(cfg)])
+    population_options = offer_options(value_customers(test, cfg), strategy_offers(cfg, strategy))
     write_json(run / "break_even.json", {"strategy": strategy, **break_even(details[strategy], cfg, population_options), "break_even_probability_quantiles": p_star})
     save_csv(tornado(test, budget, cfg, strategy, thresholds), run / "tornado.csv")
     save_csv(scenario_table(test, budget, cfg, strategy, thresholds), run / "scenarios.csv")
@@ -661,7 +680,7 @@ def simulate(run=None):
                                                    "contacted_share": reco_stats["selected_count"] / len(test), "break_even": reco_break})
     print("Fairness and pilot design", flush=True)
     save_csv(fairness_audit(details, cfg, iterations=cfg["bootstrap_iterations"], seed=cfg["seed"]), run / "fairness.csv")
-    power, pilot = pilot_plan(reco_table, cfg, recommendation["recommended_share"], reco_break.get("break_even_default_save_rate"))
+    power, pilot = pilot_plan(reco_table, cfg, recommendation["recommended_share"], reco_break.get("break_even_mix_save_rate"), reco_break.get("mix_save_rate"))
     save_csv(power, run / "pilot_power.csv")
     write_json(run / "pilot_plan.json", pilot)
     save_csv(offer_mix(details["segment_offers"]), run / "segment_offer_mix.csv")

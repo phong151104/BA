@@ -10,7 +10,7 @@
 1. **Target by expected value, not by risk alone.** Make an offer only where churn risk x customer value x the offer's *save rate* (the share of would-be leavers it keeps) exceeds its cost. Here that means **fibre customers on month-to-month contracts with high bills**: {{ p['InternetService|Fiber optic'].list_share | pct(0) }} of the recommended list have fibre and {{ p['Contract|Month-to-month'].list_share | pct(0) }} a monthly contract, with a median bill of {{ profile.list.median_monthly_charges | usd }} against {{ profile.all.median_monthly_charges | usd }} overall. Low-risk and low-bill customers are left out.
 2. **Match the offer to the segment:** {% for o in recommended_offer_mix %}{{ o.label }} ({{ o.customers | num }}){{ ", " if not loop.last else "." }}{% endfor %}
 
-3. **Test before scaling:** one randomised pilot wave of {{ pilot.list_size_per_wave | num }} customers, half held out, and scale up only if the measured save rate clears that list's **{{ rbe | pct }} break-even**.
+3. **Test before scaling:** one randomised pilot wave of {{ pilot.list_size_per_wave | num }} customers, half held out, and scale up only if its offers' measured save rate clears the **{{ rbe | pct }} break-even**.
 
 ## Why: the same budget returns more
 
@@ -36,7 +36,7 @@ Each extra budget step returns less (figure). Keeping only steps that still retu
 ## How sure are we?
 
 - **Who to target is robust.** The model ranks churners well (ROC-AUC {{ model.selected_test.roc_auc | num(2) }}) and its probabilities are within {{ (model.selected_test.ece * 100) | num(1) }} points of observed churn. With all assumptions drawn at once, expected-value targeting beats risk-only in {{ mc.base_vs_risk.prob_gain | pct(0) }} of draws.
-- **How much an offer saves is not.** Lists break even at a save rate of {{ be | pct }} (base budget) and {{ rbe | pct }} (recommended); we assume {{ default_offer.save_rate | pct(0) }}. Only {{ reasons.addressable_share | pct(0) }} of churners left for price or a competitor's offer, so {{ default_offer.save_rate | pct(0) }} means keeping {{ (default_offer.save_rate / reasons.addressable_share) | pct(0) }} of those an offer can reach.
+- **How much an offer saves is not.** Lists break even at a standard-offer save rate of {{ be | pct }} (base budget) and {{ recommended.break_even.break_even_default_save_rate | pct }} (recommended); we assume {{ default_offer.save_rate | pct(0) }}. Only {{ reasons.addressable_share | pct(0) }} of churners left for price or a competitor's offer, so {{ default_offer.save_rate | pct(0) }} means keeping {{ (default_offer.save_rate / reasons.addressable_share) | pct(0) }} of those an offer can reach.
 - **Downside:** the recommended list loses money in {{ mc.recommended.prob_loss | pct(0) }} of draws{% if mc.recommended.p05 < 0 %}, and in the worst 5% it loses more than {{ (-mc.recommended.p05_scaled) | usd }} across the base{% endif %}; the smaller base-budget list loses in {{ mc.base.prob_loss | pct(0) }}.
 
 ## Risks and guardrails
@@ -50,4 +50,4 @@ Each extra budget step returns less (figure). Keeping only steps that still retu
 
 1. **Approve one pilot wave:** {{ pilot.arm_size_per_wave | num }} customers offered, {{ pilot.arm_size_per_wave | num }} held out; offer and contact cost about {{ pilot.wave_cost | usd }}, expected net value of the offered half {{ pilot.wave_expected_net | usd }}, worst case (no one saved) {{ (-pilot.wave_cost) | usd }}.
 2. **Name owners:** Retention (offers), Call centre (capacity), Finance (margin, offer cost), Legal/DPO (consent, DPIA).
-3. **Agree the rule now:** after {{ pilot.outcome_window_days }} days, **go** if the effect is statistically significant and at least {{ rbe | pct }}; **stop** if clearly below; otherwise extend, at most {{ cfg.project.max_extend_waves }} more waves. At a true save rate of {{ default_offer.save_rate | pct(0) }} the rule says go {{ pilot.at_assumed.p_go | pct(0) }} of the time. Decision about {{ pilot.weeks_to_decision }} weeks after approval.
+3. **Agree the rule now:** after {{ pilot.outcome_window_days }} days, **go** if the effect is statistically significant and at least {{ rbe | pct }}; **stop** if clearly below; otherwise extend, at most {{ cfg.project.max_extend_waves }} more waves. At the assumed {{ pilot.assumed_save_rate | pct }} the rule says go {{ pilot.at_assumed.p_go | pct(0) }} of the time. Decision about {{ pilot.weeks_to_decision }} weeks after approval.

@@ -17,7 +17,7 @@ pdf = ["docx2pdf>=0.1.8; sys_platform == 'win32'", "pywin32>=306; sys_platform =
 where = ["src"]
 
 [tool.setuptools.package-data]
-telco_retention = ["templates/**/*.j2"]
+telco_retention = ["templates/**/*.j2", "templates/**/*.pptx", "templates/**/*.png"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

@@ -30,7 +30,7 @@ FEATURE_SETS = {
     "without TotalCharges, with tenure band": (["tenure", "MonthlyCharges"], ["InternetService", "Contract", "PaymentMethod", "tenure_band"]),
     "all inputs with tenure band": (NUMERIC, ["InternetService", "Contract", "PaymentMethod", "tenure_band"]),
 }
-FEATURE_RULE = "Full-rank sets only; cross-validated AP within one standard error of the best; then the fewest encoded columns"
+FEATURE_RULE = "Full-rank sets only; cross-validated AP within one standard error of the best full-rank candidate; then the fewest encoded columns"
 
 
 def calibration_stats(y, p, n_bins=10):
@@ -117,7 +117,8 @@ def feature_ablation(train_df, y, folds, seed):
         rows.append({"feature_set": name, "best_C": best[0], "cv_average_precision": best[1], "cv_standard_error": best[2],
                      "encoded_columns": encoded.shape[1], "matrix_rank": rank, "full_rank": rank == encoded.shape[1]})
     table = pd.DataFrame(rows)
-    top = table.loc[table.cv_average_precision.idxmax()]
+    candidates = table.loc[table.full_rank & table.feature_set.isin(FEATURE_SETS)]
+    top = candidates.loc[candidates.cv_average_precision.idxmax()]
     table["within_one_se"] = table.cv_average_precision >= top.cv_average_precision - top.cv_standard_error
     table["eligible"] = table.within_one_se & table.full_rank & table.feature_set.isin(FEATURE_SETS)
     chosen = table.loc[table.eligible].sort_values("encoded_columns", kind="mergesort").iloc[0].feature_set
@@ -280,7 +281,8 @@ def odds_ratios(bundle, cfg):
         elif term in meta["binary_features"]:
             rows.append({"term": term, "variable": term, "comparison": "Yes vs No", "coefficient": b})
         else:
-            variable, level = term.split("_", 1)
+            variable = next(c for c in meta["categorical_features"] if term.startswith(c + "_"))
+            level = term[len(variable) + 1:]
             rows.append({"term": term, "variable": variable, "comparison": f"{level} vs {meta['reference_levels'][variable]}", "coefficient": b})
     out = pd.DataFrame(rows)
     out["odds_ratio"] = np.exp(out.coefficient)

@@ -7,7 +7,7 @@ The data contain no randomised campaign, so the save rate behind every expected 
 
 - **H1:** among customers selected by the recommended rule, receiving the offer lowers {{ p.outcome_window_days }}-day churn compared with not receiving it.
 - **Decision metric:** measured save rate q = 1 - churn(offered) / churn(holdout).
-- **Break-even of the pilot list:** the recommended list pays for itself if q is at least **{{ be | pct }}** (all offers' save rates scaled proportionally). The smaller base-budget list breaks even at {{ break_even.break_even_default_save_rate | pct }}.
+- **Break-even of the pilot list:** the recommended list pays for itself if q is at least **{{ be | pct }}** (all offers' save rates scaled proportionally); q is the average save rate of the list's offer mix, assumed to be {{ p.assumed_save_rate | pct }}. Expressed as the standard offer's save rate, the recommended list breaks even at {{ recommended.break_even.break_even_default_save_rate | pct }} and the smaller base-budget list at {{ break_even.break_even_default_save_rate | pct }}.
 - **Decision rule, agreed before the pilot starts:**
 
 | Result after the wave | Decision |
@@ -46,8 +46,8 @@ The last three columns simulate the decision rule 20,000 times per row with bino
 
 - To detect a save rate equal to the break-even ({{ be | pct }}) needs about **{{ p.per_arm_break_even | num }} customers per arm**; one wave provides {{ p.arm_size_per_wave | num }}.
 - With one wave, the smallest detectable save rate is about **{{ p.minimum_detectable_save_rate_one_wave | pct }}**.
-- Detecting the assumed {{ default_offer.save_rate | pct(0) }} needs {{ p.required_per_arm_at_base | num }} per arm.
-- If the true save rate equals the assumed {{ default_offer.save_rate | pct(0) }}, the rule says go after one wave {{ p.at_assumed.p_go | pct(0) }} of the time. At break-even the chance is about even ({{ p.at_break_even.p_go | pct(0) }}); then the expected gain from scaling is close to zero either way, so a wrong go costs little.
+- Detecting the assumed {{ p.assumed_save_rate | pct }} needs {{ p.required_per_arm_at_base | num }} per arm.
+- If the true save rate equals the assumed {{ p.assumed_save_rate | pct }}, the rule says go after one wave {{ p.at_assumed.p_go | pct(0) }} of the time. At break-even the chance is about even ({{ p.at_break_even.p_go | pct(0) }}); then the expected gain from scaling is close to zero either way, so a wrong go costs little.
 - Per-offer sub-arms are smaller; offer-level comparisons may need two to three waves, so the first decision is about the list rule as a whole.
 {% set s15 = stress.by['sample|' ~ ('%g' % stress.targets[0])] %}
 - **Real churn is lower than the sample's.** At {{ stress.targets[0] | pct(0) }} average churn the list churns less and about {{ s15.pilot_per_arm | num }} customers per arm are needed to detect the assumed save rate ([analysis report](../reports/analysis-report.md#outside-the-sample-lower-churn-and-vietnamese-prices)); size the real pilot from the operator's own churn rate.

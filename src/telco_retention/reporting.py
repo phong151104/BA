@@ -3,10 +3,11 @@ from __future__ import annotations
 
 import shutil
 from pathlib import Path
-from .common import ROOT, digest, latest_run, now, write_json
+from .common import ROOT, digest, latest_run, now, remove_tree, write_json
 from .facts import build_facts, write_facts
 from .figures import figures
 from .templating import DOCUMENTS, TEMPLATES, render_documents
+from .latex import render_latex
 from . import notebooks
 
 # Large or internal files that stay in the run folder only.
@@ -16,7 +17,7 @@ SKIP_TABLES = {"customers.csv", "customer_context.csv", "shap_feature_values.csv
 def copy_tables(run, root=ROOT):
     dest = Path(root) / "reports/tables"
     if dest.exists():
-        shutil.rmtree(dest)
+        remove_tree(dest)
     dest.mkdir(parents=True)
     for path in sorted(run.glob("*.csv")):
         if path.name not in SKIP_TABLES:
@@ -31,6 +32,7 @@ def report(run=None, root=ROOT, execute_notebooks=True):
     facts = build_facts(run)
     facts_path = write_facts(facts, Path(root) / "reports/facts.json")
     written = render_documents(facts, root)
+    written += render_latex(facts, root)
     paths = notebooks.build(facts, root)
     if execute_notebooks:
         notebooks.execute(paths)

@@ -10,7 +10,8 @@ Documents marked *(generated)* are rendered from templates in `src/telco_retenti
 - [Pilot design](pilot-design.md) *(generated)*
 - [Governance, monitoring and risk register](governance-and-risks.md) *(generated)*
 - [Deploying at a Vietnamese operator](deployment-vietnam.md) *(generated)* - what transfers, local prices and law, stress test
-- [Presentation deck](../reports/presentation/retention-deck.pptx), [deck outline with notes](../reports/presentation/deck.md), [demo script](../reports/presentation/demo-script.md), [Q&A preparation](../reports/presentation/qa-prep.md) *(generated)*
+- [Final project report](../reports/final-report.pdf) *(generated, LaTeX source in [reports/latex](../reports/latex/report.tex))* - the full written report on the HUST cover
+- [Presentation](../reports/presentation/retention-presentation.pptx) on the HUST template, with the speaker script in the slide notes ([PDF](../reports/presentation/retention-presentation.pdf), [script for rehearsal](../reports/presentation/speaker-script.md)), [demo script](../reports/presentation/demo-script.md), [Q&A preparation](../reports/presentation/qa-prep.md) *(generated)*
 - [Glossary](glossary.md)
 
 ## Analysis and evidence

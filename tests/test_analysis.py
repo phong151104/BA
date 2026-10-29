@@ -136,10 +136,11 @@ def test_pilot_rule_error_rates_follow_the_true_save_rate():
 def test_pilot_is_sized_from_customers_contacted_not_budget_share():
     cfg = cfg_small()
     target = sample(200).assign(selected=lambda d: d.index < 44)
-    power, plan = pilot_plan(target, cfg, recommended_share=.24, break_even_rate=.14)
+    power, plan = pilot_plan(target, cfg, recommended_share=.24, break_even_rate=.14, assumed_rate=.2261)
     assert plan["list_size_per_wave"] == round(44 / 200 * cfg["pilot"]["base_population"])
     assert plan["arm_size_per_wave"] == int(plan["list_size_per_wave"] * cfg["pilot"]["holdout_share"])
     assert power.is_break_even.sum() == 1 and power.loc[power.is_break_even, "assumed_save_rate"].item() == .14
+    assert power.is_assumed.sum() == 1 and power.loc[power.is_assumed, "assumed_save_rate"].item() == .2261 and plan["assumed_save_rate"] == .2261
     assert plan["per_arm_break_even"] == pilot_sample_size(plan["control_churn_expected"], .14)
 
 
@@ -153,6 +154,29 @@ def test_break_even_save_rate_zeroes_frozen_list():
     q = changed["offers"][[o["offer_id"] for o in changed["offers"]].index(cfg["campaign"]["default_offer"])]["save_rate"]
     assert (picked.churn_probability * q * picked.customer_value - picked.total_cost).sum() == pytest.approx(0, abs=1e-6)
     assert be["minimum_viable_save_rate"] <= be["break_even_default_save_rate"]
+    # With one offer the pilot's scale (the list's mix save rate) is the standard offer's.
+    assert be["mix_save_rate"] == pytest.approx(default_offer(cfg)["save_rate"])
+    assert be["break_even_mix_save_rate"] == pytest.approx(be["break_even_default_save_rate"])
+
+
+def test_break_even_with_an_offer_catalog_is_on_the_pilot_scale():
+    cfg = cfg_small()
+    data = sample()
+    target, _ = campaign(data, 400, cfg, offers=cfg["offers"])
+    picked = target.loc[target.selected]
+    assert picked.offer_id.nunique() > 1
+    be = break_even(target, cfg, offer_options(value_customers(data, cfg), cfg["offers"]))
+    scaled = picked.assumed_save_rate * be["save_rate_multiplier"]
+    # Scaling every offer by the multiplier zeroes the list, and the pilot would then measure the churn-weighted mean of the scaled rates.
+    assert (picked.churn_probability * scaled * picked.customer_value - picked.total_cost).sum() == pytest.approx(0, abs=1e-6)
+    p = picked.churn_probability
+    assert be["break_even_mix_save_rate"] == pytest.approx((p * scaled).sum() / p.sum())
+    assert be["mix_save_rate"] == pytest.approx((p * picked.assumed_save_rate).sum() / p.sum())
+    # Below the minimum viable rate (offers scaled with the standard one) no customer-offer pair has positive EV.
+    q0 = default_offer(cfg)["save_rate"]
+    options = offer_options(value_customers(data, cfg), cfg["offers"])
+    factor = be["minimum_viable_save_rate"] / q0 * 0.999
+    assert not ((options.churn_probability * options.assumed_save_rate * factor * options.customer_value - options.total_cost) > 0).any()
 
 
 def test_vectorised_repricing_matches_fixed_campaign():
@@ -183,7 +207,10 @@ def test_stress_test_rows_and_sample_row_match_an_unlimited_campaign():
     assert len(table) == 2 * (1 + len(cfg["stress_test"]["target_churn"]))
     base = table.loc[table.economy.str.startswith("Sample") & table.target_churn.isna()].iloc[0]
     _, stats = campaign(data, 10 ** 6, cfg)
-    assert base.positive_ev_customers == stats["selected_count"] and base.net_no_budget_limit == pytest.approx(stats["expected_net_value"])
+    assert base.contacted_no_budget_limit == stats["selected_count"] and base.net_no_budget_limit == pytest.approx(stats["expected_net_value"])
+    # Customers worth an offer are counted without the contact cap that limits the campaign.
+    options = offer_options(value_customers(data, cfg), [default_offer(cfg)])
+    assert base.positive_ev_customers == options.loc[options.expected_net_value.gt(0)].customer_id.nunique() >= base.contacted_no_budget_limit
     sample_rows = table.loc[table.economy.str.startswith("Sample")]
     assert sample_rows.positive_ev_customers.is_monotonic_decreasing
     vn = table.loc[table.economy.str.startswith("Vietnam")].iloc[0]

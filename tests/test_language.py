@@ -9,7 +9,7 @@ EXEMPT = {"docs/references.md"}
 
 def deliverables():
     patterns = ["README.md", "CHANGELOG.md", "configs/*.yaml", "app/*.py", "src/**/*.py", "src/**/*.j2", "scripts/*.py", "tests/*.py",
-                "docs/*.md", "reports/*.md", "reports/presentation/*.md", "notebooks/*.ipynb"]
+                "docs/*.md", "reports/*.md", "reports/presentation/*.md", "reports/latex/*.tex", "notebooks/*.ipynb"]
     for pattern in patterns:
         for path in ROOT.glob(pattern):
             rel = path.relative_to(ROOT).as_posix()

@@ -2,7 +2,7 @@
 
 Business Analytics capstone, Topic 7. **Business question:** given a limited retention budget, which customers should receive an offer when both churn risk and expected economic value are considered?
 
-**Answer in one line:** rank customers by the expected net value of an offer (churn probability x save rate x customer value - cost), let an optimiser choose customers and offers within the budget, size the budget where the marginal return falls below a hurdle, and validate the assumed save rate with a randomised pilot. Start with the [executive brief](reports/executive-brief.md) ([PDF](reports/executive-brief.pdf)).
+**Answer in one line:** rank customers by the expected net value of an offer (churn probability x save rate x customer value - cost), let an optimiser choose customers and offers within the budget, size the budget where the marginal return falls below a hurdle, and validate the assumed save rate with a randomised pilot. Start with the [executive brief](reports/executive-brief.md) ([PDF](reports/executive-brief.pdf)); the full write-up is the [final report](reports/final-report.pdf) and the talk is the [presentation](reports/presentation/retention-presentation.pptx) (speaker script in the notes and in [speaker-script.md](reports/presentation/speaker-script.md)).
 
 ## Quick start (Windows, Python 3.13)
 
@@ -25,7 +25,7 @@ Open http://127.0.0.1:8501. Data, the trained model and all results are already 
 .\.venv\Scripts\python.exe -m telco_retention run-all
 ```
 
-`run-all` downloads the data (checksum-verified), prepares, trains, evaluates, simulates and then regenerates every table, figure, document, executed notebook, the executive brief (DOCX + PDF) and the slide deck (PPTX + PDF). PDF conversion uses Microsoft Word and PowerPoint; without them (for example on macOS or Linux) `run-all` skips the PDFs and still writes the DOCX and PPTX (`--pdf skip` forces this, `--pdf require` fails instead). Each run is stored in `artifacts/runs/<run_id>` with its configuration, data checksum and code hashes; `artifacts/latest.json` points to the current run.
+`run-all` downloads the data (checksum-verified), prepares, trains, evaluates, simulates and then regenerates every table, figure, document, executed notebook, the executive brief (DOCX + PDF), the presentation on the HUST template (PPTX + PDF, with the speaker script) and the final report (LaTeX + PDF). PDF conversion of the brief and deck uses Microsoft Word and PowerPoint; without them (for example on macOS or Linux) `run-all` skips those PDFs and still writes the DOCX and PPTX (`--pdf skip` forces this, `--pdf require` fails instead). The final report needs `pdflatex` (TeX Live or MiKTeX); `--latex skip|require` works the same way. Each run is stored in `artifacts/runs/<run_id>` with its configuration, data checksum and code hashes; `artifacts/latest.json` points to the current run.
 
 Individual steps, in order:
 
@@ -73,7 +73,7 @@ Save rates are assumptions, not estimates: the data contain no randomised campai
 | `app` | Streamlit dashboard |
 | `data` | Raw data (immutable, checksummed), processed data, upload template |
 | `artifacts/runs` | Versioned runs (models, tables, manifests); `artifacts/qa` verification evidence |
-| `reports` | Executive brief (MD/DOCX/PDF), analysis report, presentation, figures, tables, `facts.json` |
+| `reports` | Final report (PDF, LaTeX source in `reports/latex`), executive brief (MD/DOCX/PDF), analysis report, presentation (PPTX/PDF, speaker script), figures, tables, `facts.json` |
 | `notebooks` | Four executed narrative notebooks |
 | `docs` | Business case, data, model card, playbook, pilot, governance, assumptions, literature, guides ([index](docs/README.md)) |
 | `tests`, `scripts` | Automated tests and release QA |

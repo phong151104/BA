@@ -29,7 +29,7 @@ def test_brief_is_short_and_decision_first(facts):
     assert f"{facts['break_even']['break_even_default_save_rate'] * 100:.1f}%" in brief
 
 
-MANAGER_DOCUMENTS = ["reports/executive-brief.md.j2", "presentation/deck.md.j2", "presentation/qa-prep.md.j2", "presentation/demo-script.md.j2",
+MANAGER_DOCUMENTS = ["reports/executive-brief.md.j2", "presentation/qa-prep.md.j2", "presentation/demo-script.md.j2",
                      "docs/business-case.md.j2", "docs/retention-playbook.md.j2", "docs/deployment-vietnam.md.j2"]
 
 
@@ -42,7 +42,7 @@ def test_manager_documents_avoid_overclaims(facts):
 
 def test_one_headline_gain_everywhere(facts):
     gain = f"${facts['headline']['delta_vs_risk']:,.0f}"
-    for template in ["reports/executive-brief.md.j2", "presentation/deck.md.j2", "presentation/demo-script.md.j2", "reports/analysis-report.md.j2"]:
+    for template in ["reports/executive-brief.md.j2", "presentation/demo-script.md.j2", "reports/analysis-report.md.j2"]:
         assert gain in render(template, facts), template
     brief = render("reports/executive-brief.md.j2", facts)
     assert f"${facts['headline']['targeting_effect']:,.0f}" in brief and f"${facts['headline']['offer_design_effect']:,.0f}" in brief

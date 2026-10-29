@@ -79,4 +79,4 @@ Every item of the course brief ([course-requirements.md](course-requirements.md)
 | 3 | Model comparison + diagnostics | `validation_metrics.csv`, `test_metrics.csv`, calibration, gains, segment errors by tenure, contract, internet and payment, error profiles, model choice checked in money (`model_profit_check.csv`), odds ratios, SHAP; notebook 02; [model card diagnostics](model-card.md#diagnostics-and-error-analysis) |
 | 4 | Actionable decision logic | Expected-value rule, knapsack optimiser, offer catalog, strategy comparison; notebook 03; [playbook](retention-playbook.md) |
 | 5 | Draft dashboard + recommendations | Dashboard; sensitivity, profit curve, fairness; notebook 04; [analysis report](../reports/analysis-report.md) |
-| 6 | Final submission package | Executive brief DOCX/PDF, deck PPTX with notes, demo script, Q&A, [verification](verification.md) |
+| 6 | Final submission package | [Final report](../reports/final-report.pdf), executive brief DOCX/PDF, presentation PPTX on the HUST template with the speaker script in the notes ([script](../reports/presentation/speaker-script.md)), demo script, Q&A, [verification](verification.md) |

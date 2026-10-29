@@ -24,7 +24,6 @@ DOCUMENTS = {
     "docs/retention-playbook.md.j2": "docs/retention-playbook.md",
     "docs/pilot-design.md.j2": "docs/pilot-design.md",
     "docs/governance-and-risks.md.j2": "docs/governance-and-risks.md",
-    "presentation/deck.md.j2": "reports/presentation/deck.md",
     "presentation/demo-script.md.j2": "reports/presentation/demo-script.md",
     "presentation/qa-prep.md.j2": "reports/presentation/qa-prep.md",
 }

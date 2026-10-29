@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import shutil
+import stat
 from copy import deepcopy
 from pathlib import Path
 from datetime import datetime, timezone
@@ -77,6 +79,14 @@ def latest_run():
     return ROOT / "artifacts/runs" / read_json(pointer)["run_id"]
 
 
+def remove_tree(path):
+    """shutil.rmtree that also removes read-only entries (Windows marks synced and customised folders read-only)."""
+    def clear_and_retry(func, target, _exc):
+        os.chmod(target, stat.S_IWRITE)
+        func(target)
+    shutil.rmtree(path, onexc=clear_and_retry)
+
+
 def prune_runs(keep=2):
     """Delete all but the newest `keep` runs; the run in latest.json is always kept."""
     runs = sorted(p for p in (ROOT / "artifacts/runs").iterdir() if p.is_dir())
@@ -84,7 +94,7 @@ def prune_runs(keep=2):
     kept = set(runs[-keep:]) | {current}
     removed = [p for p in runs if p not in kept]
     for path in removed:
-        shutil.rmtree(path)
+        remove_tree(path)
     return [p.name for p in removed]
 
 

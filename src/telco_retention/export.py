@@ -1,4 +1,4 @@
-"""Produce the submission files: executive brief (DOCX + PDF) and slide deck (PPTX, optional PDF)."""
+"""Produce the submission files: executive brief (DOCX + PDF), presentation (PPTX + PDF, script) and the LaTeX final report (PDF)."""
 from __future__ import annotations
 
 import re
@@ -7,9 +7,6 @@ from docx import Document
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.shared import Cm, Pt, RGBColor
-from pptx import Presentation
-from pptx.dml.color import RGBColor as PptColor
-from pptx.util import Emu, Inches, Pt as PptPt
 from .common import ROOT, digest, latest_run, now, read_json, write_json
 
 INK, SECONDARY, ACCENT = "0B0B0B", "52514E", "2A78D6"
@@ -145,123 +142,29 @@ def pdf_page_count(pdf_path):
     return len(PdfReader(str(pdf_path)).pages)
 
 
-def parse_deck(md_text):
-    slides = []
-    for block in re.split(r"^---\s*$", re.sub(r"<!--.*?-->", "", md_text, flags=re.S), flags=re.M):
-        lines = [l.rstrip() for l in block.strip().splitlines()]
-        if not lines:
-            continue
-        slide = {"title": "", "subtitle": "", "bullets": [], "image": None, "table": [], "notes": []}
-        in_notes = False
-        for line in lines:
-            if in_notes:
-                slide["notes"].append(line)
-            elif line.startswith("Notes:"):
-                in_notes = True
-                slide["notes"].append(line[len("Notes:"):].strip())
-            elif line.startswith("# "):
-                slide["title"] = line[2:].strip()
-            elif line.startswith("## "):
-                slide["subtitle"] = line[3:].strip()
-            elif IMAGE.search(line):
-                slide["image"] = IMAGE.search(line).group(2)
-            elif line.lstrip().startswith("|"):
-                slide["table"].append(line)
-            elif re.match(r"^\s*[-*]\s+", line):
-                slide["bullets"].append(re.sub(r"^\s*[-*]\s+", "", line))
-        slide["notes"] = "\n".join(slide["notes"]).strip()
-        slides.append(slide)
-    return slides
-
-
-def _text(frame, text, size, color=INK, bold=False):
-    paragraph = frame.paragraphs[0] if not frame.paragraphs[0].runs else frame.add_paragraph()
-    for i, part in enumerate(re.split(r"\*\*", text)):
-        if part:
-            run = paragraph.add_run()
-            run.text = part.replace("`", "")
-            run.font.size, run.font.bold = PptPt(size), bold or i % 2 == 1
-            run.font.color.rgb = PptColor.from_string(color)
-            run.font.name = "Segoe UI"
-    return paragraph
-
-
-def build_deck(deck_md, out_path):
-    deck_md, out_path = Path(deck_md), Path(out_path)
-    prs = Presentation()
-    prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
-    blank = prs.slide_layouts[6]
-    slides = parse_deck(deck_md.read_text(encoding="utf-8"))
-    for number, spec in enumerate(slides, 1):
-        slide = prs.slides.add_slide(blank)
-        bar = slide.shapes.add_shape(1, 0, 0, Inches(0.18), prs.slide_height)
-        bar.fill.solid(); bar.fill.fore_color.rgb = PptColor.from_string(ACCENT); bar.line.fill.background()
-        title = slide.shapes.add_textbox(Inches(0.55), Inches(0.35), Inches(12.2), Inches(0.9)).text_frame
-        title.word_wrap = True
-        _text(title, spec["title"], 28 if number > 1 else 36, bold=True)
-        top = Inches(1.25)
-        if spec["subtitle"]:
-            sub = slide.shapes.add_textbox(Inches(0.55), Inches(1.15), Inches(12.2), Inches(0.6)).text_frame
-            sub.word_wrap = True
-            _text(sub, spec["subtitle"], 16, SECONDARY)
-            top = Inches(1.8)
-        has_image, has_text = spec["image"] is not None, bool(spec["bullets"] or spec["table"])
-        text_width = Inches(5.0) if has_image else Inches(12.2)
-        if spec["bullets"]:
-            box = slide.shapes.add_textbox(Inches(0.55), top, text_width, Inches(5.2)).text_frame
-            box.word_wrap = True
-            for bullet in spec["bullets"]:
-                p = _text(box, "• " + bullet, 15 if has_image else 18)
-                p.space_after = PptPt(8)
-        if spec["table"]:
-            rows = _table_rows(spec["table"])
-            height = Inches(0.42) * len(rows)
-            y = top + (Inches(0.3) * (len(spec["bullets"]) * 1.6) if spec["bullets"] else 0)
-            shape = slide.shapes.add_table(len(rows), len(rows[0]), Inches(0.55), int(y), text_width, int(height))
-            for r, row in enumerate(rows):
-                for c, value in enumerate(row):
-                    cell = shape.table.cell(r, c)
-                    cell.text = ""
-                    _text(cell.text_frame, value, 12, "FFFFFF" if r == 0 else INK, bold=r == 0)
-        if has_image:
-            image_path = (deck_md.parent / spec["image"]).resolve()
-            left = Inches(5.8) if has_text else Inches(1.2)
-            max_w, max_h = (Inches(7.2) if has_text else Inches(10.9)), prs.slide_height - top - Inches(0.45)
-            picture = slide.shapes.add_picture(str(image_path), left, top)
-            scale = min(max_w / picture.width, max_h / picture.height)
-            picture.width, picture.height = int(picture.width * scale), int(picture.height * scale)
-        footer = slide.shapes.add_textbox(Inches(0.55), Inches(7.05), Inches(12.2), Inches(0.35)).text_frame
-        _text(footer, f"Retention Lab | Profit-aware churn & retention targeting | {number}/{len(slides)}", 10, "898781")
-        slide.notes_slide.notes_text_frame.text = spec["notes"]
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    prs.save(out_path)
-    return out_path, slides
-
-
-def deck_lint(slides, min_slides=12, max_slides=15, max_bullets=6, max_chars=110):
-    problems = []
-    if not min_slides <= len(slides) <= max_slides:
-        problems.append(f"{len(slides)} slides; expected {min_slides}-{max_slides}")
-    for i, s in enumerate(slides, 1):
-        if not s["notes"]:
-            problems.append(f"slide {i} has no speaker notes")
-        if len(s["bullets"]) > max_bullets:
-            problems.append(f"slide {i} has {len(s['bullets'])} bullets")
-        problems += [f"slide {i} bullet too long ({len(b)} chars)" for b in s["bullets"] if len(b) > max_chars]
-    return problems
-
-
-def export(run=None, pdf="auto"):
+def export(run=None, pdf="auto", latex="auto"):
+    """pdf: Word/PowerPoint conversion of the brief and deck; latex: pdflatex build of the final report. Each is auto, require or skip.
+    A missing tool is skipped under auto; a LaTeX compile error is always raised."""
+    from .latex import LATEX_DOCUMENTS, LatexUnavailable, compile_latex
+    from .presentation import SPEAKERS, build_presentation, lint
     run = run or latest_run()
     reports = ROOT / "reports"
+    facts = read_json(reports / "facts.json")
+    if facts["run"]["id"] != run.name:
+        raise ValueError(f"reports/facts.json is from run {facts['run']['id']}; run `report` for {run.name} first")
     brief_md, brief_docx, brief_pdf = reports / "executive-brief.md", reports / "executive-brief.docx", reports / "executive-brief.pdf"
-    deck_md, deck_pptx, deck_pdf = reports / "presentation/deck.md", reports / "presentation/retention-deck.pptx", reports / "presentation/retention-deck.pdf"
+    deck_pptx, deck_pdf = reports / "presentation/retention-presentation.pptx", reports / "presentation/retention-presentation.pdf"
+    script_md = reports / "presentation/speaker-script.md"
+    report_pdf = ROOT / LATEX_DOCUMENTS["latex/report.tex.j2"][1]
     markdown_to_docx(brief_md, brief_docx, image_width_cm=15)
-    _, slides = build_deck(deck_md, deck_pptx)
+    script = build_presentation(facts, deck_pptx, script_md)
+    timed = [e for e in script if e["speaker"] in SPEAKERS]
     previous_path = reports / "deliverables-manifest.json"
     previous = read_json(previous_path) if previous_path.exists() else {}
     manifest = {"run_id": run.name, "created_at_utc": now(), "brief_words": len(re.sub(r"<!--.*?-->", "", brief_md.read_text(encoding="utf-8"), flags=re.S).split()),
-                "slides": len(slides), "slides_with_notes": sum(bool(s["notes"]) for s in slides), "deck_lint": deck_lint(slides), "pdf_status": "skipped"}
+                "slides": len(script), "slides_with_notes": sum(bool(e["text"].strip()) for e in script), "talk_seconds": sum(e["seconds"] for e in timed),
+                "speaker_seconds": {s: sum(e["seconds"] for e in timed if e["speaker"] == s) for s in SPEAKERS}, "deck_lint": lint(script),
+                "pdf_status": "skipped", "latex_status": "skipped"}
     if pdf != "skip":
         try:
             docx_to_pdf(brief_docx, brief_pdf)
@@ -274,12 +177,23 @@ def export(run=None, pdf="auto"):
                 raise
             manifest.update(pdf_status="unavailable", pdf_error=str(exc))
     if manifest["pdf_status"] != "current":
-        # Keep the committed PDFs but say which run they were made from.
-        for key in ["brief_pages", "deck_pdf_pages"]:
-            manifest.pop(key, None)
-            if key in previous:
+        # Keep the committed PDFs but say which run they were made from; never describe a PDF that no longer exists.
+        for key, path in [("brief_pages", brief_pdf), ("deck_pdf_pages", deck_pdf)]:
+            if key not in manifest and key in previous and path.exists():
                 manifest[key] = previous[key]
         manifest["pdf_run_id"] = previous.get("pdf_run_id", previous.get("run_id") if "brief_pages" in previous else None)
-    manifest["sha256"] = {str(p.relative_to(ROOT)).replace("\\", "/"): digest(p.read_bytes()) for p in [brief_docx, brief_pdf, deck_pptx, deck_pdf] if p.exists()}
+    if latex != "skip":
+        try:
+            manifest["report_pages"] = compile_latex()[LATEX_DOCUMENTS["latex/report.tex.j2"][1]]
+            manifest.update(latex_status="current", latex_run_id=run.name)
+        except LatexUnavailable as exc:
+            if latex == "require":
+                raise
+            manifest.update(latex_status="unavailable", latex_error=str(exc)[-1000:])
+    if manifest["latex_status"] != "current" and report_pdf.exists():
+        for key in ["report_pages", "latex_run_id"]:
+            if key in previous:
+                manifest[key] = previous[key]
+    manifest["sha256"] = {str(p.relative_to(ROOT)).replace("\\", "/"): digest(p.read_bytes()) for p in [brief_docx, brief_pdf, deck_pptx, deck_pdf, script_md, report_pdf] if p.exists()}
     write_json(reports / "deliverables-manifest.json", manifest)
     return manifest
